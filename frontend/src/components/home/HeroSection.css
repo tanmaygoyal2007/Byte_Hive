@@ -1,0 +1,82 @@
+.hero{
+background:#0b0b0b;
+color:white;
+min-height:100vh;
+}
+
+.navbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:25px 80px;
+}
+
+.logo{
+font-size:20px;
+font-weight:bold;
+display:flex;
+align-items:center;
+gap:10px;
+}
+
+.logo-box{
+background:#ff7a1a;
+padding:6px 10px;
+border-radius:6px;
+color:black;
+}
+
+.nav-links{
+display:flex;
+gap:30px;
+list-style:none;
+color:#ccc;
+}
+
+.hero-container{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:80px;
+}
+
+.hero-text{
+max-width:500px;
+}
+
+.hero-text h1{
+font-size:55px;
+line-height:1.2;
+}
+
+.hero-text span{
+color:#ff7a1a;
+}
+
+.hero-text p{
+margin-top:20px;
+color:#aaa;
+}
+
+.explore-btn{
+margin-top:25px;
+padding:12px 22px;
+border:none;
+background:#ff7a1a;
+color:white;
+border-radius:8px;
+cursor:pointer;
+}
+
+.food-grid{
+display:grid;
+grid-template-columns:repeat(2,200px);
+gap:25px;
+}
+
+.food-grid img{
+width:200px;
+height:200px;
+border-radius:16px;
+object-fit:cover;
+}
