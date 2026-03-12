@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react";
 import { Search } from "lucide-react";
 import Navbar from "../components/layout/Navbar";
@@ -50,7 +48,6 @@ function CanteenCardsPage() {
             <Navbar />
 
             <main className="main-content">
-                {/* Hero section */}
                 <div className={`hero-section hero-enter ${isVisible ? 'hero-visible' : ''}`}>
                     <h1 className="hero-title">
                         Explore Campus Canteens
@@ -61,12 +58,10 @@ function CanteenCardsPage() {
                     </p>
                 </div>
 
-                {/* Search Bar */}
                 <div className={`hero-enter ${isVisible ? 'hero-visible' : ''}`} style={{ transitionDelay: '100ms' }}>
                     <SearchBar value={searchValue} onChange={setSearchValue} />
                 </div>
 
-                {/* Card Grid */}
                 <div className="cards-grid">
                     {filteredCanteens.map((canteen, index) => (
                         <div
