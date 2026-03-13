@@ -1,0 +1,8 @@
+POST http://localhost:3001/api/chat
+Content-Type: application/json
+
+{
+  "messages": [
+    { "role": "user", "content": "hello bytebot" }
+  ]
+}
