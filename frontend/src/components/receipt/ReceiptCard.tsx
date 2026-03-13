@@ -21,7 +21,7 @@ interface ReceiptCardProps {
   onDownload: () => void;
 }
 
-const ReceiptCard: React.FC<ReceiptCardProps> = ({
+let ReceiptCard: React.FC<ReceiptCardProps> = ({
   orderId,
   outletName,
   pickupLocation,
@@ -36,7 +36,6 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
     <div className="receipt-page">
       <div className="receipt-container">
 
-        {/* Success Header */}
         <div className="success-section">
           <div className="success-icon">
             <CheckCircle size={40} strokeWidth={2.5} />
@@ -48,10 +47,8 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
           </p>
         </div>
 
-        {/* Receipt Card */}
         <div className="receipt-card" id="receipt-content">
 
-          {/* Order Header */}
           <div className="order-header">
 
             <div className="order-info">
@@ -72,7 +69,6 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
 
           </div>
 
-          {/* Outlet */}
           <div className="outlet-section">
             <h3 className="outlet-name">{outletName}</h3>
 
@@ -82,7 +78,6 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
             </p>
           </div>
 
-          {/* QR Section */}
           <div className="qr-section">
 
             <div className="qr-container">
@@ -99,7 +94,6 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
 
           </div>
 
-          {/* Items */}
           <div className="items-section">
             <h4 className="section-title">Items Ordered</h4>
 
@@ -124,7 +118,6 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
             ))}
           </div>
 
-          {/* Price Section */}
           <div className="price-section">
 
             <div className="price-row">
@@ -147,13 +140,11 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
           </div>
         </div>
 
-        {/* Download */}
         <button className="button-outline" onClick={onDownload}>
           <Download size={18} />
           Download Order Receipt
         </button>
 
-        {/* Action Buttons */}
         <div className="action-buttons">
 
           <button className="button-primary">

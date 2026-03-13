@@ -3,9 +3,9 @@ import ReceiptCard from "../components/receipt/ReceiptCard";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
-const ReceiptPage: React.FC = () => {
+let ReceiptPage: React.FC = () => {
 
-  const orderData = {
+  let orderData = {
     orderId: "BH2025012601",
     outletName: "Punjabi Bites",
     pickupLocation: "Block A - Basement",
