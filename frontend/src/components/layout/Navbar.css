@@ -1,0 +1,45 @@
+.navbar{
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding:20px 80px;
+background:#0b0b0b;
+color:white;
+}
+
+.logo{
+font-size:20px;
+font-weight:bold;
+display:flex;
+align-items:center;
+gap:10px;
+}
+
+.logo-box{
+background:#ff7a1a;
+padding:6px 10px;
+border-radius:6px;
+color:black;
+}
+
+.nav-links{
+display:flex;
+gap:30px;
+list-style:none;
+}
+
+.nav-links li{
+cursor:pointer;
+transition:0.3s;
+}
+
+.nav-links li:hover{
+color:#ff7a1a;
+}
+
+.theme-btn{
+background:none;
+border:none;
+font-size:20px;
+cursor:pointer;
+}

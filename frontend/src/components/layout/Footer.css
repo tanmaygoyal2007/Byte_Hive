@@ -1,0 +1,69 @@
+.footer{
+background:#0b0b0b;
+color:white;
+padding-top:60px;
+border-top:1px solid #222;
+}
+
+.footer-container{
+display:flex;
+justify-content:space-between;
+padding:0 80px;
+flex-wrap:wrap;
+gap:40px;
+}
+
+/* Logo section */
+
+.footer-logo h2{
+margin:10px 0;
+}
+
+.logo-box{
+background:#ff7a1a;
+padding:6px 10px;
+border-radius:6px;
+color:black;
+font-weight:bold;
+}
+
+/* Links */
+
+.footer-links h3,
+.footer-contact h3{
+margin-bottom:15px;
+}
+
+.footer-links ul{
+list-style:none;
+padding:0;
+}
+
+.footer-links li{
+margin-bottom:8px;
+cursor:pointer;
+color:#bbb;
+transition:0.3s;
+}
+
+.footer-links li:hover{
+color:#ff7a1a;
+}
+
+/* Contact */
+
+.footer-contact p{
+margin:6px 0;
+color:#bbb;
+}
+
+/* Bottom bar */
+
+.footer-bottom{
+text-align:center;
+margin-top:40px;
+padding:20px 0;
+border-top:1px solid #222;
+font-size:14px;
+color:#888;
+}
