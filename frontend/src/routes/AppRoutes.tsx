@@ -6,6 +6,7 @@ import CanteenMenuPage from "../pages/CanteenMenuPage";
 import CartPage from "../pages/CartPage";
 import ReceiptPage from "../pages/ReceiptPage";
 
+
 function AppRoutes() {
   return (
     <Routes>
