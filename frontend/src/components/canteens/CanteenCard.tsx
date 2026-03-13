@@ -1,5 +1,6 @@
 import { MapPin, Star } from "lucide-react";
 import type { Canteen } from "./canteens"
+import "./CanteenCard.css";
 
 export function CanteenCard({ id, name, cuisine, rating, location, image }: Canteen) {
     return (

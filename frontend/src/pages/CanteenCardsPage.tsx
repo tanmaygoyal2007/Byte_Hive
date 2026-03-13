@@ -4,7 +4,7 @@ import Navbar from "../components/layout/Navbar";
 import { CanteenCard } from "../components/canteens/CanteenCard";
 import Footer from "../components/layout/Footer";
 import { CANTEENS } from "../components/canteens/canteens";
-
+import "./CanteenCardsPage.css";
 interface SearchBarProps {
     value: string
     onChange: (value: string) => void
@@ -46,19 +46,16 @@ function CanteenCardsPage() {
     return (
         <div className="page-container">
             <Navbar />
-
             <main className="main-content">
                 <div className={`hero-section hero-enter ${isVisible ? 'hero-visible' : ''}`}>
-                    <h1 className="hero-title">
-                        Explore Campus Canteens
-                    </h1>
+                    <h1 className="hero-title">Explore Campus Canteens</h1>
                     <p className="hero-subtitle">
                         Discover all the amazing food outlets across campus<br />
                         and find your next favorite meal
                     </p>
                 </div>
 
-                <div className={`hero-enter ${isVisible ? 'hero-visible' : ''}`} style={{ transitionDelay: '100ms' }}>
+                <div className={`hero-enter search-delay ${isVisible ? 'hero-visible' : ''}`}>
                     <SearchBar value={searchValue} onChange={setSearchValue} />
                 </div>
 
@@ -68,19 +65,11 @@ function CanteenCardsPage() {
                             key={canteen.id}
                             className={`card-enter ${isVisible ? 'card-visible' : ''} card-delay-${Math.min(index % 3, 2)}`}
                         >
-                            <CanteenCard
-                                id={canteen.id}
-                                image={canteen.image}
-                                name={canteen.name}
-                                cuisine={canteen.cuisine}
-                                rating={canteen.rating}
-                                location={canteen.location}
-                            />
+                            <CanteenCard {...canteen} />
                         </div>
                     ))}
                 </div>
             </main>
-
             <Footer />
         </div>
     )
