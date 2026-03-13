@@ -20,7 +20,7 @@ get it delivered quickly without waiting in long lines.
 
 </div>
 
-<img src="/images/delivery.jpg" className="delivery-img"/>
+<img src="/images/FOOD5.jpg" alt="FOOD5" className="delivery-img"/>
 
 </section>
 
