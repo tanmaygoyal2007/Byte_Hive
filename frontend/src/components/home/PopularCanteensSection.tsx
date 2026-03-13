@@ -12,9 +12,9 @@ return(
 
 <div className="canteen-grid">
 
-<PopularCanteenCard name="Central Canteen" image="/images/canteen1.jpg"/>
-<PopularCanteenCard name="Food Court" image="/images/canteen2.jpg"/>
-<PopularCanteenCard name="Campus Cafe" image="/images/canteen3.jpg"/>
+<PopularCanteenCard name="Central Canteen" image="/images/CANTEEN1.jpg"/>
+<PopularCanteenCard name="Food Court" image="/images/CANTEEN2.jpg"/>
+<PopularCanteenCard name="Campus Cafe" image="/images/CANTEEN3.jpg"/>
 
 </div>
 
