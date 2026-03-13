@@ -1,0 +1,19 @@
+.canteen-card{
+background:#111;
+padding:15px;
+border-radius:14px;
+text-align:center;
+width:220px;
+}
+
+.canteen-card img{
+width:100%;
+height:150px;
+border-radius:12px;
+object-fit:cover;
+}
+
+.canteen-card h3{
+margin-top:10px;
+color:white;
+}
