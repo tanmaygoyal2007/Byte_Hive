@@ -1,0 +1,323 @@
+body {
+  background: #FDFCFB;
+}
+
+.receipt-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 48px 16px;
+}
+
+.receipt-container {
+  width: 100%;
+  max-width: 672px;
+}
+
+
+.success-section {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.success-icon {
+  width: 88px;
+  height: 88px;
+  margin: 0 auto 16px auto;
+  background-color: #FEF3E2;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.success-icon svg {
+  width: 48px;
+  height: 48px;
+  color: #EA580C;
+}
+
+.page-title {
+  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #1C1917;
+  font-size: 32px;
+  margin: 0 0 8px 0;
+}
+
+.page-subtitle {
+  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #6B7280;
+  margin: 0;
+}
+
+
+.receipt-card {
+  background-color: #FFFFFF;
+  border-radius: 16px;
+  border: 1px solid #E7E5E4;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  margin-bottom: 24px;
+}
+
+
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #E7E5E4;
+  background-color: #F5F4F3;
+}
+
+.order-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.label-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.label {
+  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #78716C;
+}
+
+.value {
+  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #1C1917;
+}
+
+
+.outlet-section {
+  padding: 16px 24px;
+  border-bottom: 1px solid #E7E5E4;
+}
+
+.outlet-name {
+  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #1C1917;
+  margin: 0 0 4px 0;
+}
+
+.outlet-location {
+  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #78716C;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.qr-section {
+  padding: 24px;
+  border-bottom: 1px solid #E7E5E4;
+  background-color: rgba(245, 244, 243, 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.qr-container {
+  background-color: #FFFFFF;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-container svg {
+  width: 180px;
+  height: 180px;
+}
+
+.qr-text {
+  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #78716C;
+  text-align: center;
+  margin: 0;
+}
+
+
+.items-section {
+  padding: 16px 24px;
+  border-bottom: 1px solid #E5E7EB;
+}
+
+.section-title {
+  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+  color: #78716C;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 12px 0;
+}
+
+.item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+}
+
+.item-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.quantity-badge {
+  width: 32px;
+  height: 32px;
+  border-radius: 9999px;
+  background-color: #F5F4F3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #1C1917;
+}
+
+.item-name {
+  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: #1C1917;
+}
+
+.item-price {
+  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: #1C1917;
+}
+
+.price-section {
+  padding: 16px 24px;
+}
+
+.price-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  color: #57534E;
+}
+
+.divider {
+  height: 1px;
+  background-color: #E7E5E4;
+  margin: 12px 0;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  font-weight: 600;
+}
+
+.total-amount {
+  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: #C2410C;
+}
+
+
+.action-buttons {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.button-primary {
+  width: 100%;
+  height: 48px;
+  background-color: #C2410C;
+  color: #FFFFFF;
+  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+}
+
+.button-outline {
+  width: 100%;
+  height: 48px;
+  background-color: transparent;
+  color: #1C1917;
+  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  border: 1px solid #E7E5E4;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.button-primary,
+.button-outline {
+  flex: 1;
+}
+
+.button-primary:hover {
+  background-color: #9A3412;
+  transition: background-color 0.2s ease;
+}
+
+.button-outline:hover {
+  background-color: #F5F4F3;
+  border-color: #D6D3D1;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+.label-row svg {
+  color: #EA580C;
+}
