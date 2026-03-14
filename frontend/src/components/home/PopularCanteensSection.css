@@ -1,17 +1,29 @@
 .popular{
-background:#0b0b0b;
-padding:80px;
-color:white;
-text-align:center;
+	background: transparent;
+	padding:80px 24px;
+	color:white;
+	text-align:center;
 }
 
 .popular h2{
-font-size:32px;
-margin-bottom:40px;
+	font-size:44px;
+	margin-bottom:8px;
 }
 
+.popular .subtitle{ color:#bfbfbf; margin-bottom:36px }
+
 .canteen-grid{
-display:flex;
-justify-content:center;
-gap:30px;
+	display:flex;
+	justify-content:center;
+	gap:80px;
+	align-items:flex-start;
+}
+
+.canteen-card img{ width:260px; height:260px }
+
+.canteen-grid{
+	display:flex;
+	justify-content:center;
+	gap:80px;
+	align-items:flex-start;
 }

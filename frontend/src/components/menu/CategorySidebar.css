@@ -1,0 +1,5 @@
+.category-sidebar{ background:transparent; border:1px solid rgba(255,255,255,0.08); }
+.category-sidebar h3{ margin-top:0; font-size:14px }
+.category-sidebar ul{ list-style:none; padding:0; margin:12px 0 }
+.category-sidebar li{ padding:10px 12px; color:#6b6b6b; cursor:pointer; border-radius:10px; margin-bottom:8px }
+.category-sidebar li.active{ background:#e85a06; color:#fff }

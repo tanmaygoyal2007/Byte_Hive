@@ -1,29 +1,16 @@
-import HomePage from "./pages/HomePage";
-
-function App() {
-  return (
-    <div>
-      <HomePage />
-    </div>
-  );
-}
-
-import './App.css'
-import CanteenCardsPage from './pages/CanteenCardsPage'
-
-function App() {
-    return (
-        <CanteenCardsPage />
-    );
+import "./App.css";
 import { BrowserRouter } from "react-router-dom";
 import AppRoutes from "./routes/AppRoutes";
 import ChatWidget from "./components/chatWidget/ChatWidget";
+import { CartProvider } from "./context/CartContext";
 
 function App() {
   return (
     <BrowserRouter>
-      <AppRoutes />
-      <ChatWidget />
+      <CartProvider>
+        <AppRoutes />
+        <ChatWidget />
+      </CartProvider>
     </BrowserRouter>
   );
 }

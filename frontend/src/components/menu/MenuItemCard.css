@@ -1,0 +1,22 @@
+.menu-item-card{
+    display:flex;
+    gap:12px;
+    padding:14px;
+    background: rgba(255,255,255,0.02);
+    border-radius:10px;
+    box-shadow: 0 18px 60px rgba(0,0,0,0.6);
+    align-items:center;
+    border:1px solid rgba(255,255,255,0.08);
+}
+.menu-item-image{
+    width:84px;
+    height:84px;
+    object-fit:cover;
+    border-radius:8px;
+}
+.menu-item-title{ margin:0 0 6px 0; color:#fff }
+.menu-item-desc{ margin:0; font-size:13px; color:#bfbfbf }
+.menu-item-controls{ display:flex; align-items:center; gap:12px; margin-top:8px }
+.menu-item-price{ color:#ff7a1a; font-weight:700 }
+.menu-item-add{ background:#ff7a1a; color:#111; border:none; padding:8px 12px; border-radius:8px; cursor:pointer }
+.menu-item-add:hover{ filter:brightness(0.95) }

@@ -3,7 +3,7 @@ import { Search } from "lucide-react";
 import Navbar from "../components/layout/Navbar";
 import { CanteenCard } from "../components/canteens/CanteenCard";
 import Footer from "../components/layout/Footer";
-import { CANTEENS } from "../components/canteens/canteens";
+import canteensData from "../data/canteens.json";
 import "./CanteenCardsPage.css";
 interface SearchBarProps {
     value: string
@@ -36,11 +36,19 @@ function CanteenCardsPage() {
         return () => clearTimeout(timer);
     }, []);
 
-    const filteredCanteens = CANTEENS.filter((canteen) =>
+    const mapped = (canteensData as any[]).map(c => ({
+        id: c.id,
+        name: c.name,
+        description: c.description,
+        rating: c.rating,
+        block: c.block,
+        images: c.images
+    }));
+
+    const filteredCanteens = mapped.filter((canteen) =>
         canteen.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-        canteen.cuisine.toLowerCase().includes(searchValue.toLowerCase()) ||
-        (canteen.tag && canteen.tag.toLowerCase().includes(searchValue.toLowerCase())) ||
-        canteen.location.toLowerCase().includes(searchValue.toLowerCase())
+        (canteen.description || "").toLowerCase().includes(searchValue.toLowerCase()) ||
+        (canteen.block || "").toLowerCase().includes(searchValue.toLowerCase())
     );
 
     return (
