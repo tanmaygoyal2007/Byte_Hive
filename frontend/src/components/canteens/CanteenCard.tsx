@@ -1,10 +1,36 @@
 import { MapPin, Star } from "lucide-react";
-import type { Canteen } from "./canteens"
+import { Link } from "react-router-dom";
 import "./CanteenCard.css";
 
-export function CanteenCard({ id, name, cuisine, rating, location, image }: Canteen) {
+// Accept a loose prop shape so we can pass data from data/canteens.json
+export function CanteenCard(props: any) {
+    const { id, name, description, rating, block, images } = props;
+    // override images for specific canteens using supplied logo assets
+    const overrides: Record<string, string> = {
+        'amritsari': '/images/amritsariHaveliLogo.png',
+        'amritsar': '/images/amritsariHaveliLogo.png',
+        'bites': '/images/bitesAndBrewsLogo.png',
+        'bites & brews': '/images/bitesAndBrewsLogo.png',
+        'taste of delhi': '/images/tasteOfDelhiLogo.png',
+        'southern': '/images/SouthernDelightLogo.png',
+        'rolls': '/images/rollsLaneLogo.png',
+        'punjabi': '/images/punjabiBitesLogo.png',
+        'gianis': '/images/Gianis.png',
+        "domino": '/images/dominosLogo.png',
+        'ccd': '/images/CCD.jpg',
+    };
+
+    const nameKey = (name || '').toLowerCase();
+    let image = images && images.length ? images[0] : "/placeholder.svg";
+    for (const key of Object.keys(overrides)){
+        if (nameKey.includes(key)){
+            image = overrides[key];
+            break;
+        }
+    }
+
     return (
-        <a href={`/canteens/${id}`} className="card-link">
+        <Link to={`/menu/${id}`} className="card-link">
             <article className="card-wrap">
 
                 <div className="card-image-container">
@@ -13,7 +39,7 @@ export function CanteenCard({ id, name, cuisine, rating, location, image }: Cant
 
                 <div className="card-body">
                     <h3 className="card-name">{name}</h3>
-                    <p className="card-cuisine">{cuisine}</p>
+                    <p className="card-cuisine">{description}</p>
 
                     <div className="card-footer">
                         <div className="card-rating">
@@ -23,12 +49,12 @@ export function CanteenCard({ id, name, cuisine, rating, location, image }: Cant
 
                         <div className="card-location">
                             <MapPin size={16} color="#9ca3af" />
-                            <span className="card-location-text">{location}</span>
+                            <span className="card-location-text">{block}</span>
                         </div>
                     </div>
                 </div>
 
             </article>
-        </a>
+        </Link>
     );
 }

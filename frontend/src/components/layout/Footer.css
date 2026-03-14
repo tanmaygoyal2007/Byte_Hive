@@ -1,30 +1,30 @@
 .footer{
-background:#0b0b0b;
-color:white;
-padding-top:60px;
-border-top:1px solid #222;
+	background: linear-gradient(180deg,#060606,#0b0b0b);
+	color: #ddd;
+	padding-top:60px;
+	border-top:1px solid rgba(255,255,255,0.03);
 }
 
 .footer-container{
-display:flex;
-justify-content:space-between;
-padding:0 80px;
-flex-wrap:wrap;
-gap:40px;
+	display:flex;
+	justify-content:space-between;
+	padding:40px 80px;
+	flex-wrap:wrap;
+	gap:40px;
 }
 
 /* Logo section */
 
 .footer-logo h2{
-margin:10px 0;
+	margin:10px 0;
 }
 
 .logo-box{
-background:#ff7a1a;
-padding:6px 10px;
-border-radius:6px;
-color:black;
-font-weight:bold;
+	background:#ff7a1a;
+	padding:8px 12px;
+	border-radius:8px;
+	color:black;
+	font-weight:700;
 }
 
 /* Links */
@@ -60,10 +60,10 @@ color:#bbb;
 /* Bottom bar */
 
 .footer-bottom{
-text-align:center;
-margin-top:40px;
-padding:20px 0;
-border-top:1px solid #222;
-font-size:14px;
-color:#888;
+	text-align:center;
+	margin-top:40px;
+	padding:24px 0;
+	border-top:1px solid rgba(255,255,255,0.03);
+	font-size:14px;
+	color:#9a9a9a;
 }

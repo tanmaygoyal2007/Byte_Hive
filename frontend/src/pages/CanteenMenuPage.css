@@ -1,0 +1,57 @@
+/* Basic layout for canteen menu page */
+.menu-page-root {
+  background: #0b0b0b; /* dark background */
+  color: #e6e6e6;
+  min-height: 100vh;
+}
+
+.menu-page-container {
+  max-width: 1100px;
+  margin: 30px auto;
+  display: grid;
+  grid-template-columns: 220px 1fr 320px;
+  gap: 24px;
+  align-items: start;
+}
+
+.menu-sidebar {
+  position: relative;
+}
+
+.menu-sidebar h3, .menu-sidebar ul li { color: #bfbfbf }
+.menu-sidebar ul li.active { background: #ff7a1a; color: #111 }
+.menu-sidebar ul li { cursor: pointer }
+
+.menu-main {
+  min-height: 300px;
+}
+
+.menu-main-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 18px;
+}
+.menu-main-header h2 { color: #fff }
+
+.menu-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .menu-page-container {
+    grid-template-columns: 1fr;
+    padding: 0 16px;
+  }
+  .menu-right { display:none }
+}
+
+  /* right sidebar layout when visible */
+  .menu-right {
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+  }
+  .menu-right-top{ display:flex; justify-content:flex-end }

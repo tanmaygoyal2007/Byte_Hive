@@ -1,0 +1,56 @@
+/* Global reset and dark background for the site */
+/* Prevent default body margins that cause white gaps at the viewport edges */
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: #070605;
+}
+
+body {
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	background: radial-gradient(1200px 600px at 10% 10%, rgba(255,122,26,0.03), transparent 8%),
+							linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.0));
+	background-color: #070605; /* dark base */
+	color: #fff;
+	font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+	line-height: 1.4;
+	overflow-x: hidden; /* avoid horizontal scroll showing background */
+}
+
+/* Style the scrollbar so it blends into the dark theme and avoids visible white rail */
+body::-webkit-scrollbar{
+	width:12px;
+}
+body::-webkit-scrollbar-track{
+	background: #070605;
+}
+body::-webkit-scrollbar-thumb{
+	background: rgba(255,122,26,0.15);
+	border-radius:8px;
+}
+
+/* Make images easier to work with */
+img {
+	max-width: 100%;
+	display: block;
+}
+
+/* Utility container to match design spacing when needed */
+.container {
+	max-width: 1200px;
+	margin: 0 auto;
+	padding: 0 24px;
+}
+
+.homepage {
+	background: transparent;
+}
+
