@@ -1,7 +1,7 @@
 import { MapPin, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import "./CanteenCard.css";
-
+import "./canteens.ts";
 // Accept a loose prop shape so we can pass data from data/canteens.json
 export function CanteenCard(props: any) {
     const { id, name, description, rating, block, images } = props;
