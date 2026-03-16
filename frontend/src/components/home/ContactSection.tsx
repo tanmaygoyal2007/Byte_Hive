@@ -1,54 +1,133 @@
 import React, { useState } from "react";
+import emailjs from "@emailjs/browser";
 import "./ContactSection.css";
 
-const ContactSection:React.FC = () => {
-	const [name, setName] = useState("");
-	const [email, setEmail] = useState("");
-	const [phone, setPhone] = useState("");
-	const [question, setQuestion] = useState("");
+const SERVICE_ID = "service_mtlp8ar";
+const TEMPLATE_ID = "template_v8b1mmf";
+const PUBLIC_KEY = "AZUeKttsLJ66YRG_c";
 
-	const handleSubmit = (e: React.FormEvent) => {
-		e.preventDefault();
-		// For now just log. Wire to API later.
-		console.log({ name, email, phone, question });
-		alert("Thanks! Your question has been submitted.");
-		setName(""); setEmail(""); setPhone(""); setQuestion("");
-	}
+const ContactSection: React.FC = () => {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [question, setQuestion] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
 
-	return(
-		<section className="contact-section">
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-			<h1 className="contact-title">Have a question in your mind? <br/> Let us help you!</h1>
+    if (!name || !email || !question) {
+      setStatus("error");
+      return;
+    }
 
-			<form className="contact-card" onSubmit={handleSubmit}>
-				<div className="row">
-					<div className="input-group">
-						<label>Name</label>
-						<input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" />
-					</div>
+    setIsLoading(true);
+    setStatus("idle");
 
-					<div className="input-group">
-						<label>Email</label>
-						<input value={email} onChange={e => setEmail(e.target.value)} placeholder="your.email@college.edu" />
-					</div>
-				</div>
+    try {
+      await emailjs.send(
+        SERVICE_ID,
+        TEMPLATE_ID,
+        {
+          from_name: name,
+          from_email: email,
+          contact_number: phone || "Not provided",
+          message: question,
+        },
+        PUBLIC_KEY
+      );
 
-				<div className="input-group full">
-					<label>Contact Number</label>
-					<input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 (555) 000-0000" />
-				</div>
+      setStatus("success");
+      setName("");
+      setEmail("");
+      setPhone("");
+      setQuestion("");
+    } catch (err) {
+      console.error("EmailJS error:", err);
+      setStatus("error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-				<div className="input-group full">
-					<label>Your Question</label>
-					<textarea value={question} onChange={e => setQuestion(e.target.value)} placeholder="Tell us what's on your mind..." />
-				</div>
+  return (
+    <section className="contact-section">
+      <h1 className="contact-title">
+        Have a question in your mind? <br /> Let us help you!
+      </h1>
 
-				<button className="submit-btn" type="submit">✈ Submit Question</button>
-			</form>
+      {/* Success message */}
+      {status === "success" && (
+        <div className="contact-alert contact-alert-success">
+          ✅ Your question has been submitted! We'll get back to you soon.
+        </div>
+      )}
 
-		</section>
-	)
+      {/* Error message */}
+      {status === "error" && (
+        <div className="contact-alert contact-alert-error">
+          ❌ Please fill in your name, email and question before submitting.
+        </div>
+      )}
 
-}
+      <form className="contact-card" onSubmit={handleSubmit}>
+        <div className="row">
+          <div className="input-group">
+            <label>Name</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Your name"
+              disabled={isLoading}
+              required
+            />
+          </div>
+
+          <div className="input-group">
+            <label>Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="your.email@college.edu"
+              disabled={isLoading}
+              required
+            />
+          </div>
+        </div>
+
+        <div className="input-group full">
+          <label>Contact Number</label>
+          <input
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            placeholder="+1 (555) 000-0000"
+            disabled={isLoading}
+          />
+        </div>
+
+        <div className="input-group full">
+          <label>Your Question</label>
+          <textarea
+            value={question}
+            onChange={(e) => setQuestion(e.target.value)}
+            placeholder="Tell us what's on your mind..."
+            disabled={isLoading}
+            required
+          />
+        </div>
+
+        <button
+          className={`submit-btn ${isLoading ? "submit-btn-loading" : ""}`}
+          type="submit"
+          disabled={isLoading}
+        >
+          {isLoading ? "Sending..." : "✈ Submit Question"}
+        </button>
+      </form>
+    </section>
+  );
+};
 
 export default ContactSection;
