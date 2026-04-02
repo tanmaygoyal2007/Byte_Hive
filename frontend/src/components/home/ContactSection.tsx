@@ -52,7 +52,7 @@ const ContactSection: React.FC = () => {
   };
 
   return (
-    <section className="contact-section">
+    <section id="contact" className="contact-section">
       <h1 className="contact-title">
         Have a question in your mind? <br /> Let us help you!
       </h1>

@@ -197,13 +197,13 @@ color:#ff7a1a;
 }
 
 .dominos-logo {
-    width: 28px;
-    height: 28px;
-    object-fit: contain;
+    width: 24px;
+    height: 24px;
+    display: block;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
 }
 
 .dropdown-item:hover .dominos-logo {
     transform: scale(1.1);
-    filter: drop-shadow(0 4px 8px rgba(255, 122, 26, 0.3));
+    filter: drop-shadow(0 4px 8px rgba(255, 122, 26, 0.4));
 }

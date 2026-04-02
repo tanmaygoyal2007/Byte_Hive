@@ -18,7 +18,7 @@ const PopularCanteenCard:React.FC<Props> = ({id, name, image, description}) => {
 	}
 
 	return(
-		<div className="canteen-card">
+		<div className="canteen-card" onClick={goToMenu} style={{ cursor: 'pointer' }}>
 
 			<img src={image} alt={name}/>
 
@@ -26,7 +26,7 @@ const PopularCanteenCard:React.FC<Props> = ({id, name, image, description}) => {
 
 			{description && <p className="desc">{description}</p>}
 
-			<button className="view-btn" onClick={goToMenu}>View Menu →</button>
+			<button className="view-btn">View Menu →</button>
 
 		</div>
 	)
