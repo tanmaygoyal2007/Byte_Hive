@@ -46,10 +46,7 @@ function CanteenCardsPage() {
     const filteredCanteens = CANTEENS.filter((canteen) => {
         // 1. Block Filter Logic
         if (filter) {
-            const isMatch = filter === "Dominos" 
-                ? canteen.name === "Dominos" 
-                : canteen.block === filter;
-            
+            const isMatch = canteen.block === filter;
             if (!isMatch) return false;
         }
 
