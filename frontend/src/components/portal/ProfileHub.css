@@ -139,6 +139,100 @@
   gap: 14px;
 }
 
+.profile-guest-card {
+  margin-top: 4px;
+}
+
+.profile-guest-glass {
+  width: 100%;
+  padding: 18px;
+  border-radius: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(20, 16, 12, 0.38);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(18px);
+}
+
+.profile-guest-glass strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.profile-guest-glass p {
+  margin: 10px 0 0;
+  color: var(--text-muted);
+  line-height: 1.55;
+}
+
+.profile-guest-feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.profile-guest-feature-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.profile-guest-feature-item span:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.profile-guest-feature-item small {
+  color: var(--text-muted);
+}
+
+.profile-guest-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.profile-guest-actions button,
+.profile-logout,
+.profile-favorite-side button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  cursor: pointer;
+}
+
+.profile-guest-actions button {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--accent);
+  color: #fff;
+  font-weight: 700;
+}
+
+.profile-guest-actions .profile-guest-secondary {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+.profile-guest-actions .profile-guest-tertiary {
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-soft);
+}
+
+.profile-guest-actions .profile-guest-tertiary:hover {
+  color: var(--text-primary);
+  background: rgba(255, 255, 255, 0.04);
+}
+
 .profile-actions,
 .profile-stack {
   display: flex;
@@ -187,40 +281,29 @@
   color: var(--accent);
 }
 
-.profile-logout,
-.profile-favorite-side button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  border: 0;
-  cursor: pointer;
-}
-
 .profile-logout {
   width: 100%;
   margin-top: 18px;
-  padding: 14px;
   border-radius: 16px;
-  background: rgba(209, 62, 62, 0.12);
-  color: #e67b7b;
   font-weight: 700;
 }
 
-.profile-back,
+.profile-logout {
+  padding: 14px;
+  background: rgba(209, 62, 62, 0.12);
+  color: #e67b7b;
+}
+
 .profile-hub-back {
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  margin-bottom: 16px;
   padding: 0;
   border: 0;
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
-}
-
-.profile-hub-back {
-  margin-bottom: 16px;
 }
 
 .profile-order-items {

@@ -1,10 +1,15 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Menu, Moon, Sun, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import AuthModal from "../portal/AuthModal";
 import PortalDropdown from "../portal/PortalDropdown";
 import ProfileHub from "../portal/ProfileHub";
 import StudentLoginModal from "../portal/StudentLoginModal";
 import "./Navbar.css";
+
+type AuthRole = "student" | "faculty" | "guest";
+
+type PendingAuthRole = "student" | "faculty" | null;
 
 const Navbar: React.FC = () => {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
@@ -21,8 +26,9 @@ const Navbar: React.FC = () => {
   const [isBlockOpen, setIsBlockOpen] = useState(false);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [userRole, setUserRole] = useState<"student" | "faculty">("student");
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [pendingAuthRole, setPendingAuthRole] = useState<PendingAuthRole>(null);
+  const [authRole, setAuthRole] = useState<AuthRole | null>(null);
   const [userName, setUserName] = useState("Student Name");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [hasActiveOrder] = useState(true);
@@ -98,22 +104,39 @@ const Navbar: React.FC = () => {
     setTheme((current) => (current === "dark" ? "light" : "dark"));
   };
 
-  const handlePortalLogin = (role: "student" | "faculty") => {
-    setIsAuthenticated(true);
-    setUserRole(role);
-    setUserName(role === "student" ? "Student Name" : "Faculty Name");
+  const openAuthFlow = (role: "student" | "faculty") => {
+    setPendingAuthRole(role);
+    setIsAuthModalOpen(true);
+    setIsLoginModalOpen(false);
+  };
+
+  const handleGuestContinue = () => {
+    setAuthRole("guest");
+    setUserName("Guest User");
     setIsPortalOpen(false);
     setIsMenuOpen(false);
+    setIsProfileOpen(true);
+  };
+
+  const handleAuthSubmit = ({ role, name }: { role: "student" | "faculty"; mode: "login" | "signup"; name: string; email: string }) => {
+    setAuthRole(role);
+    setUserName(name || (role === "student" ? "Student Name" : "Faculty Name"));
+    setIsPortalOpen(false);
+    setIsMenuOpen(false);
+    setIsProfileOpen(true);
   };
 
   const handleLogout = () => {
-    setIsAuthenticated(false);
-    setUserRole("student");
+    setAuthRole(null);
     setUserName("Student Name");
+    setPendingAuthRole(null);
     setIsProfileOpen(false);
   };
 
   const isDarkMode = theme === "dark";
+  const isAuthenticated = authRole !== null;
+  const isGuest = authRole === "guest";
+  const displayRole: AuthRole = authRole ?? "student";
 
   return (
     <>
@@ -222,15 +245,27 @@ const Navbar: React.FC = () => {
       <StudentLoginModal
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
-        onLogin={handlePortalLogin}
+        onChooseRole={openAuthFlow}
+        onContinueAsGuest={handleGuestContinue}
       />
+
+      {pendingAuthRole && (
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          role={pendingAuthRole}
+          onClose={() => setIsAuthModalOpen(false)}
+          onSubmit={handleAuthSubmit}
+        />
+      )}
 
       <ProfileHub
         isOpen={isProfileOpen}
         onClose={() => setIsProfileOpen(false)}
         onLogout={handleLogout}
+        onRequestAuth={(role = "student") => openAuthFlow(role)}
         userName={userName}
-        userRole={userRole}
+        userRole={displayRole}
+        isGuest={isGuest}
         isMobile={isMobileView}
         hasActiveOrder={hasActiveOrder}
       />

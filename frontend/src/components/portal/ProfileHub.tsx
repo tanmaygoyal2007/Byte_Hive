@@ -1,4 +1,4 @@
-import { CheckCircle2, ChevronLeft, Clock3, Heart, LogOut, Package, ShoppingBag, Star, X } from "lucide-react";
+import { CheckCircle2, ChevronLeft, Clock3, Heart, LogIn, LogOut, Package, ShoppingBag, Star, UserPlus, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import "./ProfileHub.css";
@@ -7,8 +7,10 @@ type ProfileHubProps = {
   isOpen: boolean;
   onClose: () => void;
   onLogout: () => void;
+  onRequestAuth: (role?: "student" | "faculty") => void;
   userName: string;
-  userRole: "student" | "faculty";
+  userRole: "student" | "faculty" | "guest";
+  isGuest?: boolean;
   isMobile?: boolean;
   hasActiveOrder?: boolean;
 };
@@ -19,8 +21,10 @@ function ProfileHub({
   isOpen,
   onClose,
   onLogout,
+  onRequestAuth,
   userName,
   userRole,
+  isGuest = false,
   isMobile = false,
   hasActiveOrder = true,
 }: ProfileHubProps) {
@@ -63,7 +67,6 @@ function ProfileHub({
       { name: "Butter Naan", quantity: 2, price: "Rs40" },
     ],
     total: "Rs220",
-    placedAt: "2:30 PM",
   };
 
   const orderHistory = [
@@ -96,57 +99,118 @@ function ProfileHub({
     </button>
   );
 
+  const renderGuestCard = () => (
+    <div className="profile-guest-card">
+      <div className="profile-guest-glass">
+        <strong>Unlock your ByteHive account</strong>
+        <p>Login or sign up as a student or faculty member to save favorites, track orders, and keep your profile synced.</p>
+        <div className="profile-guest-feature-list">
+          <div className="profile-guest-feature-item">
+            <span className="profile-action-icon"><ShoppingBag size={18} /></span>
+            <span>
+              <strong>Active Order</strong>
+              <small>View current order status</small>
+            </span>
+          </div>
+          <div className="profile-guest-feature-item">
+            <span className="profile-action-icon"><Package size={18} /></span>
+            <span>
+              <strong>Order History</strong>
+              <small>View past orders</small>
+            </span>
+          </div>
+          <div className="profile-guest-feature-item">
+            <span className="profile-action-icon"><Heart size={18} /></span>
+            <span>
+              <strong>Favorite Items</strong>
+              <small>Quick add favorites</small>
+            </span>
+          </div>
+        </div>
+        <div className="profile-guest-actions">
+          <button type="button" onClick={() => onRequestAuth("student")}>
+            <LogIn size={16} />
+            Login as Student
+          </button>
+          <button type="button" className="profile-guest-secondary" onClick={() => onRequestAuth("faculty")}>
+            <UserPlus size={16} />
+            Sign up as Faculty
+          </button>
+          <button
+            type="button"
+            className="profile-guest-tertiary"
+            onClick={() => {
+              onLogout();
+              onClose();
+            }}
+          >
+            <LogOut size={16} />
+            Exit Guest Mode
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+
   const renderHomeView = () => (
     <>
-      <div className="profile-user-card">
-        <div className="profile-user-avatar">{userName.charAt(0).toUpperCase()}</div>
-        <div>
-          <h3>{userName}</h3>
-          <span className="profile-user-role">{userRole}</span>
-        </div>
-      </div>
+      {isGuest ? (
+        renderGuestCard()
+      ) : (
+        <>
+          <div className="profile-home-top">
+            <div className="profile-user-card">
+              <div className="profile-user-avatar">{userName.charAt(0).toUpperCase()}</div>
+              <div>
+                <h3>{userName}</h3>
+                <span className="profile-user-role">{userRole}</span>
+              </div>
+            </div>
 
-      {hasActiveOrder && (
-        <div className="profile-highlight-card">
-          <div className="profile-highlight-row">
-            <strong>Current Order</strong>
-            <span className="profile-status-badge">ready</span>
+            {hasActiveOrder && (
+              <div className="profile-highlight-card">
+                <div className="profile-highlight-row">
+                  <strong>Current Order</strong>
+                  <span className="profile-status-badge">ready</span>
+                </div>
+                <p>{activeOrder.outlet}</p>
+                <small>Order #{activeOrder.id}</small>
+              </div>
+            )}
           </div>
-          <p>{activeOrder.outlet}</p>
-          <small>Order #{activeOrder.id}</small>
-        </div>
+
+          <div className="profile-actions">
+            <button type="button" className="profile-action-card" onClick={() => setCurrentView("active-order")}>
+              <span className="profile-action-icon"><ShoppingBag size={20} /></span>
+              <span>
+                <strong>Active Order</strong>
+                <small>View current order status</small>
+              </span>
+            </button>
+
+            <button type="button" className="profile-action-card" onClick={() => setCurrentView("order-history")}>
+              <span className="profile-action-icon"><Package size={20} /></span>
+              <span>
+                <strong>Order History</strong>
+                <small>View past orders</small>
+              </span>
+            </button>
+
+            <button type="button" className="profile-action-card" onClick={() => setCurrentView("favorites")}>
+              <span className="profile-action-icon"><Heart size={20} /></span>
+              <span>
+                <strong>Favorite Items</strong>
+                <small>Quick add favorites</small>
+              </span>
+            </button>
+
+            <button type="button" className="profile-logout" onClick={() => { onLogout(); onClose(); }}>
+              <LogIn size={18} />
+              Logout
+            </button>
+          </div>
+        </>
       )}
-
-      <div className="profile-actions">
-        <button type="button" className="profile-action-card" onClick={() => setCurrentView("active-order")}>
-          <span className="profile-action-icon"><ShoppingBag size={20} /></span>
-          <span>
-            <strong>Active Order</strong>
-            <small>View current order status</small>
-          </span>
-        </button>
-
-        <button type="button" className="profile-action-card" onClick={() => setCurrentView("order-history")}>
-          <span className="profile-action-icon"><Package size={20} /></span>
-          <span>
-            <strong>Order History</strong>
-            <small>View past orders</small>
-          </span>
-        </button>
-
-        <button type="button" className="profile-action-card" onClick={() => setCurrentView("favorites")}>
-          <span className="profile-action-icon"><Heart size={20} /></span>
-          <span>
-            <strong>Favorite Items</strong>
-            <small>Quick add favorites</small>
-          </span>
-        </button>
-      </div>
-
-      <button type="button" className="profile-logout" onClick={() => { onLogout(); onClose(); }}>
-        <LogOut size={18} />
-        Logout
-      </button>
     </>
   );
 

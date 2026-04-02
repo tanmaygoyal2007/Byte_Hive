@@ -5,10 +5,11 @@ import "./StudentLoginModal.css";
 type StudentLoginModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  onLogin: (role: "student" | "faculty") => void;
+  onChooseRole: (role: "student" | "faculty") => void;
+  onContinueAsGuest: () => void;
 };
 
-function StudentLoginModal({ isOpen, onClose, onLogin }: StudentLoginModalProps) {
+function StudentLoginModal({ isOpen, onClose, onChooseRole, onContinueAsGuest }: StudentLoginModalProps) {
   useEffect(() => {
     if (!isOpen) return;
 
@@ -27,8 +28,13 @@ function StudentLoginModal({ isOpen, onClose, onLogin }: StudentLoginModalProps)
 
   if (!isOpen) return null;
 
-  const handleLoginClick = (role: "student" | "faculty") => {
-    onLogin(role);
+  const handleRolePick = (role: "student" | "faculty") => {
+    onChooseRole(role);
+    onClose();
+  };
+
+  const handleGuest = () => {
+    onContinueAsGuest();
     onClose();
   };
 
@@ -41,37 +47,37 @@ function StudentLoginModal({ isOpen, onClose, onLogin }: StudentLoginModalProps)
 
         <div className="student-login-header">
           <h2>Login as Student / Faculty</h2>
-          <p>Access your meals, favorites, and campus order flow.</p>
+          <p>Choose how you want to continue into ByteHive.</p>
         </div>
 
         <div className="student-login-actions">
-          <button type="button" className="student-login-option student-login-option-primary" onClick={() => handleLoginClick("student")}>
+          <button type="button" className="student-login-option student-login-option-primary" onClick={() => handleRolePick("student")}>
             <span className="student-login-icon">
               <GraduationCap size={24} />
             </span>
             <span className="student-login-copy">
               <strong>Continue as Student</strong>
-              <small>Browse menus and place orders.</small>
+              <small>Open the login or signup flow for student access.</small>
             </span>
           </button>
 
-          <button type="button" className="student-login-option" onClick={() => handleLoginClick("faculty")}>
+          <button type="button" className="student-login-option" onClick={() => handleRolePick("faculty")}>
             <span className="student-login-icon">
               <ShieldCheck size={24} />
             </span>
             <span className="student-login-copy">
               <strong>Continue as Faculty</strong>
-              <small>Access faculty portal features.</small>
+              <small>Open the login or signup flow for faculty access.</small>
             </span>
           </button>
 
-          <button type="button" className="student-login-option" onClick={() => handleLoginClick("student")}>
+          <button type="button" className="student-login-option" onClick={handleGuest}>
             <span className="student-login-icon student-login-icon-muted">
               <UserCircle size={24} />
             </span>
             <span className="student-login-copy">
               <strong>Continue as Guest</strong>
-              <small>Browse without an account.</small>
+              <small>Browse in guest mode and upgrade later from your profile.</small>
             </span>
           </button>
         </div>
