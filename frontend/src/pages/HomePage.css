@@ -2,11 +2,11 @@
   background: linear-gradient(180deg, #080706 0%, #0b0b0b 40%);
   min-height: 100vh;
   color: #fff;
-  padding-top: 72px; /* account for fixed navbar */
+  padding-top: 88px;
 }
 
 /* center page content and constrain width */
 .homepage > * {
-  max-width: 1200px;
+  width: min(100%, 1520px);
   margin: 0 auto;
 }
