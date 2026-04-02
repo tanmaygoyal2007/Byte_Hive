@@ -126,3 +126,29 @@
 .card-delay-2 {
     transition-delay: 200ms;
 }
+
+.filter-indicator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    color: #eee;
+    font-size: 0.95rem;
+}
+
+.clear-filter-btn {
+    background: rgba(255, 122, 26, 0.1);
+    border: 1px solid rgba(255, 122, 26, 0.3);
+    color: #ff7a1a;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.clear-filter-btn:hover {
+    background: rgba(255, 122, 26, 0.2);
+    border-color: #ff7a1a;
+}

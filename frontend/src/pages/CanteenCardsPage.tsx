@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Search } from "lucide-react";
 import Navbar from "../components/layout/Navbar";
 import { CanteenCard } from "../components/canteens/CanteenCard";
@@ -30,6 +31,10 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
 }
 
 function CanteenCardsPage() {
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const filter = searchParams.get("filter");
+    
     const [searchValue, setSearchValue] = useState("");
     const [isVisible, setIsVisible] = useState(false);
 
@@ -39,6 +44,18 @@ function CanteenCardsPage() {
     }, []);
 
     const filteredCanteens = CANTEENS.filter((canteen) => {
+        // 1. Block Filter Logic
+        if (filter) {
+            const isMatch = filter === "Dominos" 
+                ? canteen.name === "Dominos" 
+                : canteen.block === filter;
+            
+            if (!isMatch) return false;
+        }
+
+        // 2. Search Filter Logic (scoped within block if block is selected)
+        if (!searchValue) return true;
+
         const query = searchValue.toLowerCase();
         
         // Check canteen basic details
@@ -71,6 +88,15 @@ function CanteenCardsPage() {
                 <div className={`hero-enter search-delay ${isVisible ? 'hero-visible' : ''}`}>
                     <SearchBar value={searchValue} onChange={setSearchValue} />
                 </div>
+
+                {filter && (
+                    <div className="filter-indicator">
+                        <span>Showing: <strong>{filter}</strong></span>
+                        <button onClick={() => navigate('/explore')} className="clear-filter-btn">
+                            Clear Filter
+                        </button>
+                    </div>
+                )}
 
                 <div className="cards-grid">
                     {filteredCanteens.map((canteen, index) => (
