@@ -1,0 +1,132 @@
+.student-login-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 180;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(10, 8, 6, 0.62);
+  backdrop-filter: blur(10px);
+}
+
+.student-login-modal {
+  position: relative;
+  width: min(100%, 520px);
+  padding: 28px;
+  border-radius: 26px;
+  background: var(--dropdown-bg);
+  border: 1px solid var(--border-soft);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.22);
+}
+
+.student-login-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.student-login-close:hover {
+  background: var(--surface-muted);
+  color: var(--text-primary);
+}
+
+.student-login-header h2 {
+  margin: 0 0 10px;
+  color: var(--text-primary);
+  font-size: 1.9rem;
+  line-height: 1.15;
+}
+
+.student-login-header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.student-login-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.student-login-option {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--nav-surface) 84%, transparent);
+  color: var(--text-primary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.student-login-option:hover {
+  background: var(--surface-muted);
+}
+
+.student-login-option-primary {
+  border-color: color-mix(in srgb, var(--accent) 30%, var(--border-soft));
+  background: color-mix(in srgb, var(--accent) 10%, var(--dropdown-bg));
+}
+
+.student-login-icon {
+  width: 50px;
+  height: 50px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 16px;
+  background: rgba(215, 111, 33, 0.12);
+  color: var(--accent);
+}
+
+.student-login-icon-muted {
+  background: color-mix(in srgb, var(--text-muted) 18%, transparent);
+  color: var(--text-muted);
+}
+
+.student-login-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.student-login-copy strong {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.student-login-copy small {
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .student-login-modal {
+    padding: 22px;
+    border-radius: 22px;
+  }
+
+  .student-login-header h2 {
+    font-size: 1.5rem;
+    padding-right: 40px;
+  }
+}

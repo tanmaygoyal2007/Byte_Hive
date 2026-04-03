@@ -1,56 +1,100 @@
-/* Global reset and dark background for the site */
-/* Prevent default body margins that cause white gaps at the viewport edges */
 *,
 *::before,
 *::after {
-	box-sizing: border-box;
+  box-sizing: border-box;
 }
 
-html, body, #root {
+html,
+body,
+#root {
   height: 100%;
   margin: 0;
   padding: 0;
-  background-color: #070605;
+}
+
+:root {
+  color-scheme: light;
+  --accent: #d76f21;
+  --accent-soft: #e5b38c;
+  --bg-base: #fcfaf7;
+  --bg-gradient: radial-gradient(circle at top left, rgba(215, 111, 33, 0.08), transparent 28%),
+    linear-gradient(180deg, #fcfaf7 0%, #f4ede6 100%);
+  --nav-surface: rgba(255, 252, 247, 0.94);
+  --dropdown-bg: #fffaf4;
+  --surface-muted: rgba(215, 111, 33, 0.08);
+  --surface-card: rgba(255, 255, 255, 0.82);
+  --text-primary: #1f1f1f;
+  --text-muted: #6d655d;
+  --border-soft: rgba(117, 95, 71, 0.18);
+  --shadow-soft: 0 20px 60px rgba(88, 72, 58, 0.08);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --accent: #f08a3f;
+  --accent-soft: rgba(240, 138, 63, 0.45);
+  --bg-base: #0f0d0b;
+  --bg-gradient: radial-gradient(circle at top left, rgba(240, 138, 63, 0.1), transparent 24%),
+    linear-gradient(180deg, #12100e 0%, #090807 100%);
+  --nav-surface: rgba(18, 16, 14, 0.92);
+  --dropdown-bg: #171412;
+  --surface-muted: rgba(240, 138, 63, 0.12);
+  --surface-card: rgba(24, 21, 19, 0.86);
+  --text-primary: #f5efe9;
+  --text-muted: #c7b8aa;
+  --border-soft: rgba(255, 255, 255, 0.1);
+  --shadow-soft: 0 24px 60px rgba(0, 0, 0, 0.28);
 }
 
 body {
-	-webkit-font-smoothing: antialiased;
-	-moz-osx-font-smoothing: grayscale;
-	background: radial-gradient(1200px 600px at 10% 10%, rgba(255,122,26,0.03), transparent 8%),
-							linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.0));
-	background-color: #070605; /* dark base */
-	color: #fff;
-	font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-	line-height: 1.4;
-	overflow-x: hidden; /* avoid horizontal scroll showing background */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background: var(--bg-gradient);
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  line-height: 1.4;
+  overflow-x: hidden;
+  transition: background-color 0.25s ease, color 0.25s ease;
 }
 
-/* Style the scrollbar so it blends into the dark theme and avoids visible white rail */
-body::-webkit-scrollbar{
-	width:12px;
-}
-body::-webkit-scrollbar-track{
-	background: #070605;
-}
-body::-webkit-scrollbar-thumb{
-	background: rgba(255,122,26,0.15);
-	border-radius:8px;
+body::-webkit-scrollbar {
+  width: 12px;
 }
 
-/* Make images easier to work with */
+body::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+
+body::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--accent) 28%, transparent);
+  border-radius: 8px;
+}
+
 img {
-	max-width: 100%;
-	display: block;
+  max-width: 100%;
+  display: block;
 }
 
-/* Utility container to match design spacing when needed */
 .container {
-	max-width: 1200px;
-	margin: 0 auto;
-	padding: 0 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
 }
 
 .homepage {
-	background: transparent;
+  background: transparent;
 }
 
+a,
+button,
+input,
+textarea,
+select {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+#popular,
+#about {
+  scroll-margin-top: 120px;
+}
