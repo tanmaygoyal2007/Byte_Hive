@@ -1,12 +1,12 @@
 .homepage {
-  background: linear-gradient(180deg, #080706 0%, #0b0b0b 40%);
+  background: var(--bg-gradient);
   min-height: 100vh;
-  color: #fff;
+  color: var(--text-primary);
   padding-top: 88px;
 }
 
-/* center page content and constrain width */
-.homepage > * {
+/* Keep homepage sections aligned, but let the footer span full width and manage its own container. */
+.homepage > :not(.footer) {
   width: min(100%, 1520px);
   margin: 0 auto;
 }

@@ -4,14 +4,26 @@ import { NextRequest, NextResponse } from "next/server";
 import Razorpay from "razorpay";
 import { randomUUID } from "crypto";
 
-const razorpay = new Razorpay({
-  key_id: process.env.RAZORPAY_KEY_ID!,
-  key_secret: process.env.RAZORPAY_KEY_SECRET!,
-});
+export const dynamic = "force-dynamic";
+
+function getRazorpayClient() {
+  const keyId = process.env.RAZORPAY_KEY_ID;
+  const keySecret = process.env.RAZORPAY_KEY_SECRET;
+
+  if (!keyId || !keySecret) {
+    throw new Error("Razorpay environment variables are missing.");
+  }
+
+  return new Razorpay({
+    key_id: keyId,
+    key_secret: keySecret,
+  });
+}
 
 export async function POST(req: NextRequest) {
   try {
     const { amount, items, canteenId } = await req.json();
+    const razorpay = getRazorpayClient();
 
     if (!amount || amount <= 0) {
       return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
@@ -45,6 +57,9 @@ export async function POST(req: NextRequest) {
     });
   } catch (err) {
     console.error("create-order error:", err);
-    return NextResponse.json({ error: "Failed to create order" }, { status: 500 });
+    return NextResponse.json(
+      { error: err instanceof Error ? err.message : "Failed to create order" },
+      { status: 500 }
+    );
   }
 }

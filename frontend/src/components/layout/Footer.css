@@ -3,14 +3,15 @@
 	color: var(--text-primary);
 	padding-top:56px;
 	border-top:1px solid var(--border-soft);
+	width: 100%;
 }
 
 .footer-container{
 	display:flex;
 	justify-content:space-between;
-	width: min(100%, 1280px);
+	width: min(100%, 1520px);
 	margin: 0 auto;
-	padding:32px 32px 24px;
+	padding:32px clamp(12px, 1.8vw, 24px) 24px;
 	flex-wrap:wrap;
 	gap:48px;
 }
@@ -101,9 +102,9 @@
 
 .footer-bottom{
 	text-align:center;
-	width: min(100%, 1280px);
+	width: min(100%, 1520px);
 	margin:24px auto 0;
-	padding:20px 32px 28px;
+	padding:20px clamp(12px, 1.8vw, 24px) 28px;
 	border-top:1px solid var(--border-soft);
 	font-size:14px;
 	color:var(--text-muted);

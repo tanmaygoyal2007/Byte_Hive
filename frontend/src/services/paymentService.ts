@@ -1,5 +1,3 @@
-// frontend/src/services/paymentService.ts
-
 export interface RazorpayOrderResponse {
   orderId: string;
   razorpayOrderId: string;
@@ -22,46 +20,69 @@ export interface PaymentResult {
 }
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
+async function parseErrorResponse(res: Response, fallback: string) {
+  try {
+    const payload = await res.json();
+    return payload.error || fallback;
+  } catch {
+    return fallback;
+  }
+}
 
-// Step 1: Create a Razorpay order via your Next.js backend
+function getFetchErrorMessage(error: unknown, fallback: string) {
+  if (error instanceof TypeError) {
+    return `Cannot reach payment backend at ${BACKEND_URL}. Make sure the backend server is running on that port.`;
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message;
+  }
+
+  return fallback;
+}
+
 export async function createPaymentOrder(
   amount: number,
   items: { id: string; name: string; price: number; quantity: number }[],
   canteenId: string
 ): Promise<RazorpayOrderResponse> {
-  const res = await fetch(`${BACKEND_URL}/api/payment/create-order`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ amount, items, canteenId }),
-  });
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/payment/create-order`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ amount, items, canteenId }),
+    });
 
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || "Failed to create payment order");
+    if (!res.ok) {
+      throw new Error(await parseErrorResponse(res, "Failed to create payment order"));
+    }
+
+    return res.json();
+  } catch (error) {
+    throw new Error(getFetchErrorMessage(error, "Payment server is unavailable. Please start the backend and try again."));
   }
-
-  return res.json();
 }
 
-// Step 2: Verify payment signature via your Next.js backend
 export async function verifyPayment(
   data: PaymentVerifyRequest
 ): Promise<PaymentResult> {
-  const res = await fetch(`${BACKEND_URL}/api/payment/verify`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(data),
-  });
+  try {
+    const res = await fetch(`${BACKEND_URL}/api/payment/verify`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
 
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error || "Payment verification failed");
+    if (!res.ok) {
+      throw new Error(await parseErrorResponse(res, "Payment verification failed"));
+    }
+
+    return res.json();
+  } catch (error) {
+    throw new Error(getFetchErrorMessage(error, "Payment verification failed because the backend is unavailable."));
   }
-
-  return res.json();
 }
 
-// Step 3: Open Razorpay checkout popup
 export function openRazorpayCheckout(
   orderData: RazorpayOrderResponse,
   userInfo: { name: string; email: string; contact: string },
@@ -72,13 +93,18 @@ export function openRazorpayCheckout(
   }) => void,
   onFailure: (error: unknown) => void
 ): void {
+  if (typeof window === "undefined" || !("Razorpay" in window)) {
+    onFailure(new Error("Razorpay checkout failed to load. Please refresh the page and disable any script blockers."));
+    return;
+  }
+
   const options = {
     key: orderData.keyId,
     amount: orderData.amount,
     currency: orderData.currency,
     name: "ByteHive Canteen",
     description: "Food Order Payment",
-    image: "/images/logo.png", // optional: your canteen logo
+    image: "/images/logo.png",
     order_id: orderData.razorpayOrderId,
     handler: onSuccess,
     prefill: {
@@ -90,7 +116,7 @@ export function openRazorpayCheckout(
       orderId: orderData.orderId,
     },
     theme: {
-      color: "#f97316", // orange - matches ByteHive food theme
+      color: "#f97316",
     },
     modal: {
       ondismiss: () => onFailure(new Error("Payment cancelled by user")),

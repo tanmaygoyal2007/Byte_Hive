@@ -13,7 +13,7 @@ export interface Order {
   canteenId: string;
   items: OrderItem[];
   totalAmount: number;
-  status: "pending" | "paid" | "preparing" | "ready" | "completed";
+  status: "pending" | "paid" | "preparing" | "ready" | "handoff" | "completed";
   paymentId?: string;
   createdAt: string;
 }
