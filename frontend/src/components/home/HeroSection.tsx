@@ -1,7 +1,15 @@
 import React from "react";
 import "./HeroSection.css";
+import { useNavigate } from "react-router-dom";
 
 const HeroSection: React.FC = () => {
+  const navigate = useNavigate();
+
+  const goExplore = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    navigate('/explore');
+  }
+
   return (
     <section className="hero">
 
@@ -21,7 +29,7 @@ const HeroSection: React.FC = () => {
             convenient place.
           </p>
 
-          <button className="explore-btn">
+          <button className="explore-btn" onClick={goExplore}>
             Explore More →
           </button>
 
