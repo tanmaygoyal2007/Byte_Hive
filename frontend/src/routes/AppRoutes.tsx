@@ -3,8 +3,6 @@ import { Routes, Route } from "react-router-dom";
 import HomePage from "../pages/HomePage";
 import CanteenCardsPage from "../pages/CanteenCardsPage";
 import CanteenMenuPage from "../pages/CanteenMenuPage";
-import CartPage from "../pages/CartPage";
-import ReceiptPage from "../pages/ReceiptPage";
 
 
 function AppRoutes() {
@@ -19,8 +17,6 @@ function AppRoutes() {
           <p>Coming Soon...</p>
         </div>
       } />
-      <Route path="/cart" element={<CartPage />} />
-      <Route path="/receipt" element={<ReceiptPage />} />
     </Routes>
   );
 }

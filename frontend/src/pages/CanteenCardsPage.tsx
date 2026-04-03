@@ -17,7 +17,7 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
     return (
         <div className="search-section">
             <div className="search-icon-wrapper">
-                <Search size={22} className="icon-search" />
+                <Search className="icon-search" />
             </div>
             <input
                 type="text"

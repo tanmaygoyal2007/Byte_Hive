@@ -11,7 +11,7 @@ const HeroSection: React.FC = () => {
   }
 
   return (
-    <section id="about" className="hero">
+    <section className="hero">
 
       <div className="hero-container">
 
@@ -40,19 +40,19 @@ const HeroSection: React.FC = () => {
         {/* RIGHT FOOD GRID */}
         <div className="food-grid">
 
-          <div className="food-card" onClick={() => navigate('/menu/punjabiBites')}>
+          <div className="food-card">
             <img src="/images/FOOD1.jpg" alt="FOOD1" />
           </div>
 
-          <div className="food-card" onClick={() => navigate('/menu/cafeCoffeeDay')}>
+          <div className="food-card">
             <img src="/images/FOOD2.jpg" alt="FOOD2" />
           </div>
 
-          <div className="food-card" onClick={() => navigate('/menu/AmritsarHaveli')}>
+          <div className="food-card">
             <img src="/images/FOOD3.jpg" alt="FOOD3" />
           </div>
 
-          <div className="food-card" onClick={() => navigate('/menu/Dominos')}>
+          <div className="food-card">
             <img src="/images/FOOD4.jpg" alt="FOOD4" />
           </div>
 
