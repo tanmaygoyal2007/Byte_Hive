@@ -445,7 +445,6 @@
   background: var(--surface-muted);
   color: var(--text-primary);
 }
-}
 
 @media (max-width: 1120px) {
   .navbar { padding: 11px 24px; }

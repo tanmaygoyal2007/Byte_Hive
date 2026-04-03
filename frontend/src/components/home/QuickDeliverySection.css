@@ -4,7 +4,7 @@
 	align-items:center;
 	padding:80px 24px;
 	background: transparent;
-	color:white;
+	color: var(--text-primary);
 }
 
 .delivery-text{
@@ -18,7 +18,7 @@
 
 .delivery-text p{
 	margin-top:12px;
-	color:#bfbfbf;
+	color: var(--text-muted);
 }
 
 .delivery-text button{
@@ -34,5 +34,5 @@
 .delivery-img{
 	width:420px;
 	border-radius:18px;
-	box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+	box-shadow: var(--shadow-soft);
 }

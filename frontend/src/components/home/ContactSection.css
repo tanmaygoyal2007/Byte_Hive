@@ -1,6 +1,6 @@
 .contact-section{
 	padding:80px 24px;
-	color:white;
+	color: var(--text-primary);
 	text-align:center;
 }
 
@@ -14,9 +14,9 @@
 	margin:0 auto 28px;
 	padding:28px;
 	border-radius:14px;
-	background: linear-gradient(180deg, rgba(255,122,26,0.02), rgba(255,122,26,0.01));
-	border:1px solid rgba(255,255,255,0.04);
-	box-shadow: 0 30px 80px rgba(0,0,0,0.6);
+	background: color-mix(in srgb, var(--surface-card) 96%, transparent);
+	border:1px solid var(--border-soft);
+	box-shadow: var(--shadow-soft);
 }
 
 .contact-card .row{
@@ -33,15 +33,15 @@
 
 .input-group.full{ width:100%; margin-top:14px }
 
-.input-group label{ color:#bbb; font-size:13px; margin-bottom:6px }
+.input-group label{ color: var(--text-muted); font-size:13px; margin-bottom:6px }
 
 .input-group input,
 .input-group textarea{
-	background:transparent;
-	border:1px solid rgba(255,255,255,0.06);
+	background: color-mix(in srgb, var(--nav-surface) 82%, transparent);
+	border:1px solid var(--border-soft);
 	padding:10px 12px;
 	border-radius:8px;
-	color:#ddd;
+	color: var(--text-primary);
 	outline:none;
 }
 
@@ -62,7 +62,7 @@
 
 .submit-btn:hover{ filter:brightness(0.95) }
 
-.contact-footer{ color:#aaa; margin-top:18px }
+.contact-footer{ color: var(--text-muted); margin-top:18px }
 
 .contact-footer p{ margin:6px }
 

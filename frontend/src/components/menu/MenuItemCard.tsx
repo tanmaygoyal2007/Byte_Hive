@@ -57,7 +57,7 @@ function MenuItemCard({ item, isOutletOpen = true }: { item: MenuItem; isOutletO
     <div className="menu-item-card">
       <img
         className="menu-item-image"
-        src={item.image || "/images/tasteOfDelhi/tandoori-paneer-tikka.jpg"}
+        src={item.image || "/images/CANTEEN1.jpg"}
         alt={item.name}
       />
       <div className="menu-item-body">
@@ -66,7 +66,7 @@ function MenuItemCard({ item, isOutletOpen = true }: { item: MenuItem; isOutletO
   <p className="menu-item-desc">{fallbackDescription}</p>
 </div>
 <div className="menu-item-controls">
-  <div className="menu-item-price">Rs {item.price}</div>
+  <div className="menu-item-price">₹{item.price}</div>
   <div className="menu-item-actions">
     <button
       className="menu-item-fav"
