@@ -4,12 +4,13 @@ import { Link } from "react-router-dom";
 
 function MiniCart() {
     const { state, increment, decrement, removeItem, total } = useCart();
+    const isEmpty = state.items.length === 0;
 
     return (
         <div className="mini-cart">
-            <h4>Your Cart</h4>
+            <h4>🛒 Your Cart</h4>
             <div className="mini-cart-body">
-                {state.items.length === 0 ? (
+                {isEmpty ? (
                     <div className="empty-cart">Cart is empty<br/><small>Add items to get started</small></div>
                 ) : (
                     <div className="mini-items">
@@ -20,12 +21,12 @@ function MiniCart() {
                                     <div className="mini-item-name">{it.name}</div>
                                     <div className="mini-item-price">₹{it.price}</div>
                                     <div className="mini-item-qty">
-                                        <button onClick={() => decrement(it.id)}>-</button>
+                                        <button type="button" onClick={() => decrement(it.id)}>-</button>
                                         <span>{it.quantity}</span>
-                                        <button onClick={() => increment(it.id)}>+</button>
+                                        <button type="button" onClick={() => increment(it.id)}>+</button>
                                     </div>
                                 </div>
-                                <button className="mini-item-remove" onClick={() => removeItem(it.id)}>🗑</button>
+                                <button className="mini-item-remove" type="button" aria-label={`Remove ${it.name}`} onClick={() => removeItem(it.id)}>🗑</button>
                             </div>
                         ))}
                     </div>
@@ -34,7 +35,14 @@ function MiniCart() {
 
             <div className="mini-cart-footer">
                 <div className="mini-total">Total <span>₹{total()}</span></div>
-                <Link to="/receipt" className="checkout-btn">Proceed to Checkout</Link>
+                <Link to={isEmpty ? "#" : "/cart"} className={`checkout-btn${isEmpty ? " checkout-btn-disabled" : ""}`} onClick={event => {
+                    // Prevent navigation when the cart is empty but keep the button layout stable.
+                    if (isEmpty) {
+                        event.preventDefault();
+                    }
+                }}>
+                    Proceed to Checkout
+                </Link>
             </div>
         </div>
     )
