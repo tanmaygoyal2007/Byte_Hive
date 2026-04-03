@@ -84,11 +84,13 @@ function CanteenMenuPage() {
 
   return (
     <div className="menu-page-root">
-      <Navbar />
-      <CanteenHeader canteen={canteen} />
-      <ImageGallery canteen={canteen} />
+  <Navbar />
+  <div className="menu-page-shell">
+    <CanteenHeader canteen={canteen} />
+    <ImageGallery canteen={canteen} />
 
-      <div className="menu-page-container">
+    <div className="menu-page-container">
+
         <aside className="menu-sidebar">
           <CategorySidebar
             categories={categories}
@@ -110,6 +112,14 @@ function CanteenMenuPage() {
           )}
 
           <div className="menu-items-list">
+            {filteredItems.length === 0 && (
+  <div className="menu-empty-state">
+    <h3>No items found</h3>
+    <p>Try another category or update your search.</p>
+  </div>
+)}
+
+            
             {filteredItems.map((item) => (
               <MenuItemCard key={item.id} item={item} isOutletOpen={isOutletOpen} />
             ))}
@@ -117,16 +127,23 @@ function CanteenMenuPage() {
         </main>
 
         <aside className="menu-right">
-          <div className="menu-right-top">
-            <MenuSearch value={searchQ} onChange={setSearchQ} />
-          </div>
-          <MiniCart />
-        </aside>
+  <div className="menu-right-sticky">
+    <div className="menu-right-top">
+      <MenuSearch value={searchQ} onChange={setSearchQ} />
+    </div>
+    <MiniCart />
+  </div>
+</aside>
+
       </div>
 
-      <Footer />
-    </div>
-  );
+            <div className="menu-footer-wrap">
+              </div>
+  </div>
+                <Footer />
+            </div>
+        </div>
+    )
 }
 
 export default CanteenMenuPage;
