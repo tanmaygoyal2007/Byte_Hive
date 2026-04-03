@@ -13,8 +13,6 @@ flex-wrap:wrap;
 gap:40px;
 }
 
-/* Logo section */
-
 .footer-logo h2{
 margin:10px 0;
 }
@@ -26,8 +24,6 @@ border-radius:6px;
 color:black;
 font-weight:bold;
 }
-
-/* Links */
 
 .footer-links h3,
 .footer-contact h3{
@@ -50,14 +46,10 @@ transition:0.3s;
 color:#ff7a1a;
 }
 
-/* Contact */
-
 .footer-contact p{
 margin:6px 0;
 color:#bbb;
 }
-
-/* Bottom bar */
 
 .footer-bottom{
 text-align:center;

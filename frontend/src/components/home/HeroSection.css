@@ -11,8 +11,6 @@ align-items:center;
 padding:0 80px;
 }
 
-/* TEXT SECTION */
-
 .hero-text{
 max-width:520px;
 }
@@ -49,9 +47,6 @@ transition:0.3s;
 .explore-btn:hover{
 background:#ff8c35;
 }
-
-
-/* FOOD GRID */
 
 .food-grid{
 display:grid;

@@ -7,14 +7,11 @@ const Footer: React.FC = () => {
 
       <div className="footer-container">
 
-        {/* Logo Section */}
         <div className="footer-logo">
           <span className="logo-box">B</span>
           <h2>ByteHive</h2>
           <p>Your campus food companion.</p>
         </div>
-
-        {/* Quick Links */}
         <div className="footer-links">
           <h3>Quick Links</h3>
           <ul>
@@ -25,7 +22,6 @@ const Footer: React.FC = () => {
           </ul>
         </div>
 
-        {/* Contact Info */}
         <div className="footer-contact">
           <h3>Contact</h3>
           <p>Email: support@bytehive.com</p>
@@ -35,7 +31,6 @@ const Footer: React.FC = () => {
 
       </div>
 
-      {/* Bottom Line */}
       <div className="footer-bottom">
         <p>© 2026 ByteHive. All rights reserved.</p>
       </div>

@@ -1,23 +1,10 @@
-import HomePage from "./pages/HomePage";
-
-function App() {
-  return (
-    <div>
-      <HomePage />
-    </div>
-  );
-}
-
-import './App.css'
-import CanteenCardsPage from './pages/CanteenCardsPage'
-
-function App() {
-    return (
-        <CanteenCardsPage />
-    );
+import React from "react";
 import { BrowserRouter } from "react-router-dom";
+
 import AppRoutes from "./routes/AppRoutes";
 import ChatWidget from "./components/chatWidget/ChatWidget";
+
+import "./App.css";
 
 function App() {
   return (
