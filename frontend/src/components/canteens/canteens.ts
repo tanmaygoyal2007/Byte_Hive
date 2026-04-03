@@ -28,7 +28,7 @@ export const CANTEENS: Canteen[] = [
     {
         id: "rollsLane",
         name: "Rolls Lane",
-        block: "Block B",
+        block: "Block A",
         rating: 4.2,
         description: "Delicious veg and non-veg rolls with refreshing beverages.",
         openingHours: "10:00 AM - 10:00 PM",
@@ -88,7 +88,7 @@ export const CANTEENS: Canteen[] = [
     {
         id: "dominos",
         name: "Dominos",
-        block: "Block B",
+        block: "Dominos",
         rating: 4.5,
         description: "Popular pizzas chain with variety of pizzas and sides.",
         openingHours: "11:00 AM - 11:00 PM",
@@ -133,7 +133,7 @@ export const CANTEENS: Canteen[] = [
     {
         id: "AmritsarHaveli",
         name: "Amritsari Haveli",
-        block: "Rooftop",
+        block: "Block B",
         rating: 4.8,
         description: "Amritsari kulchas, parathas, and traditional Punjabi fare.",
         openingHours: "9:00 AM - 10:00 PM",

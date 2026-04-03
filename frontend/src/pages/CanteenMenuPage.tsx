@@ -5,7 +5,6 @@ import ImageGallery from "../components/menu/ImageGallery";
 import CategorySidebar from "../components/menu/CategorySidebar";
 import MenuItemCard from "../components/menu/MenuItemCard";
 import MenuSearch from "../components/menu/MenuSearch";
-import MiniCart from "../components/menu/MiniCart";
 import Footer from "../components/layout/Footer";
 import menuData from "../data/menu.json";
 import { CANTEENS } from "../components/canteens/canteens";
@@ -77,7 +76,6 @@ function CanteenMenuPage() {
                     <div className="menu-right-top">
                         <MenuSearch value={searchQ} onChange={setSearchQ} />
                     </div>
-                    <MiniCart />
                 </aside>
             </div>
 

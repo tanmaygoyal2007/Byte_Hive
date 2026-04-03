@@ -2,14 +2,14 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import "./PopularCanteenCard.css";
 
-interface Props{
+interface Props {
 	id: string;
-	name:string;
-	image:string;
+	name: string;
+	image: string;
 	description?: string;
 }
 
-const PopularCanteenCard:React.FC<Props> = ({id, name, image, description}) => {
+const PopularCanteenCard: React.FC<Props> = ({ id, name, image, description }) => {
 	const navigate = useNavigate();
 
 	const goToMenu = (e?: React.MouseEvent) => {
@@ -17,10 +17,10 @@ const PopularCanteenCard:React.FC<Props> = ({id, name, image, description}) => {
 		navigate(`/menu/${id}`);
 	}
 
-	return(
+	return (
 		<div className="canteen-card">
 
-			<img src={image} alt={name}/>
+			<img src={image} alt={name} />
 
 			<h3>{name}</h3>
 

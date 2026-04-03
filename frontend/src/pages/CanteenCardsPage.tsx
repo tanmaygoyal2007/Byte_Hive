@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Search } from "lucide-react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { Search, Trash2 } from "lucide-react";
 import Navbar from "../components/layout/Navbar";
 import { CanteenCard } from "../components/canteens/CanteenCard";
 import Footer from "../components/layout/Footer";
@@ -16,7 +17,7 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
     return (
         <div className="search-section">
             <div className="search-icon-wrapper">
-                <Search size={20} />
+                <Search className="icon-search" />
             </div>
             <input
                 type="text"
@@ -25,11 +26,25 @@ export function SearchBar({ value, onChange }: SearchBarProps) {
                 placeholder="Search for food items or canteens..."
                 className="search-input"
             />
+            {value && (
+                <button 
+                    className="search-clear-btn" 
+                    onClick={() => onChange("")}
+                    aria-label="Clear search"
+                    type="button"
+                >
+                    <Trash2 size={24} className="icon-trash" />
+                </button>
+            )}
         </div>
     )
 }
 
 function CanteenCardsPage() {
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const filter = searchParams.get("filter");
+    
     const [searchValue, setSearchValue] = useState("");
     const [isVisible, setIsVisible] = useState(false);
 
@@ -39,6 +54,15 @@ function CanteenCardsPage() {
     }, []);
 
     const filteredCanteens = CANTEENS.filter((canteen) => {
+        // 1. Block Filter Logic
+        if (filter) {
+            const isMatch = canteen.block.trim().toLowerCase() === filter.trim().toLowerCase();
+            if (!isMatch) return false;
+        }
+
+        // 2. Search Filter Logic (scoped within block if block is selected)
+        if (!searchValue) return true;
+
         const query = searchValue.toLowerCase();
         
         // Check canteen basic details
@@ -61,15 +85,26 @@ function CanteenCardsPage() {
             <Navbar />
             <main className="main-content">
                 <div className={`hero-section hero-enter ${isVisible ? 'hero-visible' : ''}`}>
-                    <h1 className="hero-title">Explore Campus Canteens</h1>
+                    <h1 className="hero-title" key={filter || "all"}>
+                        {!filter ? "Explore Campus Canteens" : 
+                         filter === "Dominos" ? "Explore Dominos" : 
+                         `Explore ${filter} Canteens`}
+                    </h1>
                     <p className="hero-subtitle">
                         Discover all the amazing food outlets across campus<br />
                         and find your next favorite meal
                     </p>
                 </div>
 
-                <div className={`hero-enter search-delay ${isVisible ? 'hero-visible' : ''}`}>
+                <div className={`hero-enter search-delay ${isVisible ? 'hero-visible' : ''} search-controls`}>
                     <SearchBar value={searchValue} onChange={setSearchValue} />
+                    {filter && (
+                        <div className="filter-indicator">
+                            <button onClick={() => navigate('/explore')} className="clear-filter-btn">
+                                Clear Filter
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="cards-grid">
