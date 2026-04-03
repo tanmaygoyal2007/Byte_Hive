@@ -3,8 +3,10 @@ import { Search } from "lucide-react";
 import Navbar from "../components/layout/Navbar";
 import { CanteenCard } from "../components/canteens/CanteenCard";
 import Footer from "../components/layout/Footer";
-import canteensData from "../data/canteens.json";
+import { CANTEENS } from "../components/canteens/canteens";
+import menuData from "../data/menu.json";
 import "./CanteenCardsPage.css";
+
 interface SearchBarProps {
     value: string
     onChange: (value: string) => void
@@ -36,20 +38,23 @@ function CanteenCardsPage() {
         return () => clearTimeout(timer);
     }, []);
 
-    const mapped = (canteensData as any[]).map(c => ({
-        id: c.id,
-        name: c.name,
-        description: c.description,
-        rating: c.rating,
-        block: c.block,
-        images: c.images
-    }));
-
-    const filteredCanteens = mapped.filter((canteen) =>
-        canteen.name.toLowerCase().includes(searchValue.toLowerCase()) ||
-        (canteen.description || "").toLowerCase().includes(searchValue.toLowerCase()) ||
-        (canteen.block || "").toLowerCase().includes(searchValue.toLowerCase())
-    );
+    const filteredCanteens = CANTEENS.filter((canteen) => {
+        const query = searchValue.toLowerCase();
+        
+        // Check canteen basic details
+        const matchesCanteen = 
+            canteen.name.toLowerCase().includes(query) ||
+            (canteen.description || "").toLowerCase().includes(query) ||
+            (canteen.block || "").toLowerCase().includes(query);
+            
+        if (matchesCanteen) return true;
+        
+        // Check if any item in this canteen matches the query
+        return (menuData as any[]).some(item => 
+            item.canteenId === canteen.id && 
+            (item.name || "").toLowerCase().includes(query)
+        );
+    });
 
     return (
         <div className="page-container">

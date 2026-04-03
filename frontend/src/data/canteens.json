@@ -28,9 +28,9 @@
     ]
   },
   {
-    "id": "southSpice",
-    "name": "South Spice",
-    "block": "Block C",
+    "id": "southern Delight",
+    "name": "Southern Delight",
+    "block": "Block A",
     "rating": 4.1,
     "description": "South Indian delicacies and filter coffee.",
     "openingHours": "8:00 AM - 8:00 PM",
@@ -42,11 +42,11 @@
     ]
   },
   {
-    "id": "burgerHub",
-    "name": "Burger Hub",
-    "block": "Block D",
+    "id": "Taste of Delhi",
+    "name": "Taste of Delhi",
+    "block": "Block A",
     "rating": 4.3,
-    "description": "Juicy burgers and crispy fries.",
+    "description": "Authentic Indian cuisine with a modern twist.",
     "openingHours": "10:00 AM - 11:00 PM",
     "images": [
       "/assets/images/burger1.jpg",
@@ -56,25 +56,25 @@
     ]
   },
   {
-    "id": "chaiCorner",
-    "name": "Chai Corner",
-    "block": "Block E",
+    "id": "ccd",
+    "name": "CCD",
+    "block": "Block B",
     "rating": 4.0,
-    "description": "Tea, coffee and quick snacks.",
+    "description": "Coffee, tea and quick snacks.",
     "openingHours": "7:00 AM - 7:00 PM",
     "images": [
-      "/assets/images/chai1.jpg",
+      "/assets/images/ccd1.jpg",
       "/assets/images/chai2.jpg",
       "/assets/images/chai3.jpg",
       "/assets/images/chai4.jpg"
     ]
   },
   {
-    "id": "pizzaPoint",
-    "name": "Pizza Point",
-    "block": "Block F",
+    "id": "dominos",
+    "name": "Dominos",
+    "block": "Block B",
     "rating": 4.5,
-    "description": "Freshly baked pizzas and garlic breads.",
+    "description": "Popular pizzas chain with variety of pizzas and sides.",
     "openingHours": "11:00 AM - 11:00 PM",
     "images": [
       "/assets/images/pizza1.jpg",

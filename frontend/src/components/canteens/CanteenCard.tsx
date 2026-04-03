@@ -1,33 +1,12 @@
 import { MapPin, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import "./CanteenCard.css";
-import "./canteens.ts";
-// Accept a loose prop shape so we can pass data from data/canteens.json
-export function CanteenCard(props: any) {
-    const { id, name, description, rating, block, images } = props;
-    // override images for specific canteens using supplied logo assets
-    const overrides: Record<string, string> = {
-        'amritsari': '/images/amritsariHaveliLogo.png',
-        'amritsar': '/images/amritsariHaveliLogo.png',
-        'bites': '/images/bitesAndBrewsLogo.png',
-        'bites & brews': '/images/bitesAndBrewsLogo.png',
-        'taste of delhi': '/images/tasteOfDelhiLogo.png',
-        'southern': '/images/SouthernDelightLogo.png',
-        'rolls': '/images/rollsLaneLogo.png',
-        'punjabi': '/images/punjabiBitesLogo.png',
-        'gianis': '/images/Gianis.png',
-        "domino": '/images/dominosLogo.png',
-        'ccd': '/images/CCD.jpg',
-    };
+import type { Canteen } from "./canteens";
 
-    const nameKey = (name || '').toLowerCase();
-    let image = images && images.length ? images[0] : "/placeholder.svg";
-    for (const key of Object.keys(overrides)){
-        if (nameKey.includes(key)){
-            image = overrides[key];
-            break;
-        }
-    }
+export function CanteenCard(props: Canteen) {
+    const { id, name, description, rating, block, images, logo } = props;
+
+    const image = images && images.length ? images[0] : "/placeholder.svg";
 
     return (
         <Link to={`/menu/${id}`} className="card-link">
@@ -35,6 +14,11 @@ export function CanteenCard(props: any) {
 
                 <div className="card-image-container">
                     <img src={image || "/placeholder.svg"} alt={name} className="card-img" />
+                    {logo && (
+                        <div className="card-logo-badge">
+                            <img src={logo} alt={`${name} logo`} className="card-logo-img" />
+                        </div>
+                    )}
                 </div>
 
                 <div className="card-body">
