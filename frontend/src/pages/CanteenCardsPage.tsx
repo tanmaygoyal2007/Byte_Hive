@@ -86,7 +86,7 @@ function CanteenCardsPage() {
             <main className="main-content">
                 <div className={`hero-section hero-enter ${isVisible ? 'hero-visible' : ''}`}>
                     <h1 className="hero-title" key={filter || "all"}>
-                        {!filter ? "Explore Campus Canteens" : 
+                        {!filter ? "Explore Canteens" : 
                          filter === "Dominos" ? "Explore Dominos" : 
                          `Explore ${filter} Canteens`}
                     </h1>
