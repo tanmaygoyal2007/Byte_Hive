@@ -13,9 +13,8 @@ const HomePage: React.FC = () => {
   const location = useLocation();
 
   useEffect(() => {
-    // if there's a hash, scroll to the element with that id
     if (location.hash) {
-      const id = location.hash.replace('#','');
+      const id = location.hash.replace('#', '');
       setTimeout(() => {
         const el = document.getElementById(id);
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -24,14 +23,16 @@ const HomePage: React.FC = () => {
   }, [location]);
 
   return (
-    <div className="homepage">
+    <>
       <Navbar />
-      <HeroSection />
-      <QuickDeliverySection />
-      <PopularCanteensSection />
-      <ContactSection />
-      <Footer />
-    </div>
+      <div className="homepage">
+        <HeroSection />
+        <QuickDeliverySection />
+        <PopularCanteensSection />
+        <ContactSection />
+        <Footer />
+      </div>
+    </>
   );
 };
 

@@ -1,7 +1,7 @@
 .popular{
 	background: transparent;
 	padding:80px 24px;
-	color:white;
+	color: var(--text-primary);
 	text-align:center;
 }
 
@@ -10,7 +10,7 @@
 	margin-bottom:8px;
 }
 
-.popular .subtitle{ color:#bfbfbf; margin-bottom:36px }
+.popular .subtitle{ color: var(--text-muted); margin-bottom:36px }
 
 .canteen-grid{
 	display:flex;
