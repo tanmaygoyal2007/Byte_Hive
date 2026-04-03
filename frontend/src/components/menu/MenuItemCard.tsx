@@ -7,8 +7,6 @@ import {
   type UserSession,
 } from "../../utils/orderPortal";
 import "./MenuItemCard.css";
-import { useState } from "react";
-import useCart from "../../hooks/useCart";
 
 type MenuItem = {
   id: string;

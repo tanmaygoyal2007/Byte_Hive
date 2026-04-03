@@ -84,66 +84,59 @@ function CanteenMenuPage() {
 
   return (
     <div className="menu-page-root">
-  <Navbar />
-  <div className="menu-page-shell">
-    <CanteenHeader canteen={canteen} />
-    <ImageGallery canteen={canteen} />
+      <Navbar />
+      <div className="menu-page-shell">
+        <CanteenHeader canteen={canteen} />
+        <ImageGallery canteen={canteen} />
 
-    <div className="menu-page-container">
+        <div className="menu-page-container">
+          <aside className="menu-sidebar">
+            <CategorySidebar
+              categories={categories}
+              activeCategory={category}
+              onSelect={(nextCategory) => setCategory(nextCategory)}
+            />
+          </aside>
 
-        <aside className="menu-sidebar">
-          <CategorySidebar
-            categories={categories}
-            activeCategory={category}
-            onSelect={(nextCategory) => setCategory(nextCategory)}
-          />
-        </aside>
-
-        <main className="menu-main">
-          <div className="menu-main-header">
-            <h2>{category ?? "All"}</h2>
-          </div>
-
-          {!isOutletOpen && (
-            <div className="menu-page-outlet-alert">
-              <strong>{String(canteen?.name ?? "This outlet")} is currently closed.</strong>
-              <p>The live menu is still visible, but checkout will stay locked until the vendor reopens the outlet.</p>
+          <main className="menu-main">
+            <div className="menu-main-header">
+              <h2>{category ?? "All"}</h2>
             </div>
-          )}
 
-          <div className="menu-items-list">
-            {filteredItems.length === 0 && (
-  <div className="menu-empty-state">
-    <h3>No items found</h3>
-    <p>Try another category or update your search.</p>
-  </div>
-)}
-
-            
-            {filteredItems.map((item) => (
-              <MenuItemCard key={item.id} item={item} isOutletOpen={isOutletOpen} />
-            ))}
-          </div>
-        </main>
-
-        <aside className="menu-right">
-  <div className="menu-right-sticky">
-    <div className="menu-right-top">
-      <MenuSearch value={searchQ} onChange={setSearchQ} />
-    </div>
-    <MiniCart />
-  </div>
-</aside>
-
-      </div>
-
-            <div className="menu-footer-wrap">
+            {!isOutletOpen && (
+              <div className="menu-page-outlet-alert">
+                <strong>{String(canteen?.name ?? "This outlet")} is currently closed.</strong>
+                <p>The live menu is still visible, but checkout will stay locked until the vendor reopens the outlet.</p>
               </div>
-  </div>
-                <Footer />
+            )}
+
+            <div className="menu-items-list">
+              {filteredItems.length === 0 && (
+                <div className="menu-empty-state">
+                  <h3>No items found</h3>
+                  <p>Try another category or update your search.</p>
+                </div>
+              )}
+
+              {filteredItems.map((item) => (
+                <MenuItemCard key={item.id} item={item} isOutletOpen={isOutletOpen} />
+              ))}
             </div>
+          </main>
+
+          <aside className="menu-right">
+            <div className="menu-right-sticky">
+              <div className="menu-right-top">
+                <MenuSearch value={searchQ} onChange={setSearchQ} />
+              </div>
+              <MiniCart />
+            </div>
+          </aside>
         </div>
-    )
+        <Footer />
+      </div>
+    </div>
+  );
 }
 
 export default CanteenMenuPage;
