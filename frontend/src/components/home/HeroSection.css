@@ -11,6 +11,8 @@
 	padding:0 24px;
 }
 
+/* TEXT SECTION */
+
 .hero-text{
 	max-width:560px;
 }
@@ -50,6 +52,9 @@
 .explore-btn:hover{
 	background:#ff8c35;
 }
+
+
+/* FOOD GRID */
 
 .food-grid{
 	display:grid;
