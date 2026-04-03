@@ -1,56 +1,164 @@
-import React from "react";
+import React, { useState } from "react";
+import { CheckCircle2, House, ReceiptText } from "lucide-react";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
+import Footer from "../components/layout/Footer";
+import Navbar from "../components/layout/Navbar";
 import ReceiptCard from "../components/receipt/ReceiptCard";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 
-let ReceiptPage: React.FC = () => {
+interface LocationState {
+  paymentId: string;
+  orderId: string;
+  items: { id: string; name: string; price: number; quantity: number }[];
+  total: number;
+}
 
-  let orderData = {
-    orderId: "BH2025012601",
-    outletName: "Punjabi Bites",
-    pickupLocation: "Block A - Basement",
-    estimatedTime: "15-20 minutes",
-    items: [
-      { name: "Chole Bhature", quantity: 2, price: 120 },
-      { name: "Lassi", quantity: 1, price: 40 },
-      { name: "Paneer Tikka", quantity: 1, price: 150 },
-    ],
-    subtotal: 310,
-    taxes: 31,
-    total: 341,
-  };
+const ReceiptPage: React.FC = () => {
+  const location = useLocation();
+  const { orderId: paramOrderId } = useParams<{ orderId: string }>();
+  const navigate = useNavigate();
+  const [downloadStatus, setDownloadStatus] = useState<"idle" | "downloading" | "failed">("idle");
+
+  const state = location.state as LocationState | null;
+  const isRealPayment = !!state?.paymentId;
+
+  const orderData = isRealPayment
+    ? {
+        orderId: state.orderId ?? paramOrderId ?? "N/A",
+        paymentId: state.paymentId,
+        outletName: "ByteHive Canteen",
+        pickupLocation: "Canteen Counter",
+        estimatedTime: "10-15 minutes",
+        items: state.items.map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+        })),
+        subtotal: state.total,
+        taxes: Math.round(state.total * 0.05),
+        total: Math.round(state.total * 1.05),
+      }
+    : {
+        orderId: "BH2025012601",
+        paymentId: undefined,
+        outletName: "Punjabi Bites",
+        pickupLocation: "Block A - Basement",
+        estimatedTime: "15-20 minutes",
+        items: [
+          { name: "Chole Bhature", quantity: 2, price: 120 },
+          { name: "Lassi", quantity: 1, price: 40 },
+          { name: "Paneer Tikka", quantity: 1, price: 150 },
+        ],
+        subtotal: 310,
+        taxes: 31,
+        total: 341,
+      };
 
   const handleDownload = async () => {
-
     const receipt = document.getElementById("receipt-content");
     if (!receipt) return;
 
-    const canvas = await html2canvas(receipt, {
-      scale: 2,
-      backgroundColor: "#ffffff"
-    });
+    setDownloadStatus("downloading");
 
-    const imgData = canvas.toDataURL("image/png");
+    const exportNode = receipt.cloneNode(true) as HTMLElement;
+    exportNode.classList.add("receipt-export-mode");
+    exportNode.style.width = `${receipt.offsetWidth}px`;
+    exportNode.style.position = "fixed";
+    exportNode.style.left = "-99999px";
+    exportNode.style.top = "0";
+    exportNode.style.zIndex = "-1";
+    exportNode.style.opacity = "1";
 
-    const pdf = new jsPDF("p", "mm", "a4");
+    document.body.appendChild(exportNode);
 
-    const imgWidth = 190;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    try {
+      const canvas = await html2canvas(exportNode, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: "#ffffff",
+      });
 
-    pdf.addImage(imgData, "PNG", 10, 10, imgWidth, imgHeight);
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const pageWidth = 190;
+      const pageHeight = 277;
+      const imgHeight = (canvas.height * pageWidth) / canvas.width;
 
-    const now = new Date();
+      let heightLeft = imgHeight;
+      let position = 10;
 
-    const filename = `receipt_${orderData.orderId}_${now.getTime()}.pdf`;
+      pdf.addImage(imgData, "PNG", 10, position, pageWidth, imgHeight);
+      heightLeft -= pageHeight;
 
-    pdf.save(filename);
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight + 10;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 10, position, pageWidth, imgHeight);
+        heightLeft -= pageHeight;
+      }
+
+      pdf.save(`receipt_${orderData.orderId}_${Date.now()}.pdf`);
+      setDownloadStatus("idle");
+    } catch (error) {
+      console.error("Unable to generate receipt PDF:", error);
+      setDownloadStatus("failed");
+    } finally {
+      exportNode.remove();
+    }
   };
 
   return (
-    <ReceiptCard
-      {...orderData}
-      onDownload={handleDownload}
-    />
+    <div className="receipt-screen">
+      <Navbar />
+
+      <main className="receipt-screen-main">
+        <section className="receipt-shell">
+          {isRealPayment && (
+            <div className="receipt-success-banner" role="status" aria-live="polite">
+              <div className="receipt-success-copy">
+                <span className="receipt-success-icon" aria-hidden="true">
+                  <CheckCircle2 size={20} />
+                </span>
+                <div>
+                  <strong>Payment successful</strong>
+                  <p>Payment ID: {state?.paymentId}</p>
+                </div>
+              </div>
+
+              <button type="button" className="receipt-banner-action" onClick={() => navigate("/")}>
+                <House size={16} />
+                Back to Home
+              </button>
+            </div>
+          )}
+
+          <ReceiptCard
+            {...orderData}
+            onDownload={handleDownload}
+            onOrderMore={() => navigate("/explore")}
+            onBackHome={() => navigate("/")}
+            downloadStatus={downloadStatus}
+          />
+
+          {!isRealPayment && (
+            <div className="receipt-fallback-note">
+              <ReceiptText size={16} />
+              <span>You are viewing a sample receipt because no payment state was passed to this page.</span>
+            </div>
+          )}
+
+          {downloadStatus === "failed" && (
+            <div className="receipt-fallback-note">
+              <ReceiptText size={16} />
+              <span>We could not generate the PDF this time. Please try again.</span>
+            </div>
+          )}
+        </section>
+      </main>
+
+      <Footer />
+    </div>
   );
 };
 
