@@ -1,4 +1,9 @@
 {
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run dev"
+  },
   "dependencies": {
     "react-router-dom": "^7.13.1"
   }

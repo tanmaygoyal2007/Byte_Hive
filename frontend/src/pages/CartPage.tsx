@@ -117,7 +117,7 @@ function CartPage() {
               <PaymentButton
                 items={items}
                 total={total()}
-                canteenId={items[0]?.id?.split("-")[0] ?? "default"}
+                canteenId={items[0]?.canteenId ?? "default"}
                 onPaymentStart={() => console.log("Payment started")}
                 onPaymentSuccess={(paymentId, orderId) =>
                   console.log("Paid:", paymentId, orderId)
