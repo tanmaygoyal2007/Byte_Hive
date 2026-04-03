@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Menu, Moon, Sun, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { QRCodeSVG } from "qrcode.react";
+import useAuth from "../../hooks/useAuth";
 import AuthModal from "../portal/AuthModal";
 import PortalDropdown from "../portal/PortalDropdown";
 import ProfileHub from "../portal/ProfileHub";
@@ -13,7 +14,6 @@ import {
   setCurrentUserSession,
   subscribeToAuthPrompt,
   subscribeToOrders,
-  subscribeToUserSession,
   updateOrderStatus,
   type ByteHiveOrder,
   type UserRole,
@@ -57,18 +57,23 @@ const Navbar: React.FC = () => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [pendingAuthRole, setPendingAuthRole] = useState<PendingAuthRole>(null);
-  const [authRole, setAuthRole] = useState<AuthRole | null>(() => getCurrentUserSession()?.authRole ?? null);
-  const [userName, setUserName] = useState(() => getCurrentUserSession()?.userName ?? "Student Name");
+  const [guestMode, setGuestMode] = useState(() => getCurrentUserSession()?.authRole === "guest");
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [hasActiveOrder, setHasActiveOrder] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   const [readyOrderPrompt, setReadyOrderPrompt] = useState<ByteHiveOrder | null>(null);
   const [handoffPrompt, setHandoffPrompt] = useState<ByteHiveOrder | null>(null);
+  const { user, authRole, signIn, signUp, logout } = useAuth();
 
   const location = useLocation();
   const blockDropdownRef = useRef<HTMLDivElement>(null);
   const portalDropdownRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLButtonElement>(null);
+  const userName = guestMode ? "Guest User" : user?.displayName || user?.email?.split("@")[0] || "Student Name";
+  const isVendorRoute = location.pathname.startsWith("/vendor");
+  const showPrimaryNav = !isVendorRoute;
+  const isAuthenticated = guestMode || !!user;
+  const showUserProfileControls = !isVendorRoute && isAuthenticated;
 
   const blockLinks = useMemo(
     () => [
@@ -121,19 +126,14 @@ const Navbar: React.FC = () => {
   }, [location.pathname, location.hash]);
 
   useEffect(() => {
-    const syncSession = () => {
-      const session = getCurrentUserSession();
-      setAuthRole(session?.authRole ?? null);
-      setUserName(session?.userName ?? "Student Name");
-    };
-
-    syncSession();
-    return subscribeToUserSession(syncSession);
-  }, []);
+    if (user) {
+      setGuestMode(false);
+    }
+  }, [user]);
 
   useEffect(() => {
     const syncOrders = () => {
-      if (!authRole || !userName || authRole === "guest") {
+      if (guestMode || !authRole || !userName) {
         setHasActiveOrder(false);
         setReadyOrderPrompt(null);
         setHandoffPrompt(null);
@@ -182,22 +182,24 @@ const Navbar: React.FC = () => {
       setIsPortalOpen(false);
       setIsMenuOpen(false);
 
-      if (detail.reason === "upgrade-guest" && authRole === "guest") {
-        setAuthRole(null);
+      if (detail.reason === "upgrade-guest" && guestMode) {
+        setGuestMode(false);
       }
 
       setPendingAuthRole(detail.role ?? "student");
       setIsLoginModalOpen(true);
     });
-  }, [authRole]);
+  }, [guestMode]);
 
   useEffect(() => {
-    if (authRole) {
+    if (guestMode) {
+      setCurrentUserSession({ authRole: "guest", userName: "Guest User" });
+    } else if (authRole && user) {
       setCurrentUserSession({ authRole, userName });
     } else {
       setCurrentUserSession(null);
     }
-  }, [authRole, userName]);
+  }, [authRole, guestMode, user, userName]);
 
   const toggleTheme = () => {
     setTheme((current) => (current === "dark" ? "light" : "dark"));
@@ -210,24 +212,46 @@ const Navbar: React.FC = () => {
   };
 
   const handleGuestContinue = () => {
-    setAuthRole("guest");
-    setUserName("Guest User");
+    setGuestMode(true);
     setIsPortalOpen(false);
     setIsMenuOpen(false);
     setIsProfileOpen(true);
   };
 
-  const handleAuthSubmit = ({ role, name }: { role: "student" | "faculty"; mode: "login" | "signup"; name: string; email: string }) => {
-    setAuthRole(role);
-    setUserName(name || (role === "student" ? "Student Name" : "Faculty Name"));
+  const handleAuthSubmit = async ({
+    role,
+    mode,
+    name,
+    email,
+    password,
+  }: {
+    role: "student" | "faculty";
+    mode: "login" | "signup";
+    name: string;
+    email: string;
+    password: string;
+  }) => {
+    if (mode === "signup") {
+      await signUp({ role, name, email, password });
+    } else {
+      await signIn({ role, email, password });
+    }
+
+    setGuestMode(false);
     setIsPortalOpen(false);
     setIsMenuOpen(false);
     setIsProfileOpen(true);
   };
 
-  const handleLogout = () => {
-    setAuthRole(null);
-    setUserName("Student Name");
+  const handleLogout = async () => {
+    if (guestMode) {
+      setGuestMode(false);
+      setPendingAuthRole(null);
+      setIsProfileOpen(false);
+      return;
+    }
+
+    await logout();
     setPendingAuthRole(null);
     setIsProfileOpen(false);
     setReadyOrderPrompt(null);
@@ -263,12 +287,8 @@ const Navbar: React.FC = () => {
   };
 
   const isDarkMode = theme === "dark";
-  const isAuthenticated = authRole !== null;
-  const isGuest = authRole === "guest";
+  const isGuest = guestMode;
   const displayRole: AuthRole = authRole ?? "student";
-  const isVendorRoute = location.pathname.startsWith("/vendor");
-  const showPrimaryNav = !isVendorRoute;
-  const showUserProfileControls = !isVendorRoute && isAuthenticated;
 
   return (
     <>
@@ -314,7 +334,7 @@ const Navbar: React.FC = () => {
             </div>
           )}
 
-          {!isAuthenticated && (
+          {!isVendorRoute && !isAuthenticated && (
             <div className="nav-dropdown" ref={portalDropdownRef}>
               <button
                 type="button"

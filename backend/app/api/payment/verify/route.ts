@@ -3,6 +3,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac } from "crypto";
 
+export const dynamic = "force-dynamic";
+
 export async function POST(req: NextRequest) {
   try {
     const {
@@ -22,7 +24,15 @@ export async function POST(req: NextRequest) {
     // ✅ Verify HMAC signature — this is the security step
     // Razorpay signs: razorpay_order_id + "|" + razorpay_payment_id
     const body = `${razorpay_order_id}|${razorpay_payment_id}`;
-    const expectedSignature = createHmac("sha256", process.env.RAZORPAY_KEY_SECRET!)
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (!keySecret) {
+      return NextResponse.json(
+        { error: "Razorpay environment variables are missing." },
+        { status: 500 }
+      );
+    }
+
+    const expectedSignature = createHmac("sha256", keySecret)
       .update(body)
       .digest("hex");
 

@@ -7,7 +7,8 @@ import "./MiniCart.css";
 function MiniCart() {
   const { state, increment, decrement, removeItem, total } = useCart();
   const [session, setSession] = useState<UserSession | null>(() => getCurrentUserSession());
-  const canOpenCart = !!session && state.items.length > 0;
+  const isEmpty = state.items.length === 0;
+  const canOpenCart = !!session && !isEmpty;
 
   useEffect(() => {
     const syncSession = () => setSession(getCurrentUserSession());
@@ -16,10 +17,10 @@ function MiniCart() {
 
   return (
     <div className="mini-cart">
-      <h4>Your Cart</h4>
+      <h4>🛒 Your Cart</h4>
 
       <div className="mini-cart-body">
-        {state.items.length === 0 ? (
+        {isEmpty ? (
           <div className="empty-cart">
             Cart is empty
             <br />
@@ -33,7 +34,7 @@ function MiniCart() {
 
                 <div className="mini-item-info">
                   <div className="mini-item-name">{item.name}</div>
-                  <div className="mini-item-price">Rs {item.price}</div>
+                  <div className="mini-item-price">₹{item.price}</div>
                   <div className="mini-item-qty">
                     <button type="button" onClick={() => decrement(item.id)}>-</button>
                     <span>{item.quantity}</span>
@@ -41,8 +42,8 @@ function MiniCart() {
                   </div>
                 </div>
 
-                <button type="button" className="mini-item-remove" onClick={() => removeItem(item.id)}>
-                  Remove
+                <button type="button" className="mini-item-remove" aria-label={`Remove ${item.name}`} onClick={() => removeItem(item.id)}>
+                  🗑
                 </button>
               </div>
             ))}
@@ -52,16 +53,20 @@ function MiniCart() {
 
       <div className="mini-cart-footer">
         <div className="mini-total">
-          Total <span>Rs {total()}</span>
+          Total <span>₹{total()}</span>
         </div>
 
-        {canOpenCart ? (
-          <Link to="/cart" className="checkout-btn">Proceed to Checkout</Link>
-        ) : (
-          <button type="button" className="checkout-btn" disabled>
-            Proceed to Checkout
-          </button>
-        )}
+        <Link
+          to={canOpenCart ? "/cart" : "#"}
+          className={`checkout-btn${canOpenCart ? "" : " checkout-btn-disabled"}`}
+          onClick={(event) => {
+            if (!canOpenCart) {
+              event.preventDefault();
+            }
+          }}
+        >
+          Proceed to Checkout
+        </Link>
       </div>
     </div>
   );

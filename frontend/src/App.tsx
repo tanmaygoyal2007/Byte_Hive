@@ -1,6 +1,7 @@
 import { BrowserRouter } from "react-router-dom";
 import AppRoutes from "./routes/AppRoutes";
 import ChatWidget from "./components/chatWidget/ChatWidget";
+import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import menuData from "./data/menu.json";
 
@@ -16,12 +17,14 @@ function App() {
     }));
 
   return (
-    <CartProvider>
-      <BrowserRouter>
-        <AppRoutes />
-        <ChatWidget orderContext={{ menu: trimmedMenu }} />
-      </BrowserRouter>
-    </CartProvider>
+    <AuthProvider>
+      <CartProvider>
+        <BrowserRouter>
+          <AppRoutes />
+          <ChatWidget orderContext={{ menu: trimmedMenu }} />
+        </BrowserRouter>
+      </CartProvider>
+    </AuthProvider>
   );
 }
 

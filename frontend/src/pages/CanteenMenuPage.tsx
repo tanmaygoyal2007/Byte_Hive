@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useMemo, useState } from "react";
 import Footer from "../components/layout/Footer";
 import Navbar from "../components/layout/Navbar";
 import CategorySidebar from "../components/menu/CategorySidebar";
@@ -8,54 +7,19 @@ import ImageGallery from "../components/menu/ImageGallery";
 import MenuItemCard from "../components/menu/MenuItemCard";
 import MenuSearch from "../components/menu/MenuSearch";
 import MiniCart from "../components/menu/MiniCart";
-import canteensData from "../data/canteens.json";
-import {
-  getMenuItemsForOutlet,
-  subscribeToMenu,
-  type MenuCatalogItem,
-} from "../utils/orderPortal";
-import { getVendorOutletStatus, subscribeToVendorStatus } from "../utils/vendorPortal";
+import menuData from "../data/menu.json";
+import { CANTEENS } from "../components/canteens/canteens";
+import { useParams } from "react-router-dom";
 import "./CanteenMenuPage.css";
-
-type CanteenRecord = {
-  id: string;
-  name: string;
-  [key: string]: unknown;
-};
 
 function CanteenMenuPage() {
   const { canteenId } = useParams();
-  const canteens = canteensData as CanteenRecord[];
-  const activeCanteenId = canteenId || canteens[0]?.id || "";
-  const canteen = useMemo(
-    () => canteens.find((entry) => entry.id === activeCanteenId) || canteens[0],
-    [activeCanteenId, canteens]
+  const activeCanteenId = canteenId || CANTEENS[0]?.id;
+
+  const items = useMemo(
+    () => (menuData as any[]).filter((item) => item.canteenId === activeCanteenId),
+    [activeCanteenId]
   );
-
-  const [items, setItems] = useState<MenuCatalogItem[]>([]);
-  const [isOutletOpen, setIsOutletOpen] = useState(true);
-  const [searchQ, setSearchQ] = useState("");
-  const [category, setCategory] = useState<string | null>(null);
-
-  useEffect(() => {
-    setCategory(null);
-  }, [activeCanteenId]);
-
-  useEffect(() => {
-    const syncMenu = () => setItems(getMenuItemsForOutlet(activeCanteenId));
-    const syncOutletStatus = () => setIsOutletOpen(getVendorOutletStatus(String(canteen?.name ?? "")));
-
-    syncMenu();
-    syncOutletStatus();
-
-    const unsubscribeMenu = subscribeToMenu(syncMenu);
-    const unsubscribeVendorStatus = subscribeToVendorStatus(syncOutletStatus);
-
-    return () => {
-      unsubscribeMenu();
-      unsubscribeVendorStatus();
-    };
-  }, [activeCanteenId, canteen]);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -63,10 +27,18 @@ function CanteenMenuPage() {
     return Array.from(set);
   }, [items]);
 
+  const canteen = useMemo(
+    () => CANTEENS.find((entry) => entry.id === activeCanteenId) || CANTEENS[0],
+    [activeCanteenId]
+  );
+
+  const [searchQ, setSearchQ] = useState("");
+  const [category, setCategory] = useState<string>("All");
+
   const filteredItems = useMemo(() => {
     let list = items;
 
-    if (category) {
+    if (category !== "All") {
       list = list.filter((item) => item.category === category);
     }
 
@@ -84,66 +56,51 @@ function CanteenMenuPage() {
 
   return (
     <div className="menu-page-root">
-  <Navbar />
-  <div className="menu-page-shell">
-    <CanteenHeader canteen={canteen} />
-    <ImageGallery canteen={canteen} />
+      <Navbar />
+      <div className="menu-page-shell">
+        <CanteenHeader canteen={canteen} />
+        <ImageGallery canteen={canteen} />
 
-    <div className="menu-page-container">
+        <div className="menu-page-container">
+          <aside className="menu-sidebar">
+            <CategorySidebar categories={categories} activeCategory={category} onSelect={(nextCategory) => setCategory(nextCategory ?? "All")} />
+          </aside>
 
-        <aside className="menu-sidebar">
-          <CategorySidebar
-            categories={categories}
-            activeCategory={category}
-            onSelect={(nextCategory) => setCategory(nextCategory)}
-          />
-        </aside>
-
-        <main className="menu-main">
-          <div className="menu-main-header">
-            <h2>{category ?? "All"}</h2>
-          </div>
-
-          {!isOutletOpen && (
-            <div className="menu-page-outlet-alert">
-              <strong>{String(canteen?.name ?? "This outlet")} is currently closed.</strong>
-              <p>The live menu is still visible, but checkout will stay locked until the vendor reopens the outlet.</p>
+          <main className="menu-main">
+            <div className="menu-main-header">
+              <h2>{category}</h2>
             </div>
-          )}
 
-          <div className="menu-items-list">
+            <div className="menu-items-list">
+              {filteredItems.map((item) => (
+                <MenuItemCard key={item.id} item={item} />
+              ))}
+            </div>
+
             {filteredItems.length === 0 && (
-  <div className="menu-empty-state">
-    <h3>No items found</h3>
-    <p>Try another category or update your search.</p>
-  </div>
-)}
-
-            
-            {filteredItems.map((item) => (
-              <MenuItemCard key={item.id} item={item} isOutletOpen={isOutletOpen} />
-            ))}
-          </div>
-        </main>
-
-        <aside className="menu-right">
-  <div className="menu-right-sticky">
-    <div className="menu-right-top">
-      <MenuSearch value={searchQ} onChange={setSearchQ} />
-    </div>
-    <MiniCart />
-  </div>
-</aside>
-
-      </div>
-
-            <div className="menu-footer-wrap">
+              <div className="menu-empty-state">
+                <h3>No items found</h3>
+                <p>Try another category or update your search.</p>
               </div>
-  </div>
-                <Footer />
+            )}
+          </main>
+
+          <aside className="menu-right">
+            <div className="menu-right-sticky">
+              <div className="menu-right-top">
+                <MenuSearch value={searchQ} onChange={setSearchQ} />
+              </div>
+              <MiniCart />
             </div>
+          </aside>
         </div>
-    )
+
+        <div className="menu-footer-wrap">
+          <Footer />
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export default CanteenMenuPage;
