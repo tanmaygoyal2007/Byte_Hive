@@ -1,84 +1,156 @@
-body {
-  background: #FDFCFB;
+.receipt-screen {
+  min-height: 100vh;
+  background: transparent;
+}
+
+.receipt-screen-main {
+  padding-top: 92px;
+}
+
+.receipt-shell {
+  width: min(100%, 1180px);
+  margin: 0 auto;
+  padding: 28px 24px 72px;
+}
+
+.receipt-success-banner,
+.receipt-fallback-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  margin-bottom: 22px;
+  border: 1px solid var(--border-soft);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--surface-card) 88%, transparent);
+  box-shadow: var(--shadow-soft);
+  backdrop-filter: blur(16px);
+}
+
+.receipt-success-copy {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.receipt-success-copy strong {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--text-primary);
+}
+
+.receipt-success-copy p {
+  margin: 0;
+  color: var(--text-muted);
+}
+
+.receipt-success-icon {
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(61, 165, 103, 0.12);
+  color: #3da567;
+}
+
+.receipt-banner-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #fff;
+  padding: 12px 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease, filter 0.22s ease;
+}
+
+.receipt-fallback-note {
+  justify-content: flex-start;
+  color: var(--text-muted);
 }
 
 .receipt-page {
-  min-height: 100vh;
   display: flex;
   justify-content: center;
-  padding: 48px 16px;
 }
 
 .receipt-container {
   width: 100%;
-  max-width: 672px;
+  max-width: 760px;
+  margin: 0 auto;
 }
-
 
 .success-section {
   text-align: center;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 .success-icon {
   width: 88px;
   height: 88px;
   margin: 0 auto 16px auto;
-  background-color: #FEF3E2;
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
   border-radius: 9999px;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-shadow: 0 20px 45px rgba(215, 111, 33, 0.18);
 }
 
 .success-icon svg {
   width: 48px;
   height: 48px;
-  color: #EA580C;
+  color: var(--accent);
 }
 
 .page-title {
-  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  font-size: 30px;
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-weight: 700;
   line-height: 1.2;
-  color: #1C1917;
   font-size: 32px;
+  color: var(--text-primary);
   margin: 0 0 8px 0;
 }
 
 .page-subtitle {
-  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 18px;
   font-weight: 400;
   line-height: 1.5;
-  color: #6B7280;
+  color: var(--text-muted);
   margin: 0;
 }
 
-
 .receipt-card {
-  background-color: #FFFFFF;
-  border-radius: 16px;
-  border: 1px solid #E7E5E4;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  background: color-mix(in srgb, var(--surface-card) 92%, transparent);
+  border-radius: 28px;
+  border: 1px solid var(--border-soft);
+  box-shadow: var(--shadow-soft);
   overflow: hidden;
   margin-bottom: 24px;
+  backdrop-filter: blur(14px);
 }
-
 
 .order-header {
   display: flex;
   justify-content: space-between;
+  gap: 16px;
   padding: 16px 24px;
-  border-bottom: 1px solid #E7E5E4;
-  background-color: #F5F4F3;
+  border-bottom: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--surface-muted) 55%, transparent);
 }
 
 .order-info {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .label-row {
@@ -88,42 +160,37 @@ body {
 }
 
 .label {
-  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 14px;
   font-weight: 400;
   line-height: 1.5;
-  color: #78716C;
+  color: var(--text-muted);
 }
 
 .value {
-  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 14px;
   font-weight: 600;
   line-height: 1.5;
-  color: #1C1917;
+  color: var(--text-primary);
 }
-
 
 .outlet-section {
   padding: 16px 24px;
-  border-bottom: 1px solid #E7E5E4;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .outlet-name {
-  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 18px;
   font-weight: 600;
   line-height: 1.5;
-  color: #1C1917;
+  color: var(--text-primary);
   margin: 0 0 4px 0;
 }
 
 .outlet-location {
-  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 14px;
   font-weight: 400;
   line-height: 1.5;
-  color: #78716C;
+  color: var(--text-muted);
   margin: 0;
   display: flex;
   align-items: center;
@@ -132,8 +199,8 @@ body {
 
 .qr-section {
   padding: 24px;
-  border-bottom: 1px solid #E7E5E4;
-  background-color: rgba(245, 244, 243, 0.3);
+  border-bottom: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--surface-muted) 40%, transparent);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -141,10 +208,10 @@ body {
 }
 
 .qr-container {
-  background-color: #FFFFFF;
+  background: #fff;
   padding: 16px;
-  border-radius: 12px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  border-radius: 18px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -156,27 +223,24 @@ body {
 }
 
 .qr-text {
-  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 14px;
   font-weight: 400;
   line-height: 1.5;
-  color: #78716C;
+  color: var(--text-muted);
   text-align: center;
   margin: 0;
 }
 
-
 .items-section {
   padding: 16px 24px;
-  border-bottom: 1px solid #E5E7EB;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .section-title {
-  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 14px;
   font-weight: 600;
   line-height: 1.5;
-  color: #78716C;
+  color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   margin: 0 0 12px 0;
@@ -199,30 +263,27 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 9999px;
-  background-color: #F5F4F3;
+  background: color-mix(in srgb, var(--surface-muted) 70%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 14px;
-  font-weight: 500;
-  color: #1C1917;
+  font-weight: 700;
+  color: var(--text-primary);
 }
 
 .item-name {
-  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 16px;
   font-weight: 400;
   line-height: 1.5;
-  color: #1C1917;
+  color: var(--text-primary);
 }
 
 .item-price {
-  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.5;
-  color: #1C1917;
+  color: var(--text-primary);
 }
 
 .price-section {
@@ -234,12 +295,12 @@ body {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 12px;
-  color: #57534E;
+  color: var(--text-muted);
 }
 
 .divider {
   height: 1px;
-  background-color: #E7E5E4;
+  background: var(--border-soft);
   margin: 12px 0;
 }
 
@@ -252,13 +313,11 @@ body {
 }
 
 .total-amount {
-  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   font-size: 18px;
   font-weight: 700;
   line-height: 1.5;
-  color: #C2410C;
+  color: var(--accent);
 }
-
 
 .action-buttons {
   display: flex;
@@ -269,37 +328,36 @@ body {
 .button-primary {
   width: 100%;
   height: 48px;
-  background-color: #C2410C;
-  color: #FFFFFF;
-  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--accent);
+  color: #fff;
   font-size: 16px;
-  font-weight: 500;
+  font-weight: 700;
   border: none;
-  border-radius: 10px;
+  border-radius: 14px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  box-shadow: 0 14px 28px rgba(215, 111, 33, 0.18);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease, filter 0.22s ease;
 }
 
 .button-outline {
   width: 100%;
   height: 48px;
   background-color: transparent;
-  color: #1C1917;
-  font-family: "Geist", "Geist Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text-primary);
   font-size: 16px;
-  font-weight: 500;
-  border: 1px solid #E7E5E4;
-  border-radius: 10px;
+  font-weight: 600;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  margin-bottom: 16px;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, background-color 0.22s ease, border-color 0.22s ease, color 0.22s ease;
 }
 
 .button-primary,
@@ -307,17 +365,79 @@ body {
   flex: 1;
 }
 
-.button-primary:hover {
-  background-color: #9A3412;
-  transition: background-color 0.2s ease;
+.receipt-download {
+  margin-bottom: 16px;
 }
 
-.button-outline:hover {
-  background-color: #F5F4F3;
-  border-color: #D6D3D1;
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+.button-primary:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 18px 34px rgba(215, 111, 33, 0.24);
+}
+
+.button-outline:hover,
+.receipt-banner-action:hover {
+  background: var(--surface-muted);
+  border-color: color-mix(in srgb, var(--accent) 36%, var(--border-soft));
+  transform: translateY(-1px);
+}
+
+.receipt-banner-action:hover {
+  color: #fff;
+  box-shadow: 0 16px 30px rgba(215, 111, 33, 0.22);
 }
 
 .label-row svg {
-  color: #EA580C;
+  color: var(--accent);
+}
+
+.receipt-export-mode {
+  background: #ffffff !important;
+  border-radius: 28px !important;
+  border: 1px solid #ece6dd !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+.receipt-export-mode .order-header,
+.receipt-export-mode .qr-section,
+.receipt-export-mode .quantity-badge {
+  background: #f7f2ec !important;
+}
+
+.receipt-export-mode .label,
+.receipt-export-mode .qr-text,
+.receipt-export-mode .outlet-location,
+.receipt-export-mode .price-row {
+  color: #6d655d !important;
+}
+
+.receipt-export-mode .page-title,
+.receipt-export-mode .item-name,
+.receipt-export-mode .value,
+.receipt-export-mode .outlet-name,
+.receipt-export-mode .item-price {
+  color: #1f1f1f !important;
+}
+
+@media (max-width: 720px) {
+  .receipt-shell {
+    padding: 22px 16px 56px;
+  }
+
+  .receipt-success-banner,
+  .receipt-fallback-note,
+  .order-header,
+  .action-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .page-title {
+    font-size: 2rem;
+  }
+
+  .item-row {
+    gap: 12px;
+  }
 }

@@ -19,9 +19,12 @@ interface ReceiptCardProps {
   taxes: number;
   total: number;
   onDownload: () => void;
+  onOrderMore: () => void;
+  onBackHome: () => void;
+  downloadStatus?: "idle" | "downloading" | "failed";
 }
 
-let ReceiptCard: React.FC<ReceiptCardProps> = ({
+const ReceiptCard: React.FC<ReceiptCardProps> = ({
   orderId,
   outletName,
   pickupLocation,
@@ -31,11 +34,13 @@ let ReceiptCard: React.FC<ReceiptCardProps> = ({
   taxes,
   total,
   onDownload,
+  onOrderMore,
+  onBackHome,
+  downloadStatus = "idle",
 }) => {
   return (
     <div className="receipt-page">
       <div className="receipt-container">
-
         <div className="success-section">
           <div className="success-icon">
             <CheckCircle size={40} strokeWidth={2.5} />
@@ -48,9 +53,7 @@ let ReceiptCard: React.FC<ReceiptCardProps> = ({
         </div>
 
         <div className="receipt-card" id="receipt-content">
-
           <div className="order-header">
-
             <div className="order-info">
               <div className="label-row">
                 <Package size={16} />
@@ -66,7 +69,6 @@ let ReceiptCard: React.FC<ReceiptCardProps> = ({
               </div>
               <span className="value">{estimatedTime}</span>
             </div>
-
           </div>
 
           <div className="outlet-section">
@@ -79,7 +81,6 @@ let ReceiptCard: React.FC<ReceiptCardProps> = ({
           </div>
 
           <div className="qr-section">
-
             <div className="qr-container">
               <QRCodeSVG
                 value={`ByteHive-Order-${orderId}`}
@@ -89,74 +90,59 @@ let ReceiptCard: React.FC<ReceiptCardProps> = ({
             </div>
 
             <p className="qr-text">
-              Show this QR code at the counter to collect your order
+              Show this QR code at the counter to collect your order.
             </p>
-
           </div>
 
           <div className="items-section">
             <h4 className="section-title">Items Ordered</h4>
 
             {items.map((item, index) => (
-              <div key={index} className="item-row">
-
+              <div key={`${item.name}-${index}`} className="item-row">
                 <div className="item-left">
-                  <div className="quantity-badge">
-                    {item.quantity}x
-                  </div>
-
-                  <span className="item-name">
-                    {item.name}
-                  </span>
+                  <div className="quantity-badge">{item.quantity}x</div>
+                  <span className="item-name">{item.name}</span>
                 </div>
 
-                <span className="item-price">
-                  ₹{item.price}
-                </span>
-
+                <span className="item-price">Rs {item.price}</span>
               </div>
             ))}
           </div>
 
           <div className="price-section">
-
             <div className="price-row">
               <span>Subtotal</span>
-              <span>₹{subtotal}</span>
+              <span>Rs {subtotal}</span>
             </div>
 
             <div className="price-row">
               <span>Taxes & Fees</span>
-              <span>₹{taxes}</span>
+              <span>Rs {taxes}</span>
             </div>
 
-            <div className="divider"></div>
+            <div className="divider" />
 
             <div className="price-row total-row">
               <span>Total Amount</span>
-              <span className="total-amount">₹{total}</span>
+              <span className="total-amount">Rs {total}</span>
             </div>
-
           </div>
         </div>
 
-        <button className="button-outline" onClick={onDownload}>
+        <button type="button" className="button-outline receipt-download" onClick={onDownload}>
           <Download size={18} />
-          Download Order Receipt
+          {downloadStatus === "downloading" ? "Preparing Receipt..." : "Download Order Receipt"}
         </button>
 
         <div className="action-buttons">
-
-          <button className="button-primary">
+          <button type="button" className="button-primary" onClick={onOrderMore}>
             Order More Food
           </button>
 
-          <button className="button-outline">
+          <button type="button" className="button-outline" onClick={onBackHome}>
             Back to Home
           </button>
-
         </div>
-
       </div>
     </div>
   );
