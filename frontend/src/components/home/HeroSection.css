@@ -80,3 +80,14 @@ height:200px;
 border-radius:16px;
 object-fit:cover;
 }
+
+.food-card img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  transition:0.4s;
+}
+
+.food-card:hover img{
+  transform:scale(1.1);
+}

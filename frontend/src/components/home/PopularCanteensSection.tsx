@@ -2,26 +2,33 @@ import React from "react";
 import PopularCanteenCard from "./PopularCanteenCard";
 import "./PopularCanteensSection.css";
 
-const PopularCanteensSection:React.FC = () => {
+const PopularCanteensSection: React.FC = () => {
+  return (
+    <section className="popular">
 
-return(
+      <h2>Popular Canteens</h2>
 
-<section className="popular">
+      <div className="canteen-grid">
 
-<h2>Popular Canteens</h2>
+        <PopularCanteenCard 
+          name="Central Canteen" 
+          image="/images/canteen1.jpg"
+        />
 
-<div className="canteen-grid">
+        <PopularCanteenCard 
+          name="Food Court" 
+          image="/images/canteen2.jpg"
+        />
 
-<PopularCanteenCard name="Central Canteen" image="/images/canteen1.jpg"/>
-<PopularCanteenCard name="Food Court" image="/images/canteen2.jpg"/>
-<PopularCanteenCard name="Campus Cafe" image="/images/canteen3.jpg"/>
+        <PopularCanteenCard 
+          name="Campus Cafe" 
+          image="/images/canteen3.jpg"
+        />
 
-</div>
+      </div>
 
-</section>
-
-)
-
-}
+    </section>
+  );
+};
 
 export default PopularCanteensSection;
