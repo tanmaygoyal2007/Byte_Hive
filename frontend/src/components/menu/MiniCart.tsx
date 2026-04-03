@@ -34,7 +34,7 @@ function MiniCart() {
 
             <div className="mini-cart-footer">
                 <div className="mini-total">Total <span>₹{total()}</span></div>
-                <Link to="/receipt" className="checkout-btn">Proceed to Checkout</Link>
+                <Link to="/cart" className="checkout-btn">Proceed to Checkout</Link>
             </div>
         </div>
     )

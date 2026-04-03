@@ -1,5 +1,5 @@
 import { GraduationCap, Store } from "lucide-react";
-import { Link } from "react-router-dom";
+import { openVendorPortalWindow } from "../../utils/vendorPortal";
 import "./PortalDropdown.css";
 
 type PortalDropdownProps = {
@@ -16,6 +16,11 @@ function PortalDropdown({ isOpen, onClose, onOpenStudentLogin }: PortalDropdownP
     onOpenStudentLogin();
   };
 
+  const handleVendorClick = () => {
+    onClose();
+    openVendorPortalWindow();
+  };
+
   return (
     <div className="portal-dropdown" role="menu" aria-label="Portal options">
       <button type="button" className="portal-dropdown-item" onClick={handleStudentClick}>
@@ -28,7 +33,7 @@ function PortalDropdown({ isOpen, onClose, onOpenStudentLogin }: PortalDropdownP
         </span>
       </button>
 
-      <Link to="/vendor/login" className="portal-dropdown-item" onClick={onClose}>
+      <button type="button" className="portal-dropdown-item" onClick={handleVendorClick}>
         <span className="portal-dropdown-icon">
           <Store size={22} />
         </span>
@@ -36,7 +41,7 @@ function PortalDropdown({ isOpen, onClose, onOpenStudentLogin }: PortalDropdownP
           <strong>Vendor Portal</strong>
           <small>Manage menu items, prices, and orders</small>
         </span>
-      </Link>
+      </button>
     </div>
   );
 }

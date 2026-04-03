@@ -40,6 +40,25 @@
   gap: 16px;
 }
 
+.menu-page-outlet-alert {
+  margin-bottom: 18px;
+  padding: 16px 18px;
+  border: 1px solid rgba(255, 122, 26, 0.35);
+  border-radius: 16px;
+  background: rgba(255, 122, 26, 0.12);
+}
+
+.menu-page-outlet-alert strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #fff4e8;
+}
+
+.menu-page-outlet-alert p {
+  margin: 0;
+  color: #ffd9bb;
+}
+
 @media (max-width: 900px) {
   .menu-page-container {
     grid-template-columns: 1fr;
