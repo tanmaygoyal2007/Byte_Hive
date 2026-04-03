@@ -1,53 +1,76 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import PopularCanteenCard from "./PopularCanteenCard";
 import "./PopularCanteensSection.css";
 
 const PopularCanteensSection: React.FC = () => {
+  const [isVisible, setIsVisible] = useState(false);
+  const sectionRef = useRef<HTMLElement>(null);
+
+  const popular = [
+    {
+      id: "punjabiBites",
+      name: "Featured: North Indian Thali",
+      image: "/images/redesign/punjabi.jpg",
+      description: "Experience the authentic flavors of a complete North Indian meal, freshly prepared and traditionally served.",
+      layout: "featured"
+    },
+    {
+      id: "cafeCoffeeDay",
+      name: "Quick Pick: CCD",
+      image: "/images/redesign/cafe.jpg",
+      description: "Gourmet coffee and quick snacks for your busy campus life.",
+      layout: "quick"
+    },
+    {
+      id: "AmritsarHaveli",
+      name: "Quick Pick: Haveli",
+      image: "/images/redesign/amritsari.jpg",
+      description: "The legendary taste of Amritsari Kulcha and more.",
+      layout: "quick"
+    },
+  ];
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    if (sectionRef.current) {
+      observer.observe(sectionRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section className="popular">
+    <section id="popular" ref={sectionRef} className={`popular ${isVisible ? 'visible' : ''}`}>
+      <div className="popular-container">
+        <div className="section-header">
+          <h2 className="glow-text">Campus Popular Canteens</h2>
+          <p className="subtitle">Explore curated dining experiences across campus</p>
+        </div>
 
-      <h2>Popular Canteens</h2>
-
-      <div className="canteen-grid">
-
-        <PopularCanteenCard 
-          name="Central Canteen" 
-          image="/images/canteen1.jpg"
-        />
-
-        <PopularCanteenCard 
-          name="Food Court" 
-          image="/images/canteen2.jpg"
-        />
-
-        <PopularCanteenCard 
-          name="Campus Cafe" 
-          image="/images/canteen3.jpg"
-        />
-
+        <div className="canteen-bento-grid">
+          {popular.map((c) => (
+            <PopularCanteenCard
+              key={c.id}
+              id={c.id}
+              name={c.name}
+              image={c.image}
+              description={c.description}
+              layout={c.layout}
+            />
+          ))}
+        </div>
       </div>
-
     </section>
   );
 };
-	const popular = [
-		{ id: 'punjabiBites', name: 'Punjabi Bites', image: '/images/punjabiBitesHomePageImg.png', description: 'Authentic North Indian Cuisine' },
-		{ id: 'cafeCoffeeDay', name: 'Cafe Coffee Day', image: '/images/ccdHomePageImg.png', description: 'Premium Coffee & Quick Bites' },
-		{ id: 'AmritsarHaveli', name: 'Amritsari Haveli', image: '/images/amritsariHaveliHomePageImg.png', description: 'Traditional Amritsari Flavors' },
-	];
-
-	return(
-		<section id="popular" className="popular">
-			<h2>Campus Popular Canteen</h2>
-			<p className="subtitle">Explore the most loved dining spots across campus</p>
-
-			<div className="canteen-grid">
-				{popular.map(c => (
-					<PopularCanteenCard key={c.id} id={c.id} name={c.name} image={c.image} description={c.description} />
-				))}
-			</div>
-		</section>
-	)
-}
 
 export default PopularCanteensSection;
