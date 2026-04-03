@@ -1,35 +1,38 @@
 .delivery{
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding:80px;
-background:#111;
-color:white;
+	display:flex;
+	justify-content:space-between;
+	align-items:center;
+	padding:80px 24px;
+	background: transparent;
+	color:white;
 }
 
 .delivery-text{
-max-width:450px;
+	max-width:540px;
 }
 
 .delivery-text h2{
-font-size:36px;
+	font-size:42px;
+	margin:0 0 10px 0;
 }
 
 .delivery-text p{
-margin-top:15px;
-color:#bbb;
+	margin-top:12px;
+	color:#bfbfbf;
 }
 
 .delivery-text button{
-margin-top:20px;
-padding:10px 20px;
-border:none;
-background:#ff7a1a;
-color:white;
-border-radius:6px;
+	margin-top:20px;
+	padding:10px 22px;
+	border:none;
+	background:#ff7a1a;
+	color:white;
+	border-radius:10px;
+	box-shadow: 0 8px 26px rgba(248,120,30,0.16);
 }
 
 .delivery-img{
-width:350px;
-border-radius:16px;
+	width:420px;
+	border-radius:18px;
+	box-shadow: 0 24px 60px rgba(0,0,0,0.6);
 }

@@ -1,4 +1,12 @@
 .homepage {
-  background-color: #0b0b0b;
+  background: linear-gradient(180deg, #080706 0%, #0b0b0b 40%);
   min-height: 100vh;
+  color: #fff;
+  padding-top: 88px;
+}
+
+/* center page content and constrain width */
+.homepage > * {
+  width: min(100%, 1520px);
+  margin: 0 auto;
 }

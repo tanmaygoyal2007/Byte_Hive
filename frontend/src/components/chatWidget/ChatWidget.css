@@ -55,7 +55,8 @@
   right: 28px;
   z-index: 999;
   width: 400px;
-  max-height: 600px;
+  height: 580px;  
+  max-height: calc(100vh - 110px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -185,6 +186,7 @@
 .bh-messages {
   flex: 1;
   overflow-y: auto;
+  min-height: 0;  
   padding: 16px;
   display: flex;
   flex-direction: column;
