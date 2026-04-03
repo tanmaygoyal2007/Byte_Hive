@@ -7,6 +7,7 @@ const Footer: React.FC = () => {
   return (
     <footer className="footer">
       <div className="footer-container">
+
         <div className="footer-logo">
           <h2>ByteHive</h2>
           <p className="footer-tagline">Buzzing place for campus food</p>

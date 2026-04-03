@@ -1,3 +1,7 @@
+import React from "react";
+
+import Navbar from "../components/layout/Navbar";
+import Footer from "../components/layout/Footer";
 import React, { useEffect } from "react";
 import "./HomePage.css";
 
@@ -24,7 +28,7 @@ const HomePage: React.FC = () => {
   }, [location]);
 
   return (
-    <div className="homepage">
+    <div>
       <Navbar />
       <HeroSection />
       <QuickDeliverySection />

@@ -14,8 +14,7 @@ const HeroSection: React.FC = () => {
     <section className="hero">
 
       <div className="hero-container">
-
-        {/* LEFT TEXT CONTENT */}
+        
         <div className="hero-text">
 
           <h1>
@@ -36,8 +35,6 @@ const HeroSection: React.FC = () => {
 
         </div>
 
-
-        {/* RIGHT FOOD GRID */}
         <div className="food-grid">
 
           <div className="food-card">

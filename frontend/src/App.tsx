@@ -1,8 +1,12 @@
+import React from "react";
 import { BrowserRouter } from "react-router-dom";
+
 import AppRoutes from "./routes/AppRoutes";
 import ChatWidget from "./components/chatWidget/ChatWidget";
 import { CartProvider } from "./context/CartContext";
 import menuData from "./data/menu.json";
+
+import "./App.css";
 
 function App() {
   const trimmedMenu = (menuData as any[])
