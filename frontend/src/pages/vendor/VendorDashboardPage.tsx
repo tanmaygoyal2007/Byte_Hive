@@ -77,7 +77,8 @@ function VendorDashboardPage() {
   const getActionMeta = (status: ByteHiveOrder["status"]) => {
     if (status === "preparing") return { label: "Accept Order", className: "vendor-order-action vendor-order-action-new", disabled: false };
     if (status === "accepted") return { label: "Mark as Ready", className: "vendor-order-action vendor-order-action-accepted", disabled: false };
-    if (status === "ready") return { label: "Await Pickup", className: "vendor-order-action vendor-order-action-ready", disabled: true };
+    if (status === "ready") return { label: "Await QR Verification", className: "vendor-order-action vendor-order-action-ready", disabled: true };
+    if (status === "handoff") return { label: "Await Student Confirmation", className: "vendor-order-action vendor-order-action-ready", disabled: true };
     return { label: "Completed", className: "vendor-order-action vendor-order-action-ready", disabled: true };
   };
 
@@ -85,6 +86,7 @@ function VendorDashboardPage() {
     if (status === "preparing") return { className: "vendor-status-badge vendor-status-new", label: "New Order" };
     if (status === "accepted") return { className: "vendor-status-badge vendor-status-accepted", label: "Accepted" };
     if (status === "ready") return { className: "vendor-status-badge vendor-status-ready", label: "Ready" };
+    if (status === "handoff") return { className: "vendor-status-badge vendor-status-ready", label: "Handoff Confirming" };
     return { className: "vendor-status-badge vendor-status-collected", label: "Collected" };
   };
 

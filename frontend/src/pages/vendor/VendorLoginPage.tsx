@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import Footer from "../../components/layout/Footer";
 import Navbar from "../../components/layout/Navbar";
+import { authenticateVendor } from "../../services/vendorAuthService";
 import { setVendorOutlet, VENDOR_OUTLETS } from "../../utils/vendorPortal";
 import "./VendorPortal.css";
 
@@ -12,6 +13,8 @@ function VendorLoginPage() {
   const outlets = useMemo(() => [...VENDOR_OUTLETS], []);
   const [selectedOutlet, setSelectedOutlet] = useState("");
   const [masterKey, setMasterKey] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const requestedOutlet = searchParams.get("outlet");
@@ -20,11 +23,25 @@ function VendorLoginPage() {
     }
   }, [outlets, searchParams]);
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!selectedOutlet || !masterKey) return;
 
-    setVendorOutlet(selectedOutlet);
-    navigate("/vendor/dashboard");
+    setIsSubmitting(true);
+    setError("");
+
+    try {
+      const result = await authenticateVendor(selectedOutlet, masterKey);
+      if (!result.success) {
+        throw new Error("Vendor authentication failed.");
+      }
+
+      setVendorOutlet(result.outletName);
+      navigate("/vendor/dashboard");
+    } catch (loginError) {
+      setError(loginError instanceof Error ? loginError.message : "Vendor authentication failed.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -79,13 +96,15 @@ function VendorLoginPage() {
                 <p className="vendor-form-hint">Master key is provided by ByteHive admin.</p>
               </div>
 
+              {error && <p className="vendor-form-hint" style={{ color: "#d04747" }}>{error}</p>}
+
               <button
                 type="button"
                 className="vendor-button"
-                disabled={!selectedOutlet || !masterKey}
+                disabled={!selectedOutlet || !masterKey || isSubmitting}
                 onClick={handleLogin}
               >
-                Access Dashboard
+                {isSubmitting ? "Verifying..." : "Access Dashboard"}
               </button>
             </div>
 

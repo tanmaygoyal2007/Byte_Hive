@@ -6,7 +6,7 @@ import Navbar from "../components/layout/Navbar";
 import ReceiptCard from "../components/receipt/ReceiptCard";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { getOrderById } from "../utils/orderPortal";
+import { getOrderById, getQrValueForOrder } from "../utils/orderPortal";
 
 interface LocationState {
   paymentId?: string;
@@ -29,6 +29,8 @@ const ReceiptPage: React.FC = () => {
   const orderData = storedOrder
     ? {
         orderId: storedOrder.id,
+        qrValue: getQrValueForOrder(storedOrder),
+        pickupCode: storedOrder.pickupCode,
         paymentId: storedOrder.paymentId,
         outletName: storedOrder.outletName,
         pickupLocation: storedOrder.pickupLocation,
@@ -44,6 +46,8 @@ const ReceiptPage: React.FC = () => {
       }
     : {
         orderId: resolvedOrderId || "BH2025012601",
+        qrValue: resolvedOrderId ? getQrValueForOrder(resolvedOrderId) : `ByteHive-Order-${resolvedOrderId || "BH2025012601"}`,
+        pickupCode: undefined,
         paymentId: state?.paymentId,
         outletName: "Punjabi Bites",
         pickupLocation: "Block A - Basement",

@@ -1,3 +1,5 @@
+import { getOutletIdByName } from "./orderPortal";
+
 export const VENDOR_OUTLETS = [
   "Taste of Delhi",
   "Punjabi Bites",
@@ -44,6 +46,10 @@ function writeJSON<T>(key: string, value: T, eventName?: string) {
 export function getVendorOutlet() {
   if (typeof window === "undefined") return "";
   return localStorage.getItem(VENDOR_OUTLET_KEY) ?? "";
+}
+
+export function getVendorOutletId(outlet = getVendorOutlet()) {
+  return getOutletIdByName(outlet);
 }
 
 export function setVendorOutlet(outlet: string) {

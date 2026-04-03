@@ -1,7 +1,7 @@
 import baseMenuData from "../data/menu.json";
 
 export type UserRole = "student" | "faculty" | "guest";
-export type OrderStatus = "preparing" | "accepted" | "ready" | "collected";
+export type OrderStatus = "preparing" | "accepted" | "ready" | "handoff" | "collected";
 
 export interface ByteHiveOrderItem {
   id: string;
@@ -13,6 +13,10 @@ export interface ByteHiveOrderItem {
 
 export interface ByteHiveOrder {
   id: string;
+  receiptNumber: string;
+  sequenceNumber: number;
+  businessDate: string;
+  pickupCode: string;
   paymentId?: string;
   customerName: string;
   customerRole: UserRole;
@@ -21,6 +25,7 @@ export interface ByteHiveOrder {
   pickupLocation: string;
   estimatedTime: string;
   status: OrderStatus;
+  qrToken: string;
   createdAt: string;
   updatedAt: string;
   items: ByteHiveOrderItem[];
@@ -50,24 +55,31 @@ export interface MenuCatalogItem {
   isAvailable: boolean;
 }
 
+export interface ParsedQrPayload {
+  orderId: string;
+  outletId?: string;
+  qrToken?: string;
+}
+
 const ORDERS_KEY = "bytehiveOrders";
 const USER_SESSION_KEY = "bytehiveUserSession";
 const MENU_OVERRIDES_KEY = "bytehiveVendorMenuOverrides";
+const ORDER_COUNTERS_KEY = "bytehiveOrderCounters";
 const ORDERS_EVENT = "bytehive-orders-updated";
 const MENU_EVENT = "bytehive-menu-updated";
 const USER_SESSION_EVENT = "bytehive-user-session-updated";
 const AUTH_PROMPT_EVENT = "bytehive-auth-prompt";
 
-const outletMetaById: Record<string, { name: string; location: string; estimatedTime: string }> = {
-  punjabiBites: { name: "Punjabi Bites", location: "Block A, Basement", estimatedTime: "12-15 minutes" },
-  rollsLane: { name: "Rolls Lane", location: "Block B, Food Court", estimatedTime: "10-14 minutes" },
-  tasteOfDelhi: { name: "Taste of Delhi", location: "Block C, Ground Floor", estimatedTime: "14-18 minutes" },
-  cafeCoffeeDay: { name: "Cafe Coffee Day", location: "Block D, Atrium", estimatedTime: "8-12 minutes" },
-  AmritsarHaveli: { name: "Amritsari Haveli", location: "Block E, Ground Floor", estimatedTime: "14-18 minutes" },
-  southSpice: { name: "Southern Delights", location: "Block G, South Wing", estimatedTime: "12-15 minutes" },
-  bitesAndBrews: { name: "Bites & Brews", location: "Block H, Cafe Strip", estimatedTime: "10-12 minutes" },
-  dominos: { name: "Domino's", location: "Block J, Campus Plaza", estimatedTime: "18-22 minutes" },
-  gianis: { name: "Gianis", location: "Block F, Dessert Bay", estimatedTime: "8-10 minutes" },
+const outletMetaById: Record<string, { name: string; location: string; estimatedTime: string; code: string }> = {
+  punjabiBites: { name: "Punjabi Bites", location: "Block A, Basement", estimatedTime: "12-15 minutes", code: "PB" },
+  rollsLane: { name: "Rolls Lane", location: "Block B, Food Court", estimatedTime: "10-14 minutes", code: "RL" },
+  tasteOfDelhi: { name: "Taste of Delhi", location: "Block C, Ground Floor", estimatedTime: "14-18 minutes", code: "TD" },
+  cafeCoffeeDay: { name: "Cafe Coffee Day", location: "Block D, Atrium", estimatedTime: "8-12 minutes", code: "CCD" },
+  AmritsarHaveli: { name: "Amritsari Haveli", location: "Block E, Ground Floor", estimatedTime: "14-18 minutes", code: "AH" },
+  southSpice: { name: "Southern Delights", location: "Block G, South Wing", estimatedTime: "12-15 minutes", code: "SD" },
+  bitesAndBrews: { name: "Bites & Brews", location: "Block H, Cafe Strip", estimatedTime: "10-12 minutes", code: "BB" },
+  dominos: { name: "Domino's", location: "Block J, Campus Plaza", estimatedTime: "18-22 minutes", code: "DM" },
+  gianis: { name: "Gianis", location: "Block F, Dessert Bay", estimatedTime: "8-10 minutes", code: "GN" },
 };
 
 const canteenIdByOutletName: Record<string, string> = Object.entries(outletMetaById).reduce<Record<string, string>>((acc, [id, meta]) => {
@@ -122,18 +134,73 @@ function formatTimestamp(date = new Date()) {
   });
 }
 
-function generateOrderId() {
-  const now = new Date();
-  const parts = [
-    now.getFullYear(),
-    String(now.getMonth() + 1).padStart(2, "0"),
-    String(now.getDate()).padStart(2, "0"),
-    String(now.getHours()).padStart(2, "0"),
-    String(now.getMinutes()).padStart(2, "0"),
-    String(now.getSeconds()).padStart(2, "0"),
-  ];
-  const random = Math.floor(Math.random() * 90 + 10);
-  return `BH-${parts.join("")}-${random}`;
+function getBusinessDate(date = new Date()) {
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, "0"),
+    String(date.getDate()).padStart(2, "0"),
+  ].join("");
+}
+
+function getRandomToken() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID().replace(/-/g, "").slice(0, 12).toUpperCase();
+  }
+
+  return Math.random().toString(36).slice(2, 14).toUpperCase();
+}
+
+function getDailySequence(outletId: string, businessDate: string) {
+  const counters = readJSON<Record<string, number>>(ORDER_COUNTERS_KEY, {});
+  const counterKey = `${outletId}:${businessDate}`;
+  const nextValue = (counters[counterKey] ?? 0) + 1;
+
+  if (typeof window !== "undefined") {
+    localStorage.setItem(
+      ORDER_COUNTERS_KEY,
+      JSON.stringify({
+        ...counters,
+        [counterKey]: nextValue,
+      })
+    );
+  }
+
+  return nextValue;
+}
+
+function createReceiptNumber(outletId: string, businessDate: string, sequenceNumber: number) {
+  const outletCode = outletMetaById[outletId]?.code ?? outletId.slice(0, 3).toUpperCase();
+  return `${outletCode}-${businessDate}-${String(sequenceNumber).padStart(3, "0")}`;
+}
+
+function createPickupCode(sequenceNumber: number) {
+  return String(sequenceNumber).padStart(4, "0");
+}
+
+function normalizeStoredOrder(order: ByteHiveOrder): ByteHiveOrder {
+  const businessDate = order.businessDate ?? getBusinessDate(new Date(order.createdAt));
+  const sequenceNumber =
+    typeof order.sequenceNumber === "number" && order.sequenceNumber > 0
+      ? order.sequenceNumber
+      : Number(order.id.match(/-(\d{2,4})$/)?.[1] ?? 1);
+  const receiptNumber = order.receiptNumber ?? order.id;
+
+  return {
+    ...order,
+    id: receiptNumber,
+    receiptNumber,
+    sequenceNumber,
+    businessDate,
+    pickupCode: order.pickupCode ?? createPickupCode(sequenceNumber),
+    qrToken: order.qrToken ?? `LEGACY-${receiptNumber.replace(/[^A-Za-z0-9]/g, "").slice(-8)}`,
+  };
+}
+
+function resolveOrder(orderOrId: ByteHiveOrder | string) {
+  if (typeof orderOrId === "string") {
+    return getOrderById(orderOrId);
+  }
+  return normalizeStoredOrder(orderOrId);
 }
 
 export function getOutletMetaById(outletId: string) {
@@ -141,6 +208,7 @@ export function getOutletMetaById(outletId: string) {
     name: outletId,
     location: "Campus Food Court",
     estimatedTime: "10-15 minutes",
+    code: outletId.slice(0, 3).toUpperCase(),
   };
 }
 
@@ -190,15 +258,22 @@ export function subscribeToAuthPrompt(callback: (detail: AuthPromptDetail) => vo
 }
 
 export function getOrders() {
-  return readJSON<ByteHiveOrder[]>(ORDERS_KEY, []);
+  return readJSON<ByteHiveOrder[]>(ORDERS_KEY, []).map(normalizeStoredOrder);
 }
 
 export function getOrderById(orderId: string) {
-  return getOrders().find((order) => order.id === orderId) ?? null;
+  return getOrders().find((order) => order.id === orderId || order.receiptNumber === orderId) ?? null;
 }
 
 export function getOrdersForOutlet(outletName: string) {
   return getOrders().filter((order) => order.outletName === outletName);
+}
+
+export function getOrderForOutletByPickupCode(outletName: string, pickupCode: string) {
+  const normalized = pickupCode.trim();
+  if (!normalized) return null;
+
+  return getOrdersForOutlet(outletName).find((order) => order.pickupCode === normalized) ?? null;
 }
 
 export function getOrdersForUser(userName: string) {
@@ -228,10 +303,18 @@ export function createOrder(payload: {
   const subtotal = payload.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const taxes = Math.round(subtotal * 0.05);
   const total = subtotal + taxes;
-  const now = new Date().toISOString();
+  const createdAt = new Date();
+  const businessDate = getBusinessDate(createdAt);
+  const sequenceNumber = getDailySequence(payload.outletId, businessDate);
+  const receiptNumber = createReceiptNumber(payload.outletId, businessDate, sequenceNumber);
+  const now = createdAt.toISOString();
 
   const order: ByteHiveOrder = {
-    id: generateOrderId(),
+    id: receiptNumber,
+    receiptNumber,
+    sequenceNumber,
+    businessDate,
+    pickupCode: createPickupCode(sequenceNumber),
     paymentId: payload.paymentId,
     customerName: payload.customerName,
     customerRole: payload.customerRole,
@@ -240,6 +323,7 @@ export function createOrder(payload: {
     pickupLocation: meta.location,
     estimatedTime: meta.estimatedTime,
     status: "preparing",
+    qrToken: getRandomToken(),
     createdAt: now,
     updatedAt: now,
     items: payload.items,
@@ -272,21 +356,32 @@ export function subscribeToOrders(callback: () => void) {
   return subscribeToKey(ORDERS_EVENT, ORDERS_KEY, callback);
 }
 
-export function getQrValueForOrder(orderId: string) {
-  return `ByteHive-Order-${orderId}`;
+export function getQrValueForOrder(orderOrId: ByteHiveOrder | string) {
+  const order = resolveOrder(orderOrId);
+  if (!order) {
+    return typeof orderOrId === "string" ? `ByteHive-Order-${orderOrId}` : "";
+  }
+
+  return `ByteHive|${order.outletId}|${order.receiptNumber}|${order.qrToken}`;
 }
 
-export function validateQrPayload(rawValue: string) {
+export function validateQrPayload(rawValue: string): ParsedQrPayload | null {
   const trimmed = rawValue.trim();
   if (!trimmed) return null;
 
-  if (/^BH-/i.test(trimmed)) {
-    return trimmed;
+  if (/^ByteHive\|/i.test(trimmed)) {
+    const [, outletId, orderId, qrToken] = trimmed.split("|");
+    if (!outletId || !orderId || !qrToken) return null;
+    return { outletId, orderId, qrToken };
   }
 
-  const match = trimmed.match(/^ByteHive-Order-(.+)$/i);
-  if (!match) return null;
-  return match[1];
+  if (/^BH-/i.test(trimmed) || /^[A-Z]{2,4}-\d{8}-\d{3,4}$/i.test(trimmed)) {
+    return { orderId: trimmed };
+  }
+
+  const legacyMatch = trimmed.match(/^ByteHive-Order-(.+)$/i);
+  if (!legacyMatch) return null;
+  return { orderId: legacyMatch[1] };
 }
 
 function getStoredMenuOverrides() {

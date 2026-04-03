@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Menu, Moon, Sun, X } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { QRCodeSVG } from "qrcode.react";
 import AuthModal from "../portal/AuthModal";
 import PortalDropdown from "../portal/PortalDropdown";
 import ProfileHub from "../portal/ProfileHub";
@@ -8,6 +9,7 @@ import StudentLoginModal from "../portal/StudentLoginModal";
 import {
   getActiveOrdersForUser,
   getCurrentUserSession,
+  getQrValueForOrder,
   setCurrentUserSession,
   subscribeToAuthPrompt,
   subscribeToOrders,
@@ -61,6 +63,7 @@ const Navbar: React.FC = () => {
   const [hasActiveOrder, setHasActiveOrder] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   const [readyOrderPrompt, setReadyOrderPrompt] = useState<ByteHiveOrder | null>(null);
+  const [handoffPrompt, setHandoffPrompt] = useState<ByteHiveOrder | null>(null);
 
   const location = useLocation();
   const blockDropdownRef = useRef<HTMLDivElement>(null);
@@ -133,31 +136,46 @@ const Navbar: React.FC = () => {
       if (!authRole || !userName || authRole === "guest") {
         setHasActiveOrder(false);
         setReadyOrderPrompt(null);
+        setHandoffPrompt(null);
         return;
       }
 
       const activeOrders = getActiveOrdersForUser(userName);
       setHasActiveOrder(activeOrders.length > 0);
 
-      const latestReadyOrder = !location.pathname.startsWith("/vendor")
-        ? activeOrders.find((order) => order.status === "ready") ?? null
-        : null;
-      if (!latestReadyOrder) {
+      if (location.pathname.startsWith("/vendor")) {
         setReadyOrderPrompt(null);
+        setHandoffPrompt(null);
         return;
       }
 
       const promptState = readReadyPromptState();
-      if (promptState[latestReadyOrder.id] === latestReadyOrder.updatedAt) {
-        return;
+      const latestHandoffOrder = activeOrders.find((order) => order.status === "handoff") ?? null;
+      const latestReadyOrder = activeOrders.find((order) => order.status === "ready") ?? null;
+
+      if (
+        latestHandoffOrder &&
+        promptState[latestHandoffOrder.id] !== latestHandoffOrder.updatedAt
+      ) {
+        setHandoffPrompt(latestHandoffOrder);
+      } else if (!latestHandoffOrder) {
+        setHandoffPrompt(null);
       }
 
-      setReadyOrderPrompt(latestReadyOrder);
+      if (
+        latestReadyOrder &&
+        promptState[latestReadyOrder.id] !== latestReadyOrder.updatedAt &&
+        (!latestHandoffOrder || latestHandoffOrder.id !== latestReadyOrder.id)
+      ) {
+        setReadyOrderPrompt(latestReadyOrder);
+      } else if (!latestReadyOrder || latestHandoffOrder?.id === latestReadyOrder.id) {
+        setReadyOrderPrompt(null);
+      }
     };
 
     syncOrders();
     return subscribeToOrders(syncOrders);
-  }, [authRole, userName]);
+  }, [authRole, location.pathname, userName]);
 
   useEffect(() => {
     return subscribeToAuthPrompt((detail) => {
@@ -213,6 +231,7 @@ const Navbar: React.FC = () => {
     setPendingAuthRole(null);
     setIsProfileOpen(false);
     setReadyOrderPrompt(null);
+    setHandoffPrompt(null);
   };
 
   const handleReadyPromptDismiss = () => {
@@ -224,14 +243,23 @@ const Navbar: React.FC = () => {
     setReadyOrderPrompt(null);
   };
 
-  const handleOrderPicked = () => {
-    if (!readyOrderPrompt) return;
-    updateOrderStatus(readyOrderPrompt.id, "collected");
+  const handleHandoffPromptDismiss = () => {
+    if (!handoffPrompt) return;
     saveReadyPromptState({
       ...readReadyPromptState(),
-      [readyOrderPrompt.id]: readyOrderPrompt.updatedAt,
+      [handoffPrompt.id]: handoffPrompt.updatedAt,
     });
-    setReadyOrderPrompt(null);
+    setHandoffPrompt(null);
+  };
+
+  const handleOrderPicked = () => {
+    if (!handoffPrompt) return;
+    updateOrderStatus(handoffPrompt.id, "collected");
+    saveReadyPromptState({
+      ...readReadyPromptState(),
+      [handoffPrompt.id]: handoffPrompt.updatedAt,
+    });
+    setHandoffPrompt(null);
   };
 
   const isDarkMode = theme === "dark";
@@ -377,8 +405,29 @@ const Navbar: React.FC = () => {
             <p>
               Order #{readyOrderPrompt.id} from {readyOrderPrompt.outletName} is ready for pickup at {readyOrderPrompt.pickupLocation}.
             </p>
+            <div className="ready-order-qr-shell">
+              <div className="ready-order-qr-box">
+                <QRCodeSVG value={getQrValueForOrder(readyOrderPrompt)} size={180} level="H" />
+              </div>
+              <strong>Pickup code: {readyOrderPrompt.pickupCode}</strong>
+              <small>{getQrValueForOrder(readyOrderPrompt)}</small>
+            </div>
             <div className="ready-order-actions">
-              <button type="button" className="ready-order-secondary" onClick={handleReadyPromptDismiss}>No, not yet</button>
+              <button type="button" className="ready-order-secondary" onClick={handleReadyPromptDismiss}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {handoffPrompt && (
+        <div className="ready-order-modal-backdrop" role="dialog" aria-modal="true" aria-label="Confirm order pickup">
+          <div className="ready-order-modal">
+            <h3>Counter verification complete</h3>
+            <p>
+              {handoffPrompt.outletName} has verified your QR for order #{handoffPrompt.id}. Did you receive your order?
+            </p>
+            <div className="ready-order-actions">
+              <button type="button" className="ready-order-secondary" onClick={handleHandoffPromptDismiss}>No, not yet</button>
               <button type="button" className="ready-order-primary" onClick={handleOrderPicked}>Yes, order picked</button>
             </div>
           </div>

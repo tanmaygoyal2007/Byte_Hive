@@ -275,6 +275,29 @@
   line-height: 1.6;
 }
 
+.ready-order-qr-shell {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.ready-order-qr-box {
+  display: inline-flex;
+  padding: 14px;
+  border-radius: 18px;
+  background: #fff;
+}
+
+.ready-order-qr-shell small {
+  display: block;
+  max-width: 100%;
+  text-align: center;
+  color: var(--text-muted);
+  word-break: break-all;
+}
+
 .ready-order-actions {
   display: flex;
   gap: 12px;

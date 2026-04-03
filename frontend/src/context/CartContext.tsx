@@ -1,5 +1,6 @@
 import { createContext, useEffect, useReducer } from "react";
 import type { ReactNode } from "react";
+import { getCurrentUserSession, subscribeToUserSession } from "../utils/orderPortal";
 
 type CartItem = {
   id: string;
@@ -27,6 +28,9 @@ function readInitialState(): State {
   if (typeof window === "undefined") return { items: [] };
 
   try {
+    const session = getCurrentUserSession();
+    if (!session) return { items: [] };
+
     const stored = localStorage.getItem(CART_STORAGE_KEY);
     if (!stored) return { items: [] };
     return JSON.parse(stored) as State;
@@ -81,6 +85,18 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, readInitialState);
+
+  useEffect(() => {
+    const syncCartForSession = () => {
+      const session = getCurrentUserSession();
+      if (!session) {
+        dispatch({ type: "clear" });
+      }
+    };
+
+    syncCartForSession();
+    return subscribeToUserSession(syncCartForSession);
+  }, []);
 
   useEffect(() => {
     try {
