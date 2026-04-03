@@ -1,5 +1,4 @@
 import "./MenuItemCard.css";
-import useCart from "../../hooks/useCart";
 
 type MenuItem = {
   id: string;
@@ -12,10 +11,9 @@ type MenuItem = {
 }
 
 function MenuItemCard({ item }: { item: MenuItem }) {
-    const { addItem } = useCart();
-
+    // Note: Cart feature is currently deactivated
     const handleAdd = () => {
-        addItem({ id: item.id, name: item.name, price: item.price, image: item.image });
+        console.log("Adding item to cart (stub):", item.name);
     }
 
     return(

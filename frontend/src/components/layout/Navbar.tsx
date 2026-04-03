@@ -8,7 +8,6 @@ import StudentLoginModal from "../portal/StudentLoginModal";
 import "./Navbar.css";
 
 type AuthRole = "student" | "faculty" | "guest";
-
 type PendingAuthRole = "student" | "faculty" | null;
 
 const Navbar: React.FC = () => {
@@ -149,17 +148,9 @@ const Navbar: React.FC = () => {
         </Link>
 
         <div className={`navbar-menu ${isMenuOpen ? "navbar-menu-open" : ""}`}>
-          <Link to="/" className="nav-link">
-            Home
-          </Link>
-
-          <Link to="/#popular" className="nav-link">
-            Popular
-          </Link>
-
-          <Link to="/about" className="nav-link">
-            About Us
-          </Link>
+          <Link to="/" className="nav-link">Home</Link>
+          <Link to="/#popular" className="nav-link">Popular</Link>
+          <Link to="/about" className="nav-link">About Us</Link>
 
           <div className="nav-dropdown" ref={blockDropdownRef}>
             <button

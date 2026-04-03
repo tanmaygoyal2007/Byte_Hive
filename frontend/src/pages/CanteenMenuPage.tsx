@@ -5,10 +5,9 @@ import ImageGallery from "../components/menu/ImageGallery";
 import CategorySidebar from "../components/menu/CategorySidebar";
 import MenuItemCard from "../components/menu/MenuItemCard";
 import MenuSearch from "../components/menu/MenuSearch";
-import MiniCart from "../components/menu/MiniCart";
 import Footer from "../components/layout/Footer";
 import menuData from "../data/menu.json";
-import canteensData from "../data/canteens.json";
+import { CANTEENS } from "../components/canteens/canteens";
 import { useMemo, useState } from "react";
 import { useParams } from "react-router-dom";
 
@@ -16,7 +15,7 @@ function CanteenMenuPage() {
     const { canteenId } = useParams();
 
     // fallback to first canteen if param missing
-    const activeCanteenId = canteenId || (canteensData as any[])[0]?.id;
+    const activeCanteenId = canteenId || CANTEENS[0]?.id;
 
     const items = useMemo(() => (
         (menuData as any[]).filter(i => i.canteenId === activeCanteenId)
@@ -30,7 +29,7 @@ function CanteenMenuPage() {
     }, [items]);
 
     const canteen = useMemo(() => (
-        (canteensData as any[]).find(c => c.id === activeCanteenId) || (canteensData as any[])[0]
+        CANTEENS.find(c => c.id === activeCanteenId) || CANTEENS[0]
     ), [activeCanteenId]);
 
     // UI state for filtering and search
@@ -50,7 +49,7 @@ function CanteenMenuPage() {
         return list;
     }, [items, category, searchQ]);
 
-    return(
+    return (
         <div className="menu-page-root">
             <Navbar />
             <CanteenHeader canteen={canteen} />
@@ -77,7 +76,6 @@ function CanteenMenuPage() {
                     <div className="menu-right-top">
                         <MenuSearch value={searchQ} onChange={setSearchQ} />
                     </div>
-                    <MiniCart />
                 </aside>
             </div>
 

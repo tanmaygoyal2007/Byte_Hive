@@ -1,12 +1,11 @@
-import { Routes, Route } from "react-router-dom";
-
-import HomePage from "../pages/HomePage";
+import { Route, Routes } from "react-router-dom";
+import AboutPage from "../pages/AboutPage";
 import CanteenCardsPage from "../pages/CanteenCardsPage";
 import CanteenMenuPage from "../pages/CanteenMenuPage";
 import CartPage from "../pages/CartPage";
+import HomePage from "../pages/HomePage";
 import ReceiptPage from "../pages/ReceiptPage";
 import VendorPortalPage from "../pages/VendorPortalPage";
-import AboutPage from "../pages/AboutPage";
 
 function AppRoutes() {
   return (
