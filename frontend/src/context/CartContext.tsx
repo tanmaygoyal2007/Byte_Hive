@@ -38,7 +38,13 @@ function reducer(state: State, action: Action): State {
 		case 'increment':
 			return { items: state.items.map(i => i.id === action.id ? { ...i, quantity: i.quantity + 1 } : i) };
 		case 'decrement':
-			return { items: state.items.map(i => i.id === action.id ? { ...i, quantity: Math.max(1, i.quantity - 1) } : i) };
+			return {
+				items: state.items.flatMap(i => {
+					if (i.id !== action.id) return [i];
+					if (i.quantity <= 1) return [];
+					return [{ ...i, quantity: i.quantity - 1 }];
+				})
+			};
 		case 'clear':
 			return { items: [] };
 		default:

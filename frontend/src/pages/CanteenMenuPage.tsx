@@ -5,6 +5,7 @@ import ImageGallery from "../components/menu/ImageGallery";
 import CategorySidebar from "../components/menu/CategorySidebar";
 import MenuItemCard from "../components/menu/MenuItemCard";
 import MenuSearch from "../components/menu/MenuSearch";
+import MiniCart from "../components/menu/MiniCart";
 import Footer from "../components/layout/Footer";
 import menuData from "../data/menu.json";
 import { CANTEENS } from "../components/canteens/canteens";
@@ -14,14 +15,14 @@ import { useParams } from "react-router-dom";
 function CanteenMenuPage() {
     const { canteenId } = useParams();
 
-    // fallback to first canteen if param missing
+    // Keep the page usable even if the route param is missing or invalid.
     const activeCanteenId = canteenId || CANTEENS[0]?.id;
 
     const items = useMemo(() => (
         (menuData as any[]).filter(i => i.canteenId === activeCanteenId)
     ), [activeCanteenId]);
 
-    // extract categories in order
+    // Preserve category order from the menu data so the sidebar matches the source list.
     const categories = useMemo(() => {
         const set = new Set<string>();
         items.forEach(i => set.add(i.category));
@@ -32,14 +33,13 @@ function CanteenMenuPage() {
         CANTEENS.find(c => c.id === activeCanteenId) || CANTEENS[0]
     ), [activeCanteenId]);
 
-    // UI state for filtering and search
-    const [searchQ, setSearchQ] = useState('');
-    const [category, setCategory] = useState<string | null>(null);
+    const [searchQ, setSearchQ] = useState("");
+    const [category, setCategory] = useState<string>("All");
 
-    // filtered items by category and search
+    // Search is applied after category filtering so the visible list always stays scoped to the selected section.
     const filteredItems = useMemo(() => {
         let list = items;
-        if (category) {
+        if (category !== "All") {
             list = list.filter(i => i.category === category);
         }
         if (searchQ) {
@@ -52,34 +52,48 @@ function CanteenMenuPage() {
     return (
         <div className="menu-page-root">
             <Navbar />
-            <CanteenHeader canteen={canteen} />
-            <ImageGallery canteen={canteen} />
+            <div className="menu-page-shell">
+                <CanteenHeader canteen={canteen} />
+                <ImageGallery canteen={canteen} />
 
-            <div className="menu-page-container">
-                <aside className="menu-sidebar">
-                    <CategorySidebar categories={categories} activeCategory={category} onSelect={c => setCategory(c)} />
-                </aside>
+                <div className="menu-page-container">
+                    <aside className="menu-sidebar">
+                        <CategorySidebar categories={categories} activeCategory={category} onSelect={c => setCategory(c ?? "All")} />
+                    </aside>
 
-                <main className="menu-main">
-                    <div className="menu-main-header">
-                        <h2>{category ?? 'All'}</h2>
-                    </div>
+                    <main className="menu-main">
+                        <div className="menu-main-header">
+                            <h2>{category}</h2>
+                        </div>
 
-                    <div className="menu-items-list">
-                        {filteredItems.map(item => (
-                            <MenuItemCard key={item.id} item={item} />
-                        ))}
-                    </div>
-                </main>
+                        <div className="menu-items-list">
+                            {filteredItems.map(item => (
+                                <MenuItemCard key={item.id} item={item} />
+                            ))}
+                        </div>
 
-                <aside className="menu-right">
-                    <div className="menu-right-top">
-                        <MenuSearch value={searchQ} onChange={setSearchQ} />
-                    </div>
-                </aside>
+                        {filteredItems.length === 0 && (
+                            <div className="menu-empty-state">
+                                <h3>No items found</h3>
+                                <p>Try another category or update your search.</p>
+                            </div>
+                        )}
+                    </main>
+
+                    <aside className="menu-right">
+                        <div className="menu-right-sticky">
+                            <div className="menu-right-top">
+                                <MenuSearch value={searchQ} onChange={setSearchQ} />
+                            </div>
+                            <MiniCart />
+                        </div>
+                    </aside>
+                </div>
             </div>
 
-            <Footer />
+            <div className="menu-footer-wrap">
+                <Footer />
+            </div>
         </div>
     )
 }
