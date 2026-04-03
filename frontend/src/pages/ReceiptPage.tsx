@@ -1,17 +1,18 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { CheckCircle2, House, ReceiptText } from "lucide-react";
-import { useLocation, useParams, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import Footer from "../components/layout/Footer";
 import Navbar from "../components/layout/Navbar";
 import ReceiptCard from "../components/receipt/ReceiptCard";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
+import { getOrderById, getQrValueForOrder } from "../utils/orderPortal";
 
 interface LocationState {
-  paymentId: string;
-  orderId: string;
-  items: { id: string; name: string; price: number; quantity: number }[];
-  total: number;
+  paymentId?: string;
+  orderId?: string;
+  items?: { id: string; name: string; price: number; quantity: number }[];
+  total?: number;
 }
 
 const ReceiptPage: React.FC = () => {
@@ -21,38 +22,44 @@ const ReceiptPage: React.FC = () => {
   const [downloadStatus, setDownloadStatus] = useState<"idle" | "downloading" | "failed">("idle");
 
   const state = location.state as LocationState | null;
-  const isRealPayment = !!state?.paymentId;
+  const resolvedOrderId = state?.orderId ?? paramOrderId ?? "";
+  const storedOrder = useMemo(() => (resolvedOrderId ? getOrderById(resolvedOrderId) : null), [resolvedOrderId]);
+  const isRealPayment = !!(state?.paymentId || storedOrder?.paymentId);
 
-  const orderData = isRealPayment
+  const orderData = storedOrder
     ? {
-        orderId: state.orderId ?? paramOrderId ?? "N/A",
-        paymentId: state.paymentId,
-        outletName: "ByteHive Canteen",
-        pickupLocation: "Canteen Counter",
-        estimatedTime: "10-15 minutes",
-        items: state.items.map((item) => ({
+        orderId: storedOrder.id,
+        qrValue: getQrValueForOrder(storedOrder),
+        pickupCode: storedOrder.pickupCode,
+        paymentId: storedOrder.paymentId,
+        outletName: storedOrder.outletName,
+        pickupLocation: storedOrder.pickupLocation,
+        estimatedTime: storedOrder.estimatedTime,
+        items: storedOrder.items.map((item) => ({
           name: item.name,
           quantity: item.quantity,
           price: item.price,
         })),
-        subtotal: state.total,
-        taxes: Math.round(state.total * 0.05),
-        total: Math.round(state.total * 1.05),
+        subtotal: storedOrder.subtotal,
+        taxes: storedOrder.taxes,
+        total: storedOrder.total,
       }
     : {
-        orderId: "BH2025012601",
-        paymentId: undefined,
+        orderId: resolvedOrderId || "BH2025012601",
+        qrValue: resolvedOrderId ? getQrValueForOrder(resolvedOrderId) : `ByteHive-Order-${resolvedOrderId || "BH2025012601"}`,
+        pickupCode: undefined,
+        paymentId: state?.paymentId,
         outletName: "Punjabi Bites",
         pickupLocation: "Block A - Basement",
         estimatedTime: "15-20 minutes",
-        items: [
+        items: state?.items?.map((item) => ({ name: item.name, quantity: item.quantity, price: item.price })) ?? [
           { name: "Chole Bhature", quantity: 2, price: 120 },
           { name: "Lassi", quantity: 1, price: 40 },
           { name: "Paneer Tikka", quantity: 1, price: 150 },
         ],
-        subtotal: 310,
-        taxes: 31,
-        total: 341,
+        subtotal: state?.total ?? 310,
+        taxes: state?.total ? Math.round(state.total * 0.05) : 31,
+        total: state?.total ? Math.round(state.total * 1.05) : 341,
       };
 
   const handleDownload = async () => {
@@ -60,7 +67,6 @@ const ReceiptPage: React.FC = () => {
     if (!receipt) return;
 
     setDownloadStatus("downloading");
-
     const exportNode = receipt.cloneNode(true) as HTMLElement;
     exportNode.classList.add("receipt-export-mode");
     exportNode.style.width = `${receipt.offsetWidth}px`;
@@ -68,8 +74,6 @@ const ReceiptPage: React.FC = () => {
     exportNode.style.left = "-99999px";
     exportNode.style.top = "0";
     exportNode.style.zIndex = "-1";
-    exportNode.style.opacity = "1";
-
     document.body.appendChild(exportNode);
 
     try {
@@ -87,7 +91,6 @@ const ReceiptPage: React.FC = () => {
 
       let heightLeft = imgHeight;
       let position = 10;
-
       pdf.addImage(imgData, "PNG", 10, position, pageWidth, imgHeight);
       heightLeft -= pageHeight;
 
@@ -111,7 +114,6 @@ const ReceiptPage: React.FC = () => {
   return (
     <div className="receipt-screen">
       <Navbar />
-
       <main className="receipt-screen-main">
         <section className="receipt-shell">
           {isRealPayment && (
@@ -122,10 +124,9 @@ const ReceiptPage: React.FC = () => {
                 </span>
                 <div>
                   <strong>Payment successful</strong>
-                  <p>Payment ID: {state?.paymentId}</p>
+                  <p>Payment ID: {orderData.paymentId ?? state?.paymentId}</p>
                 </div>
               </div>
-
               <button type="button" className="receipt-banner-action" onClick={() => navigate("/")}>
                 <House size={16} />
                 Back to Home
@@ -141,10 +142,10 @@ const ReceiptPage: React.FC = () => {
             downloadStatus={downloadStatus}
           />
 
-          {!isRealPayment && (
+          {!storedOrder && !isRealPayment && (
             <div className="receipt-fallback-note">
               <ReceiptText size={16} />
-              <span>You are viewing a sample receipt because no payment state was passed to this page.</span>
+              <span>You are viewing a sample receipt because no stored order was found for this page.</span>
             </div>
           )}
 
@@ -156,7 +157,6 @@ const ReceiptPage: React.FC = () => {
           )}
         </section>
       </main>
-
       <Footer />
     </div>
   );

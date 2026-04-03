@@ -11,6 +11,8 @@ interface Item {
 
 interface ReceiptCardProps {
   orderId: string;
+  qrValue?: string;
+  pickupCode?: string;
   outletName: string;
   pickupLocation: string;
   estimatedTime: string;
@@ -26,6 +28,8 @@ interface ReceiptCardProps {
 
 const ReceiptCard: React.FC<ReceiptCardProps> = ({
   orderId,
+  qrValue,
+  pickupCode,
   outletName,
   pickupLocation,
   estimatedTime,
@@ -83,7 +87,7 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
           <div className="qr-section">
             <div className="qr-container">
               <QRCodeSVG
-                value={`ByteHive-Order-${orderId}`}
+                value={qrValue || `ByteHive-Order-${orderId}`}
                 size={180}
                 level="H"
               />
@@ -92,6 +96,11 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
             <p className="qr-text">
               Show this QR code at the counter to collect your order.
             </p>
+            {pickupCode && (
+              <p className="qr-text">
+                Pickup code: <strong>{pickupCode}</strong>
+              </p>
+            )}
           </div>
 
           <div className="items-section">
