@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import Footer from "../components/layout/Footer";
 import Navbar from "../components/layout/Navbar";
 import CategorySidebar from "../components/menu/CategorySidebar";
@@ -9,11 +9,12 @@ import MenuSearch from "../components/menu/MenuSearch";
 import MiniCart from "../components/menu/MiniCart";
 import menuData from "../data/menu.json";
 import { CANTEENS } from "../components/canteens/canteens";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import "./CanteenMenuPage.css";
 
 function CanteenMenuPage() {
   const { canteenId } = useParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const activeCanteenId = canteenId || CANTEENS[0]?.id;
 
   const items = useMemo(
@@ -32,8 +33,29 @@ function CanteenMenuPage() {
     [activeCanteenId]
   );
 
-  const [searchQ, setSearchQ] = useState("");
-  const [category, setCategory] = useState<string>("All");
+  const searchQ = searchParams.get("q") ?? "";
+  const rawCategory = searchParams.get("category") ?? "All";
+  const category = rawCategory === "All" || categories.includes(rawCategory) ? rawCategory : "All";
+
+  const updateMenuParams = ({ nextSearch, nextCategory }: { nextSearch?: string; nextCategory?: string }) => {
+    const params = new URLSearchParams(searchParams);
+    const searchValue = nextSearch ?? searchQ;
+    const categoryValue = nextCategory ?? category;
+
+    if (searchValue.trim()) {
+      params.set("q", searchValue);
+    } else {
+      params.delete("q");
+    }
+
+    if (categoryValue && categoryValue !== "All") {
+      params.set("category", categoryValue);
+    } else {
+      params.delete("category");
+    }
+
+    setSearchParams(params, { replace: true });
+  };
 
   const filteredItems = useMemo(() => {
     let list = items;
@@ -63,7 +85,11 @@ function CanteenMenuPage() {
 
         <div className="menu-page-container">
           <aside className="menu-sidebar">
-            <CategorySidebar categories={categories} activeCategory={category} onSelect={(nextCategory) => setCategory(nextCategory ?? "All")} />
+            <CategorySidebar
+              categories={categories}
+              activeCategory={category}
+              onSelect={(nextCategory) => updateMenuParams({ nextCategory: nextCategory ?? "All" })}
+            />
           </aside>
 
           <main className="menu-main">
@@ -88,7 +114,7 @@ function CanteenMenuPage() {
           <aside className="menu-right">
             <div className="menu-right-sticky">
               <div className="menu-right-top">
-                <MenuSearch value={searchQ} onChange={setSearchQ} />
+                <MenuSearch value={searchQ} onChange={(nextSearch) => updateMenuParams({ nextSearch })} />
               </div>
               <MiniCart />
             </div>

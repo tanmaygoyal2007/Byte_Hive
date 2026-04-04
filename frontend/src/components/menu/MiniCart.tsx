@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { getCurrentUserSession, subscribeToUserSession, type UserSession } from "../../utils/orderPortal";
+import { resolveMenuImageUrl } from "../../utils/menuImage";
 import useCart from "../../hooks/useCart";
 import "./MiniCart.css";
 
@@ -30,7 +31,7 @@ function MiniCart() {
           <div className="mini-items">
             {state.items.map((item: { id: string; image?: string; name: string; price: number; quantity: number }) => (
               <div key={item.id} className="mini-item">
-                <img src={item.image || "/placeholder.svg"} alt={item.name} />
+                <img src={resolveMenuImageUrl(item.image) || "/placeholder.svg"} alt={item.name} />
 
                 <div className="mini-item-info">
                   <div className="mini-item-name">{item.name}</div>
