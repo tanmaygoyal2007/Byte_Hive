@@ -1,124 +1,29 @@
-/* src/components/home/PopularCanteensSection.css */
-.popular {
-  height: 100vh;
-  padding: 60px 40px;
-  background: transparent;
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  overflow: hidden;
+.popular{
+	background: transparent;
+	padding:80px 24px;
+	color: var(--text-primary);
+	text-align:center;
 }
 
-.popular-container {
-  max-width: 1400px;
-  width: 100%;
-  margin: 0 auto;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+.popular h2{
+	font-size:44px;
+	margin-bottom:8px;
 }
 
-.section-header {
-  text-align: center;
-  margin-bottom: 40px;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-  transition-delay: 0s;
+.popular .subtitle{ color: var(--text-muted); margin-bottom:36px }
+
+.canteen-grid{
+	display:flex;
+	justify-content:center;
+	gap:80px;
+	align-items:flex-start;
 }
 
-.popular.visible .section-header {
-  opacity: 1;
-  transform: translateY(0);
-}
+.canteen-card img{ width:260px; height:260px }
 
-.section-header h2 {
-  font-size: clamp(32px, 5vw, 64px);
-  font-weight: 800;
-  margin-bottom: 12px;
-  letter-spacing: -2px;
-  line-height: 1.1;
-}
-
-.glow-text {
-  background: linear-gradient(135deg, #fff 30%, #FF8C00 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  text-shadow: 0 0 30px rgba(255, 140, 0, 0.1);
-}
-
-.subtitle {
-  font-size: 18px;
-  color: rgba(255, 255, 255, 0.6);
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.canteen-bento-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: 1fr 1fr;
-  grid-template-areas: 
-    "featured quick1"
-    "featured quick2";
-  gap: 24px;
-  width: 100%;
-  height: 100%;
-  max-height: 75vh;
-}
-
-/* Initial Hidden State for Cards */
-.canteen-card {
-  opacity: 0;
-  transform: translateY(50px) scale(0.98);
-  will-change: opacity, transform;
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.popular.visible .canteen-card {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-
-/* Staggered Delays */
-.popular.visible .featured {
-  transition-delay: 0.1s;
-}
-
-.popular.visible .canteen-card:nth-of-type(2) {
-  transition-delay: 0.25s;
-}
-
-.popular.visible .canteen-card:nth-of-type(3) {
-  transition-delay: 0.4s;
-}
-
-/* Map individual children to areas if they have classes, but since we map layout prop to class: */
-.canteen-card.featured {
-  grid-area: featured;
-}
-
-/* Quick picks just flow into the other slots, but I'll ensure they are handled */
-.canteen-card.quick:nth-of-type(2) { grid-area: quick1; }
-.canteen-card.quick:nth-of-type(3) { grid-area: quick2; }
-
-@media (max-width: 1024px) {
-  .canteen-bento-grid {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
-    grid-template-areas: 
-      "featured"
-      "quick1"
-      "quick2";
-  }
-}
-
-@media (max-width: 768px) {
-  .popular {
-    padding: 80px 24px;
-  }
+.canteen-grid{
+	display:flex;
+	justify-content:center;
+	gap:80px;
+	align-items:flex-start;
 }

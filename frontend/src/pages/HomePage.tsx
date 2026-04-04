@@ -7,7 +7,6 @@ import PopularCanteensSection from "../components/home/PopularCanteensSection";
 import ContactSection from "../components/home/ContactSection";
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
-import BokehBackground from "../components/common/BokehBackground";
 import { useLocation } from "react-router-dom";
 
 const HomePage: React.FC = () => {
@@ -27,17 +26,12 @@ const HomePage: React.FC = () => {
     <>
       <Navbar />
       <div className="homepage">
-        <BokehBackground />
-        
-        {/* Main Content Layer */}
-        <div className="content-layer">
-          <HeroSection />
-          <QuickDeliverySection />
-          <PopularCanteensSection />
-          <ContactSection />
-        </div>
+        <HeroSection />
+        <QuickDeliverySection />
+        <PopularCanteensSection />
+        <ContactSection />
+        <Footer />
       </div>
-      <Footer />
     </>
   );
 };
