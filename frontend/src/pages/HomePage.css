@@ -1,12 +1,38 @@
 .homepage {
-  background: var(--bg-gradient);
+  background: var(--home-surface-primary);
   min-height: 100vh;
   color: var(--text-primary);
-  padding-top: 88px;
+  padding-top: 70px;
 }
 
-/* Keep homepage sections aligned, but let the footer span full width and manage its own container. */
-.homepage > :not(.footer) {
-  width: min(100%, 1520px);
-  margin: 0 auto;
+.homepage section {
+  scroll-margin-top: 112px;
+  width: 100%;
+}
+
+.homepage-footer-divider {
+  height: clamp(72px, 10vw, 132px);
+  width: 100%;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--home-surface-secondary) 92%, transparent) 0%,
+      var(--home-surface-secondary) 100%
+    );
+  border-top: 1px solid color-mix(in srgb, var(--border-soft) 72%, transparent);
+}
+
+.homepage .homepage-footer-divider + .footer {
+  border-top: none;
+  padding-top: 0;
+}
+
+@media (max-width: 900px) {
+  .homepage {
+    padding-top: 66px;
+  }
+
+  .homepage-footer-divider {
+    height: 56px;
+  }
 }

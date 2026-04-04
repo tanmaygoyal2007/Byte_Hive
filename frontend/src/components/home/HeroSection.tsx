@@ -1,6 +1,8 @@
 import React from "react";
 import "./HeroSection.css";
 import { useNavigate } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowRight } from "@fortawesome/free-solid-svg-icons";
 
 const HeroSection: React.FC = () => {
   const navigate = useNavigate();
@@ -12,12 +14,12 @@ const HeroSection: React.FC = () => {
 
   return (
     <section className="hero">
-
       <div className="hero-container">
-
-        {/* LEFT TEXT CONTENT */}
         <div className="hero-text">
-
+          <span className="hero-kicker">
+            <span className="hero-kicker-dot" aria-hidden="true" />
+            Campus food guide
+          </span>
           <h1>
             Get a quick <br />
             idea about your <br />
@@ -31,20 +33,16 @@ const HeroSection: React.FC = () => {
           </p>
 
           <button className="explore-btn" onClick={goExplore}>
-            Explore More →
+            Explore More
+            <FontAwesomeIcon icon={faArrowRight} className="explore-btn-arrow" aria-hidden="true" />
           </button>
-
         </div>
-
-
-        {/* RIGHT FOOD GRID */}
         <div className="food-grid">
-
-          <div className="food-card">
+          <div className="food-card food-card-tall">
             <img src="/images/FOOD1.jpg" alt="FOOD1" />
           </div>
 
-          <div className="food-card">
+          <div className="food-card food-card-offset">
             <img src="/images/FOOD2.jpg" alt="FOOD2" />
           </div>
 
@@ -52,14 +50,11 @@ const HeroSection: React.FC = () => {
             <img src="/images/FOOD3.jpg" alt="FOOD3" />
           </div>
 
-          <div className="food-card">
+          <div className="food-card food-card-offset-sm">
             <img src="/images/FOOD4.jpg" alt="FOOD4" />
           </div>
-
         </div>
-
       </div>
-
     </section>
   );
 };

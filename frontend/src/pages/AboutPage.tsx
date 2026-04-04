@@ -49,8 +49,10 @@ const founders = [
     initial: "T",
     name: "Tanmay Goyal",
     subtitle: "BCA, Semester 2",
-    role: "Lead Developer & Full Stack",
+    role: "Full Stack Developer",
     description: "Primary developer responsible for architecture, frontend, and backend implementation.",
+    github: "https://github.com/tanmaygoyal2007",
+    linkedin: "https://www.linkedin.com/in/tanmay-goyal-6205472a6/?trk=opento_sprofile_details",
   },
   {
     initial: "D",
@@ -58,21 +60,8 @@ const founders = [
     subtitle: "BCA, Semester 2",
     role: "Full Stack Developer",
     description: "Core contributor focusing on system design, user experience, and feature development.",
-  },
-];
-
-const contributors = [
-  {
-    initial: "P",
-    name: "Pratham Gupta",
-    subtitle: "BCA, Semester 2",
-    role: "Frontend Developer",
-  },
-  {
-    initial: "L",
-    name: "Lis Maria Bino",
-    subtitle: "BCA, Semester 2",
-    role: "Frontend Developer",
+    github: "https://github.com/Devrajj-Singh",
+    linkedin: "https://www.linkedin.com/in/devraj-singh-2bba08374/",
   },
 ];
 
@@ -193,30 +182,10 @@ function AboutPage() {
                 <span className="about-member-role">{member.role}</span>
                 <p>{member.description}</p>
                 <div className="about-member-links">
-                  <a href="#" aria-label={`${member.name} GitHub`}>
+                  <a href={member.github} target="_blank" rel="noreferrer noopener" aria-label={`${member.name} GitHub`}>
                     <Github size={16} />
                   </a>
-                  <a href="#" aria-label={`${member.name} LinkedIn`}>
-                    <Linkedin size={16} />
-                  </a>
-                </div>
-              </article>
-            ))}
-          </div>
-
-          <h3 className="about-team-heading">Co-Developers & Contributors</h3>
-          <div className="about-team-grid about-team-grid-contributors">
-            {contributors.map((member) => (
-              <article key={`${member.name}-${member.initial}`} className="about-team-card">
-                <div className="about-avatar about-avatar-small">{member.initial}</div>
-                <h4>{member.name}</h4>
-                <span className="about-member-subtitle">{member.subtitle}</span>
-                <span className="about-member-role about-member-role-plain">{member.role}</span>
-                <div className="about-member-links">
-                  <a href="#" aria-label={`${member.name} GitHub`}>
-                    <Github size={16} />
-                  </a>
-                  <a href="#" aria-label={`${member.name} LinkedIn`}>
+                  <a href={member.linkedin} target="_blank" rel="noreferrer noopener" aria-label={`${member.name} LinkedIn`}>
                     <Linkedin size={16} />
                   </a>
                 </div>

@@ -18,17 +18,14 @@ const PopularCanteenCard: React.FC<Props> = ({ id, name, image, description }) =
 	}
 
 	return (
-		<div className="canteen-card">
-
-			<img src={image} alt={name} />
-
+		<article className="canteen-card">
+			<div className="canteen-card-media">
+				<img src={image} alt={name} />
+			</div>
 			<h3>{name}</h3>
-
 			{description && <p className="desc">{description}</p>}
-
-			<button className="view-btn" onClick={goToMenu}>View Menu →</button>
-
-		</div>
+			<button className="view-btn" onClick={goToMenu}>View Menu <span aria-hidden="true">→</span></button>
+		</article>
 	)
 
 }
