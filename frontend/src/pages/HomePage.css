@@ -1,12 +1,32 @@
+/* src/pages/HomePage.css */
 .homepage {
-  background: var(--bg-gradient);
+  width: 100%;
   min-height: 100vh;
-  color: var(--text-primary);
-  padding-top: 88px;
+  position: relative;
+  background-color: #000000; /* True Black background */
+  color: #ffffff;
+  overflow-x: hidden;
+  transition: background-color 0.5s ease, color 0.5s ease;
 }
 
-/* Keep homepage sections aligned, but let the footer span full width and manage its own container. */
-.homepage > :not(.footer) {
-  width: min(100%, 1520px);
-  margin: 0 auto;
+/* Light Mode Overrides (if data-theme="light" is on body/root) */
+[data-theme="light"] .homepage {
+  background-color: #FAFAFA;
+  color: #000000;
+}
+
+.content-layer {
+  position: relative;
+  z-index: 1;
+}
+
+/* Base fade-in for sections as they enter viewport */
+section {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
 }
