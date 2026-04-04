@@ -1,4 +1,4 @@
-import { createContext, useEffect, useReducer } from "react";
+import { createContext, useEffect, useReducer, useRef } from "react";
 import type { ReactNode } from "react";
 import { getCurrentUserSession, subscribeToUserSession } from "../utils/orderPortal";
 
@@ -28,9 +28,6 @@ function readInitialState(): State {
   if (typeof window === "undefined") return { items: [] };
 
   try {
-    const session = getCurrentUserSession();
-    if (!session) return { items: [] };
-
     const stored = localStorage.getItem(CART_STORAGE_KEY);
     if (!stored) return { items: [] };
     return JSON.parse(stored) as State;
@@ -89,16 +86,20 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, readInitialState);
+  const previousSessionRef = useRef(getCurrentUserSession());
 
   useEffect(() => {
     const syncCartForSession = () => {
-      const session = getCurrentUserSession();
-      if (!session) {
+      const previousSession = previousSessionRef.current;
+      const nextSession = getCurrentUserSession();
+
+      if (previousSession && !nextSession) {
         dispatch({ type: "clear" });
       }
+
+      previousSessionRef.current = nextSession;
     };
 
-    syncCartForSession();
     return subscribeToUserSession(syncCartForSession);
   }, []);
 
