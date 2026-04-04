@@ -12,13 +12,19 @@ const PopularCanteensSection:React.FC = () => {
 
 	return(
 		<section id="popular" className="popular">
-			<h2>Campus Popular Canteen</h2>
-			<p className="subtitle">Explore the most loved dining spots across campus</p>
+			<div className="popular-inner">
+				<span className="popular-kicker">
+					<span className="popular-kicker-dot" aria-hidden="true" />
+					Most loved spots
+				</span>
+				<h2>Campus Popular Canteen</h2>
+				<p className="subtitle">Explore the most loved dining spots across campus</p>
 
-			<div className="canteen-grid">
-				{popular.map(c => (
-					<PopularCanteenCard key={c.id} id={c.id} name={c.name} image={c.image} description={c.description} />
-				))}
+				<div className="canteen-grid">
+					{popular.map(c => (
+						<PopularCanteenCard key={c.id} id={c.id} name={c.name} image={c.image} description={c.description} />
+					))}
+				</div>
 			</div>
 		</section>
 	)

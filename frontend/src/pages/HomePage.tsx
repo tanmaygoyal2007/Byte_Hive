@@ -30,6 +30,7 @@ const HomePage: React.FC = () => {
         <QuickDeliverySection />
         <PopularCanteensSection />
         <ContactSection />
+        <div className="homepage-footer-divider" aria-hidden="true" />
         <Footer />
       </div>
     </>
