@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import "./HeroSection.css";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";

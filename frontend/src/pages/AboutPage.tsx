@@ -1,7 +1,9 @@
 import { useEffect } from "react";
 import { Clock3, Github, Linkedin, MapPin, Shield, Smartphone, Target, UtensilsCrossed, Users } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
 import Navbar from "../components/layout/Navbar";
 import Footer from "../components/layout/Footer";
+import "../pages/vendor/VendorPortal.css";
 import "./AboutPage.css";
 
 const stats = [
@@ -68,6 +70,9 @@ const founders = [
 const projectPillars = ["Idea", "Design", "Development", "Mobile UX", "Vendor Portal", "QR Flow"];
 
 function AboutPage() {
+  const location = useLocation();
+  const isVendorAbout = location.pathname.startsWith("/vendor/");
+
   useEffect(() => {
     const elements = document.querySelectorAll<HTMLElement>(".about-animate");
     const observer = new IntersectionObserver(
@@ -90,12 +95,19 @@ function AboutPage() {
     <div className="about-page">
       <Navbar />
       <main className="about-main">
+        {isVendorAbout && (
+          <div className="vendor-shell" style={{ marginBottom: "12px" }}>
+            <Link to="/vendor/dashboard" className="vendor-back-link">
+              Back to Vendor Portal
+            </Link>
+          </div>
+        )}
         <section className="about-hero about-animate about-visible">
-          <span className="about-kicker">Built for Campus Life</span>
+          <span className="about-kicker">{isVendorAbout ? "Vendor Platform Story" : "Built for Campus Life"}</span>
           <h1>
-            About <span>ByteHive</span>
+            About <span>{isVendorAbout ? "ByteHive Vendor Portal" : "ByteHive"}</span>
           </h1>
-          <p>Transforming campus dining through technology and innovation</p>
+          <p>{isVendorAbout ? "Understand the platform behind outlet operations, queue control, and campus ordering." : "Transforming campus dining through technology and innovation"}</p>
         </section>
 
         <section className="about-section about-intro about-animate">

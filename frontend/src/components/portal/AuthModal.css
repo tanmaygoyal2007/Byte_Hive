@@ -144,6 +144,69 @@
   filter: brightness(1.05);
 }
 
+.auth-modal-google-card {
+  margin-top: 20px;
+  padding: 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--nav-surface) 76%, transparent);
+}
+
+.auth-modal-google-btn {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 52px;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-primary);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0 16px;
+}
+
+.auth-modal-google-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-modal-google-mark {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #fff;
+  color: #ea4335;
+  font-weight: 900;
+}
+
+.auth-modal-divider {
+  position: relative;
+  margin-top: 18px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+}
+
+.auth-modal-divider::before {
+  content: "";
+  position: absolute;
+  inset: 50% 0 auto;
+  border-top: 1px solid var(--border-soft);
+}
+
+.auth-modal-divider span {
+  position: relative;
+  display: inline-block;
+  padding: 0 12px;
+  background: color-mix(in srgb, var(--dropdown-bg) 92%, transparent);
+}
+
 .auth-modal-error {
   margin: 0;
   padding: 10px 12px;

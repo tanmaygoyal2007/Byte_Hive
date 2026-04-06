@@ -1,12 +1,24 @@
-import { CheckCircle2, ChevronLeft, Clock3, Heart, LogIn, LogOut, Package, ShoppingBag, Star, UserPlus, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { CheckCircle2, ChevronLeft, Clock3, Heart, LogIn, LogOut, Package, ShoppingBag, Star, Trash2, UserPlus, X } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
+import { Link } from "react-router-dom";
+import useCart from "../../hooks/useCart";
+import useSecondClock from "../../hooks/useSecondClock";
+import { resolveMenuImageUrl } from "../../utils/menuImage";
 import {
+  getFavoriteItemsForUser,
+  getOrderCountdownState,
+  getOrderDelayCopy,
+  getOrderEtaLabel,
   getOrdersForUser,
   getOrdersSummaryTimestamp,
   getQrValueForOrder,
+  getRelativeTimeLabel,
+  removeFavoriteItemForUser,
+  subscribeToFavorites,
   subscribeToOrders,
   type ByteHiveOrder,
+  type FavoriteMenuItem,
 } from "../../utils/orderPortal";
 import "./ProfileHub.css";
 
@@ -22,7 +34,7 @@ type ProfileHubProps = {
   hasActiveOrder?: boolean;
 };
 
-type View = "home" | "active-order" | "order-history" | "favorites";
+type View = "home" | "active-order" | "order-history" | "favorites" | "cart";
 
 function ProfileHub({
   isOpen,
@@ -34,14 +46,18 @@ function ProfileHub({
   isGuest = false,
   isMobile = false,
 }: ProfileHubProps) {
+  const { state, addItem, increment, decrement, removeItem, total } = useCart();
+  const now = useSecondClock();
   const [currentView, setCurrentView] = useState<View>("home");
   const [orders, setOrders] = useState<ByteHiveOrder[]>([]);
+  const [favorites, setFavorites] = useState<FavoriteMenuItem[]>([]);
+  const handleClose = useCallback(() => {
+    setCurrentView("home");
+    onClose();
+  }, [onClose]);
 
   useEffect(() => {
-    if (!isOpen) {
-      setCurrentView("home");
-      return;
-    }
+    if (!isOpen) return;
 
     const handleEscape = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -49,7 +65,7 @@ function ProfileHub({
           setCurrentView("home");
           return;
         }
-        onClose();
+        handleClose();
       }
     };
 
@@ -60,7 +76,7 @@ function ProfileHub({
       document.removeEventListener("keydown", handleEscape);
       document.body.style.overflow = "unset";
     };
-  }, [isOpen, currentView, onClose]);
+  }, [currentView, handleClose, isOpen]);
 
   useEffect(() => {
     const syncOrders = () => {
@@ -73,6 +89,20 @@ function ProfileHub({
 
     syncOrders();
     return subscribeToOrders(syncOrders);
+  }, [isGuest, userName]);
+
+  useEffect(() => {
+    const syncFavorites = () => {
+      if (isGuest) {
+        setFavorites([]);
+        return;
+      }
+
+      setFavorites(getFavoriteItemsForUser(userName));
+    };
+
+    syncFavorites();
+    return subscribeToFavorites(syncFavorites);
   }, [isGuest, userName]);
 
   const activeOrders = useMemo(
@@ -89,20 +119,42 @@ function ProfileHub({
     [orders]
   );
 
-  const favorites = [
-    { id: 1, name: "Butter Chicken", outlet: "Punjabi Bites", price: "Rs180" },
-    { id: 2, name: "Paneer Tikka", outlet: "Taste of Delhi", price: "Rs150" },
-    { id: 3, name: "Masala Chai", outlet: "Cafe Coffee Day", price: "Rs20" },
-  ];
-
   if (!isOpen) return null;
 
   const goBack = () => setCurrentView("home");
 
+  const handleFavoriteAdd = (item: FavoriteMenuItem) => {
+    addItem({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      image: item.image,
+      canteenId: item.canteenId,
+    });
+  };
+
+  const handleFavoriteRemove = (itemId: string) => {
+    removeFavoriteItemForUser(userName, itemId);
+  };
+
+  const getCartQuantityForFavorite = (itemId: string) => {
+    return state.items.find((item: { id: string; quantity: number }) => item.id === itemId)?.quantity ?? 0;
+  };
+
   const renderHeader = () => (
     <div className="profile-hub-shell-header">
-      <h2>{currentView === "home" ? "Profile" : currentView === "active-order" ? "Active Order" : currentView === "order-history" ? "Order History" : "Favorite Items"}</h2>
-      <button type="button" className="profile-hub-close" onClick={onClose} aria-label="Close profile hub">
+      <h2>
+        {currentView === "home"
+          ? "Profile"
+          : currentView === "active-order"
+            ? "Active Order"
+            : currentView === "order-history"
+              ? "Order History"
+              : currentView === "favorites"
+                ? "Favorite Items"
+                : "Cart"}
+      </h2>
+      <button type="button" className="profile-hub-close" onClick={handleClose} aria-label="Close profile hub">
         <X size={20} />
       </button>
     </div>
@@ -120,7 +172,7 @@ function ProfileHub({
       <div className="profile-guest-glass">
         <strong>Unlock your ByteHive account</strong>
         <p>Login or sign up as a student or faculty member to save favorites, track orders, and keep your profile synced.</p>
-        <div className="profile-guest-feature-list">
+          <div className="profile-guest-feature-list">
           <div className="profile-guest-feature-item">
             <span className="profile-action-icon"><ShoppingBag size={18} /></span>
             <span><strong>Active Order</strong><small>View current order status</small></span>
@@ -132,6 +184,10 @@ function ProfileHub({
           <div className="profile-guest-feature-item">
             <span className="profile-action-icon"><Heart size={18} /></span>
             <span><strong>Favorite Items</strong><small>Quick add favorites</small></span>
+          </div>
+          <div className="profile-guest-feature-item">
+            <span className="profile-action-icon"><ShoppingBag size={18} /></span>
+            <span><strong>Cart</strong><small>Review items before checkout</small></span>
           </div>
         </div>
         <div className="profile-guest-actions">
@@ -158,12 +214,25 @@ function ProfileHub({
 
             {activeOrder ? (
               <div className="profile-highlight-card">
+                {(() => {
+                  const countdown = getOrderCountdownState(activeOrder, now);
+                  return (
+                    <>
                 <div className="profile-highlight-row">
                   <strong>Current Order</strong>
                   <span className="profile-status-badge">{activeOrder.status}</span>
                 </div>
                 <p>{activeOrder.outletName}</p>
                 <small>Order #{activeOrder.id}</small>
+                {countdown.isActive && (
+                  <div className={`profile-home-timer ${countdown.isDelayed ? "profile-home-timer-delayed" : ""}`}>
+                    <strong>{countdown.clockLabel}</strong>
+                    <span>{countdown.isDelayed ? "Order delayed" : "Preparation countdown"}</span>
+                  </div>
+                )}
+                    </>
+                  );
+                })()}
               </div>
             ) : (
               <div className="profile-highlight-card">
@@ -187,6 +256,10 @@ function ProfileHub({
               <span className="profile-action-icon"><Heart size={20} /></span>
               <span><strong>Favorite Items</strong><small>Quick add favorites</small></span>
             </button>
+            <button type="button" className="profile-action-card" onClick={() => setCurrentView("cart")}>
+              <span className="profile-action-icon"><ShoppingBag size={20} /></span>
+              <span><strong>Cart</strong><small>Review and manage cart items</small></span>
+            </button>
             <button type="button" className="profile-logout" onClick={() => { onLogout(); onClose(); }}>
               <LogIn size={18} />
               Logout
@@ -206,6 +279,10 @@ function ProfileHub({
         <>
           {activeOrders.map((order) => (
             <div key={order.id} className="profile-stack">
+              {(() => {
+                const countdown = getOrderCountdownState(order, now);
+                return (
+                  <>
               <div className="profile-panel-card">
                 <div className="profile-highlight-row">
                   <div>
@@ -227,6 +304,18 @@ function ProfileHub({
                   <strong>Rs {order.total}</strong>
                 </div>
                 <div className="profile-order-item-row">
+                  <span>Estimated Pickup</span>
+                  <strong>{getOrderEtaLabel(order)}</strong>
+                </div>
+                {countdown.isActive && (
+                  <div className="profile-order-item-row">
+                    <span>{countdown.isDelayed ? "Timer Paused" : "Live Timer"}</span>
+                    <strong className={countdown.isDelayed ? "profile-order-timer profile-order-timer-delayed" : "profile-order-timer"}>
+                      {countdown.clockLabel}
+                    </strong>
+                  </div>
+                )}
+                <div className="profile-order-item-row">
                   <span>Pickup Point</span>
                   <strong>{order.pickupLocation}</strong>
                 </div>
@@ -234,6 +323,18 @@ function ProfileHub({
                   <span>Last Updated</span>
                   <strong>{getOrdersSummaryTimestamp(order.updatedAt)}</strong>
                 </div>
+                {order.vendorTimingUpdatedAt && (
+                  <div className="profile-order-item-row">
+                    <span>ETA Updated</span>
+                    <strong>{getRelativeTimeLabel(order.vendorTimingUpdatedAt, now)}</strong>
+                  </div>
+                )}
+                {getOrderDelayCopy(order) && (
+                  <div className="profile-order-delay-note">
+                    <strong>Delay Notice</strong>
+                    <p>{getOrderDelayCopy(order)}</p>
+                  </div>
+                )}
               </div>
 
               <div className="profile-panel-card">
@@ -258,6 +359,9 @@ function ProfileHub({
                   <p>Pickup code: <strong>{order.pickupCode}</strong></p>
                 </div>
               )}
+                  </>
+                );
+              })()}
             </div>
           ))}
         </>
@@ -287,18 +391,81 @@ function ProfileHub({
     <>
       {renderBackButton()}
       <div className="profile-stack">
-        {favorites.map((item) => (
+        {favorites.length ? favorites.map((item) => (
           <div key={item.id} className="profile-panel-card profile-favorite-row">
             <div className="profile-favorite-copy">
               <div className="profile-favorite-title"><Star size={16} /> <strong>{item.name}</strong></div>
-              <p>{item.outlet}</p>
+              <p>{item.outletName}</p>
+              <small>{item.category}</small>
             </div>
             <div className="profile-favorite-side">
-              <strong>{item.price}</strong>
-              <button type="button">+ Add</button>
+              <strong>Rs {item.price}</strong>
+              <div className="profile-favorite-actions">
+                {getCartQuantityForFavorite(item.id) > 0 ? (
+                  <div className="profile-favorite-qty">
+                    <button type="button" onClick={() => decrement(item.id)}>-</button>
+                    <span>{getCartQuantityForFavorite(item.id)}</span>
+                    <button type="button" onClick={() => increment(item.id)}>+</button>
+                  </div>
+                ) : (
+                  <button type="button" onClick={() => handleFavoriteAdd(item)}>Add to Cart</button>
+                )}
+                <button type="button" className="profile-favorite-remove" onClick={() => handleFavoriteRemove(item.id)}>
+                  Remove Favorite
+                </button>
+              </div>
             </div>
           </div>
-        ))}
+        )) : (
+          <div className="profile-panel-card">
+            <strong>No favorites yet</strong>
+            <p>Tap the star beside any menu item to save it here for quick reordering.</p>
+          </div>
+        )}
+      </div>
+    </>
+  );
+
+  const renderCartView = () => (
+    <>
+      {renderBackButton()}
+      <div className="profile-panel-card">
+        <h3>Your Cart</h3>
+        {!state.items.length ? (
+          <p>Your cart is empty. Add items from the menu or your favorites to get started.</p>
+        ) : (
+          <>
+            <div className="profile-cart-list">
+              {state.items.map((item: { id: string; image?: string; name: string; price: number; quantity: number }) => (
+                <div key={item.id} className="profile-cart-item">
+                  <img src={resolveMenuImageUrl(item.image) || "/placeholder.svg"} alt={item.name} className="profile-cart-image" />
+                  <div className="profile-cart-copy">
+                    <strong>{item.name}</strong>
+                    <small>Rs {item.price}</small>
+                    <div className="profile-cart-qty">
+                      <button type="button" onClick={() => decrement(item.id)}>-</button>
+                      <span>{item.quantity}</span>
+                      <button type="button" onClick={() => increment(item.id)}>+</button>
+                    </div>
+                  </div>
+                  <button type="button" className="profile-cart-remove" onClick={() => removeItem(item.id)} aria-label={`Remove ${item.name}`}>
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            <div className="profile-cart-footer">
+              <div className="profile-cart-total">
+                <span>Total</span>
+                <strong>Rs {total()}</strong>
+              </div>
+              <Link to="/cart" className="profile-cart-link" onClick={handleClose}>
+                Open Full Cart
+              </Link>
+            </div>
+          </>
+        )}
       </div>
     </>
   );
@@ -309,10 +476,12 @@ function ProfileHub({
       ? renderActiveOrderView()
       : currentView === "order-history"
         ? renderOrderHistoryView()
-        : renderFavoritesView();
+        : currentView === "favorites"
+          ? renderFavoritesView()
+          : renderCartView();
 
   return (
-    <div className="profile-hub-backdrop" onClick={onClose} role="dialog" aria-modal="true" aria-label="User profile hub">
+    <div className="profile-hub-backdrop" onClick={handleClose} role="dialog" aria-modal="true" aria-label="User profile hub">
       <div className={`profile-hub-shell ${isMobile ? "profile-hub-shell-mobile" : "profile-hub-shell-desktop"}`} onClick={(event) => event.stopPropagation()}>
         {renderHeader()}
         <div className="profile-hub-content">{content}</div>

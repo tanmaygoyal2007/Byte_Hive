@@ -1,4 +1,5 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 import Footer from "../components/layout/Footer";
 import Navbar from "../components/layout/Navbar";
 import CategorySidebar from "../components/menu/CategorySidebar";
@@ -7,20 +8,30 @@ import ImageGallery from "../components/menu/ImageGallery";
 import MenuItemCard from "../components/menu/MenuItemCard";
 import MenuSearch from "../components/menu/MenuSearch";
 import MiniCart from "../components/menu/MiniCart";
-import menuData from "../data/menu.json";
 import { CANTEENS } from "../components/canteens/canteens";
-import { useParams, useSearchParams } from "react-router-dom";
+import { getMenuItemsForOutlet, subscribeToMenu, type MenuCatalogItem } from "../utils/orderPortal";
+import { getVendorClosureLabel, getVendorOutletStatus, subscribeToVendorStatus } from "../utils/vendorPortal";
 import "./CanteenMenuPage.css";
 
 function CanteenMenuPage() {
   const { canteenId } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeCanteenId = canteenId || CANTEENS[0]?.id;
+  const [items, setItems] = useState<MenuCatalogItem[]>(() => getMenuItemsForOutlet(activeCanteenId));
+  const [isOutletOpen, setIsOutletOpen] = useState(() => {
+    const activeCanteen = CANTEENS.find((entry) => entry.id === activeCanteenId) || CANTEENS[0];
+    return activeCanteen ? getVendorOutletStatus(activeCanteen.name) : true;
+  });
+  const [closureLabel, setClosureLabel] = useState<string | null>(() => {
+    const activeCanteen = CANTEENS.find((entry) => entry.id === activeCanteenId) || CANTEENS[0];
+    return activeCanteen ? getVendorClosureLabel(activeCanteen.name) : null;
+  });
 
-  const items = useMemo(
-    () => (menuData as any[]).filter((item) => item.canteenId === activeCanteenId),
-    [activeCanteenId]
-  );
+  useEffect(() => {
+    const syncItems = () => setItems(getMenuItemsForOutlet(activeCanteenId));
+    syncItems();
+    return subscribeToMenu(syncItems);
+  }, [activeCanteenId]);
 
   const categories = useMemo(() => {
     const set = new Set<string>();
@@ -32,6 +43,23 @@ function CanteenMenuPage() {
     () => CANTEENS.find((entry) => entry.id === activeCanteenId) || CANTEENS[0],
     [activeCanteenId]
   );
+
+  useEffect(() => {
+    const syncStatus = () => {
+      const activeCanteen = CANTEENS.find((entry) => entry.id === activeCanteenId) || CANTEENS[0];
+      setIsOutletOpen(activeCanteen ? getVendorOutletStatus(activeCanteen.name) : true);
+      setClosureLabel(activeCanteen ? getVendorClosureLabel(activeCanteen.name) : null);
+    };
+
+    syncStatus();
+    const unsubscribe = subscribeToVendorStatus(syncStatus);
+    const interval = window.setInterval(syncStatus, 30000);
+
+    return () => {
+      window.clearInterval(interval);
+      unsubscribe();
+    };
+  }, [activeCanteenId]);
 
   const searchQ = searchParams.get("q") ?? "";
   const rawCategory = searchParams.get("category") ?? "All";
@@ -80,7 +108,13 @@ function CanteenMenuPage() {
     <div className="menu-page-root">
       <Navbar />
       <div className="menu-page-shell">
-        <CanteenHeader canteen={canteen} />
+        <CanteenHeader canteen={canteen} isOutletOpen={isOutletOpen} closureLabel={closureLabel} />
+        {!isOutletOpen && (
+          <div className="menu-page-outlet-alert">
+            <strong>This outlet is temporarily closed for checkout.</strong>
+            <p>{closureLabel ?? "You can still browse the menu and add items to cart, but checkout is paused right now."}</p>
+          </div>
+        )}
         <ImageGallery canteen={canteen} />
 
         <div className="menu-page-container">

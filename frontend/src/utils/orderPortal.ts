@@ -2,6 +2,7 @@ import baseMenuData from "../data/menu.json";
 
 export type UserRole = "student" | "faculty" | "guest";
 export type OrderStatus = "preparing" | "accepted" | "ready" | "handoff" | "collected";
+export type OrderDelayState = "on-time" | "delayed";
 
 export interface ByteHiveOrderItem {
   id: string;
@@ -23,7 +24,12 @@ export interface ByteHiveOrder {
   outletId: string;
   outletName: string;
   pickupLocation: string;
+  basePrepMinutes: number;
+  prepMinutes: number;
   estimatedTime: string;
+  delayState: OrderDelayState;
+  delayMessage?: string | null;
+  vendorTimingUpdatedAt?: string | null;
   status: OrderStatus;
   qrToken: string;
   createdAt: string;
@@ -50,9 +56,34 @@ export interface MenuCatalogItem {
   name: string;
   price: number;
   category: string;
+  isVeg?: boolean;
   description?: string;
   image?: string;
   isAvailable: boolean;
+}
+
+export interface MenuItemDraftInput {
+  name: string;
+  category: string;
+  price: number;
+  description?: string;
+  isAvailable?: boolean;
+  isVeg?: boolean;
+  image?: string;
+}
+
+export interface FavoriteMenuItem {
+  id: string;
+  canteenId: string;
+  outletName: string;
+  name: string;
+  price: number;
+  category: string;
+  image?: string;
+  description?: string;
+  isVeg?: boolean;
+  isAvailable: boolean;
+  savedAt: string;
 }
 
 export interface ParsedQrPayload {
@@ -64,9 +95,11 @@ export interface ParsedQrPayload {
 const ORDERS_KEY = "bytehiveOrders";
 const USER_SESSION_KEY = "bytehiveUserSession";
 const MENU_OVERRIDES_KEY = "bytehiveVendorMenuOverrides";
+const FAVORITES_KEY = "bytehiveFavoriteItems";
 const ORDER_COUNTERS_KEY = "bytehiveOrderCounters";
 const ORDERS_EVENT = "bytehive-orders-updated";
 const MENU_EVENT = "bytehive-menu-updated";
+const FAVORITES_EVENT = "bytehive-favorites-updated";
 const USER_SESSION_EVENT = "bytehive-user-session-updated";
 const AUTH_PROMPT_EVENT = "bytehive-auth-prompt";
 
@@ -76,7 +109,7 @@ const outletMetaById: Record<string, { name: string; location: string; estimated
   tasteOfDelhi: { name: "Taste of Delhi", location: "Block C, Ground Floor", estimatedTime: "14-18 minutes", code: "TD" },
   cafeCoffeeDay: { name: "Cafe Coffee Day", location: "Block D, Atrium", estimatedTime: "8-12 minutes", code: "CCD" },
   AmritsarHaveli: { name: "Amritsari Haveli", location: "Block E, Ground Floor", estimatedTime: "14-18 minutes", code: "AH" },
-  southSpice: { name: "Southern Delights", location: "Block G, South Wing", estimatedTime: "12-15 minutes", code: "SD" },
+  southernDelight: { name: "Southern Delights", location: "Block G, South Wing", estimatedTime: "12-15 minutes", code: "SD" },
   bitesAndBrews: { name: "Bites & Brews", location: "Block H, Cafe Strip", estimatedTime: "10-12 minutes", code: "BB" },
   dominos: { name: "Domino's", location: "Block J, Campus Plaza", estimatedTime: "18-22 minutes", code: "DM" },
   gianis: { name: "Gianis", location: "Block F, Dessert Bay", estimatedTime: "8-10 minutes", code: "GN" },
@@ -177,22 +210,115 @@ function createPickupCode(sequenceNumber: number) {
   return String(sequenceNumber).padStart(4, "0");
 }
 
-function normalizeStoredOrder(order: ByteHiveOrder): ByteHiveOrder {
-  const businessDate = order.businessDate ?? getBusinessDate(new Date(order.createdAt));
-  const sequenceNumber =
-    typeof order.sequenceNumber === "number" && order.sequenceNumber > 0
-      ? order.sequenceNumber
-      : Number(order.id.match(/-(\d{2,4})$/)?.[1] ?? 1);
-  const receiptNumber = order.receiptNumber ?? order.id;
+function parseEstimatedMinutes(label?: string) {
+  if (!label) return 15;
+
+  const matches = Array.from(label.matchAll(/\d+/g)).map((match) => Number.parseInt(match[0], 10));
+  if (matches.length === 0) return 15;
+  return Math.max(...matches);
+}
+
+function formatPrepMinutes(minutes: number) {
+  const normalized = Math.max(0, Math.round(minutes));
+  return normalized === 1 ? "1 minute" : `${normalized} minutes`;
+}
+
+function getTimingAnchor(order: Pick<ByteHiveOrder, "vendorTimingUpdatedAt" | "createdAt">) {
+  return order.vendorTimingUpdatedAt ?? order.createdAt;
+}
+
+export function getOrderRemainingMs(order: Pick<ByteHiveOrder, "status" | "delayState" | "prepMinutes" | "vendorTimingUpdatedAt" | "createdAt">, now = Date.now()) {
+  if (order.status === "ready" || order.status === "handoff" || order.status === "collected") {
+    return 0;
+  }
+
+  if (order.delayState === "delayed") {
+    return Math.max(0, Math.round(order.prepMinutes) * 60_000);
+  }
+
+  const anchorTime = new Date(getTimingAnchor(order)).getTime();
+  const targetTime = anchorTime + Math.max(0, Math.round(order.prepMinutes)) * 60_000;
+  return Math.max(0, targetTime - now);
+}
+
+export function getLivePrepMinutes(order: Pick<ByteHiveOrder, "status" | "delayState" | "prepMinutes" | "vendorTimingUpdatedAt" | "createdAt">, now = Date.now()) {
+  return Math.ceil(getOrderRemainingMs(order, now) / 60_000);
+}
+
+export function formatCountdownClock(totalMs: number) {
+  const totalSeconds = Math.max(0, Math.ceil(totalMs / 1000));
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+export function getOrderCountdownState(order: ByteHiveOrder, now = Date.now()) {
+  const remainingMs = getOrderRemainingMs(order, now);
+  const remainingMinutes = Math.ceil(remainingMs / 60_000);
+  const isDelayed = order.delayState === "delayed";
+  const isActive = order.status === "preparing" || order.status === "accepted";
+  const isStopped = isDelayed || !isActive;
 
   return {
-    ...order,
+    remainingMs,
+    remainingMinutes,
+    clockLabel: formatCountdownClock(remainingMs),
+    timerLabel: remainingMs > 0 ? formatPrepMinutes(remainingMinutes) : "Less than 1 minute",
+    isDelayed,
+    isStopped,
+    isActive,
+  };
+}
+
+function deriveEstimatedTime(order: {
+  status: OrderStatus;
+  prepMinutes: number;
+  delayState: OrderDelayState;
+}) {
+  if (order.status === "ready") return "Ready for pickup";
+  if (order.status === "handoff") return "Counter verification in progress";
+  if (order.status === "collected") return "Collected";
+
+  const timing = `About ${formatPrepMinutes(order.prepMinutes)}`;
+  return order.delayState === "delayed" ? `Delayed | ${timing}` : timing;
+}
+
+function normalizeStoredOrder(order: ByteHiveOrder): ByteHiveOrder {
+  const storedOrder = order as ByteHiveOrder & Partial<Pick<ByteHiveOrder, "basePrepMinutes" | "prepMinutes" | "delayState" | "delayMessage" | "vendorTimingUpdatedAt">>;
+  const businessDate = storedOrder.businessDate ?? getBusinessDate(new Date(storedOrder.createdAt));
+  const sequenceNumber =
+    typeof storedOrder.sequenceNumber === "number" && storedOrder.sequenceNumber > 0
+      ? storedOrder.sequenceNumber
+      : Number(storedOrder.id.match(/-(\d{2,4})$/)?.[1] ?? 1);
+  const receiptNumber = storedOrder.receiptNumber ?? storedOrder.id;
+  const basePrepMinutes =
+    typeof storedOrder.basePrepMinutes === "number" && storedOrder.basePrepMinutes > 0
+      ? storedOrder.basePrepMinutes
+      : parseEstimatedMinutes(storedOrder.estimatedTime);
+  const prepMinutes =
+    typeof storedOrder.prepMinutes === "number" && storedOrder.prepMinutes >= 0
+      ? storedOrder.prepMinutes
+      : basePrepMinutes;
+  const delayState = storedOrder.delayState === "delayed" ? "delayed" : "on-time";
+
+  return {
+    ...storedOrder,
     id: receiptNumber,
     receiptNumber,
     sequenceNumber,
     businessDate,
-    pickupCode: order.pickupCode ?? createPickupCode(sequenceNumber),
-    qrToken: order.qrToken ?? `LEGACY-${receiptNumber.replace(/[^A-Za-z0-9]/g, "").slice(-8)}`,
+    pickupCode: storedOrder.pickupCode ?? createPickupCode(sequenceNumber),
+    qrToken: storedOrder.qrToken ?? `LEGACY-${receiptNumber.replace(/[^A-Za-z0-9]/g, "").slice(-8)}`,
+    basePrepMinutes,
+    prepMinutes,
+    delayState,
+    delayMessage: storedOrder.delayMessage ?? null,
+    vendorTimingUpdatedAt: storedOrder.vendorTimingUpdatedAt ?? null,
+    estimatedTime: deriveEstimatedTime({
+      status: storedOrder.status,
+      prepMinutes,
+      delayState,
+    }),
   };
 }
 
@@ -261,6 +387,10 @@ export function getOrders() {
   return readJSON<ByteHiveOrder[]>(ORDERS_KEY, []).map(normalizeStoredOrder);
 }
 
+function saveOrders(orders: ByteHiveOrder[]) {
+  writeJSON(ORDERS_KEY, orders, ORDERS_EVENT);
+}
+
 export function getOrderById(orderId: string) {
   return getOrders().find((order) => order.id === orderId || order.receiptNumber === orderId) ?? null;
 }
@@ -308,6 +438,7 @@ export function createOrder(payload: {
   const sequenceNumber = getDailySequence(payload.outletId, businessDate);
   const receiptNumber = createReceiptNumber(payload.outletId, businessDate, sequenceNumber);
   const now = createdAt.toISOString();
+  const basePrepMinutes = parseEstimatedMinutes(meta.estimatedTime);
 
   const order: ByteHiveOrder = {
     id: receiptNumber,
@@ -321,7 +452,16 @@ export function createOrder(payload: {
     outletId: payload.outletId,
     outletName: meta.name,
     pickupLocation: meta.location,
-    estimatedTime: meta.estimatedTime,
+    basePrepMinutes,
+    prepMinutes: basePrepMinutes,
+    estimatedTime: deriveEstimatedTime({
+      status: "preparing",
+      prepMinutes: basePrepMinutes,
+      delayState: "on-time",
+    }),
+    delayState: "on-time",
+    delayMessage: null,
+    vendorTimingUpdatedAt: null,
     status: "preparing",
     qrToken: getRandomToken(),
     createdAt: now,
@@ -333,7 +473,7 @@ export function createOrder(payload: {
   };
 
   const nextOrders = [order, ...getOrders()];
-  writeJSON(ORDERS_KEY, nextOrders, ORDERS_EVENT);
+  saveOrders(nextOrders);
   return order;
 }
 
@@ -342,13 +482,63 @@ export function updateOrderStatus(orderId: string, status: OrderStatus) {
     order.id === orderId
       ? {
           ...order,
+          prepMinutes: status === "ready" || status === "handoff" || status === "collected" ? 0 : order.prepMinutes,
+          delayState: status === "ready" || status === "handoff" || status === "collected" ? "on-time" : order.delayState,
+          delayMessage: status === "ready" || status === "handoff" || status === "collected" ? null : order.delayMessage,
           status,
+          estimatedTime: deriveEstimatedTime({
+            status,
+            prepMinutes: status === "ready" || status === "handoff" || status === "collected" ? 0 : order.prepMinutes,
+            delayState: status === "ready" || status === "handoff" || status === "collected" ? "on-time" : order.delayState,
+          }),
           updatedAt: new Date().toISOString(),
         }
       : order
   );
 
-  writeJSON(ORDERS_KEY, nextOrders, ORDERS_EVENT);
+  saveOrders(nextOrders);
+  return nextOrders.find((order) => order.id === orderId) ?? null;
+}
+
+export function updateOrderTiming(
+  orderId: string,
+  payload: {
+    prepMinutes?: number;
+    delayState?: OrderDelayState;
+    delayMessage?: string | null;
+    resetToBase?: boolean;
+  }
+) {
+  const now = new Date().toISOString();
+
+  const nextOrders = getOrders().map((order) => {
+    if (order.id !== orderId) return order;
+
+    const livePrepMinutes = getLivePrepMinutes(order);
+    const nextPrepMinutes = payload.resetToBase
+      ? order.basePrepMinutes
+      : typeof payload.prepMinutes === "number"
+        ? Math.max(0, Math.round(payload.prepMinutes))
+        : livePrepMinutes;
+    const nextDelayState = payload.delayState ?? order.delayState;
+    const nextDelayMessage = payload.delayMessage === undefined ? order.delayMessage : payload.delayMessage;
+
+    return {
+      ...order,
+      prepMinutes: nextPrepMinutes,
+      delayState: nextDelayState,
+      delayMessage: nextDelayState === "delayed" ? nextDelayMessage ?? "Sorry, your order will be late." : null,
+      vendorTimingUpdatedAt: now,
+      estimatedTime: deriveEstimatedTime({
+        status: order.status,
+        prepMinutes: nextPrepMinutes,
+        delayState: nextDelayState,
+      }),
+      updatedAt: now,
+    };
+  });
+
+  saveOrders(nextOrders);
   return nextOrders.find((order) => order.id === orderId) ?? null;
 }
 
@@ -388,6 +578,10 @@ function getStoredMenuOverrides() {
   return readJSON<Record<string, MenuCatalogItem[]>>(MENU_OVERRIDES_KEY, {});
 }
 
+function getStoredFavorites() {
+  return readJSON<Record<string, FavoriteMenuItem[]>>(FAVORITES_KEY, {});
+}
+
 export function getMenuItemsForOutlet(outletId: string) {
   const overrides = getStoredMenuOverrides();
   if (overrides[outletId]?.length) return overrides[outletId];
@@ -395,6 +589,16 @@ export function getMenuItemsForOutlet(outletId: string) {
   return (baseMenuData as MenuCatalogItem[])
     .filter((item) => item.canteenId === outletId)
     .map((item) => ({ ...item, description: item.description ?? "Freshly prepared at ByteHive." }));
+}
+
+export function getAllMenuItems() {
+  const overrides = getStoredMenuOverrides();
+  const outletIds = new Set<string>([
+    ...(baseMenuData as MenuCatalogItem[]).map((item) => item.canteenId),
+    ...Object.keys(overrides),
+  ]);
+
+  return Array.from(outletIds).flatMap((outletId) => getMenuItemsForOutlet(outletId));
 }
 
 export function saveMenuItemsForOutlet(outletId: string, items: MenuCatalogItem[]) {
@@ -410,6 +614,166 @@ export function subscribeToMenu(callback: () => void) {
   return subscribeToKey(MENU_EVENT, MENU_OVERRIDES_KEY, callback);
 }
 
+export function updateMenuItemsForOutlet(outletId: string, updater: (items: MenuCatalogItem[]) => MenuCatalogItem[]) {
+  const currentItems = getMenuItemsForOutlet(outletId);
+  const nextItems = updater(currentItems);
+  saveMenuItemsForOutlet(outletId, nextItems);
+  return nextItems;
+}
+
+export function setMenuItemsAvailability(outletId: string, itemIds: string[], isAvailable: boolean) {
+  const idSet = new Set(itemIds);
+  return updateMenuItemsForOutlet(outletId, (items) =>
+    items.map((item) => (idSet.has(item.id) ? { ...item, isAvailable } : item))
+  );
+}
+
+export function setMenuItemsPrice(outletId: string, itemIds: string[], price: number) {
+  const nextPrice = Math.max(0, Math.round(price * 100) / 100);
+  const idSet = new Set(itemIds);
+  return updateMenuItemsForOutlet(outletId, (items) =>
+    items.map((item) => (idSet.has(item.id) ? { ...item, price: nextPrice } : item))
+  );
+}
+
+export function adjustMenuItemsPriceByPercent(outletId: string, itemIds: string[], percent: number) {
+  const multiplier = 1 + percent / 100;
+  const idSet = new Set(itemIds);
+  return updateMenuItemsForOutlet(outletId, (items) =>
+    items.map((item) =>
+      idSet.has(item.id)
+        ? {
+            ...item,
+            price: Math.max(0, Math.round(item.price * multiplier * 100) / 100),
+          }
+        : item
+    )
+  );
+}
+
+export function createMenuItemForOutlet(outletId: string, item: MenuItemDraftInput) {
+  const normalizedName = item.name.trim();
+  const normalizedCategory = item.category.trim();
+  const price = Math.max(0, Math.round(item.price * 100) / 100);
+
+  if (!normalizedName || !normalizedCategory) {
+    return null;
+  }
+
+  const nextItem: MenuCatalogItem = {
+    id: `${outletId}-${Date.now()}`,
+    canteenId: outletId,
+    name: normalizedName,
+    category: normalizedCategory,
+    price,
+    description: item.description?.trim() || "Freshly prepared at ByteHive.",
+    image: item.image,
+    isAvailable: item.isAvailable ?? true,
+    isVeg: item.isVeg ?? true,
+  };
+
+  updateMenuItemsForOutlet(outletId, (items) => [nextItem, ...items]);
+  return nextItem;
+}
+
+export function getFavoriteItemsForUser(userName: string) {
+  if (!userName.trim()) return [];
+  return (getStoredFavorites()[userName] ?? []).sort((a, b) => b.savedAt.localeCompare(a.savedAt));
+}
+
+export function isFavoriteItemForUser(userName: string, itemId: string) {
+  if (!userName.trim() || !itemId.trim()) return false;
+  return getFavoriteItemsForUser(userName).some((item) => item.id === itemId);
+}
+
+export function saveFavoriteItemForUser(
+  userName: string,
+  item: Omit<FavoriteMenuItem, "savedAt" | "outletName"> & { outletName?: string }
+) {
+  if (!userName.trim()) return null;
+
+  const favorites = getStoredFavorites();
+  const currentItems = favorites[userName] ?? [];
+  const favoriteItem: FavoriteMenuItem = {
+    ...item,
+    outletName: item.outletName ?? getOutletMetaById(item.canteenId).name,
+    savedAt: new Date().toISOString(),
+  };
+  const nextItems = [favoriteItem, ...currentItems.filter((entry) => entry.id !== item.id)];
+
+  writeJSON(
+    FAVORITES_KEY,
+    {
+      ...favorites,
+      [userName]: nextItems,
+    },
+    FAVORITES_EVENT
+  );
+
+  return favoriteItem;
+}
+
+export function removeFavoriteItemForUser(userName: string, itemId: string) {
+  if (!userName.trim() || !itemId.trim()) return;
+
+  const favorites = getStoredFavorites();
+  const currentItems = favorites[userName] ?? [];
+  const nextItems = currentItems.filter((item) => item.id !== itemId);
+
+  writeJSON(
+    FAVORITES_KEY,
+    {
+      ...favorites,
+      [userName]: nextItems,
+    },
+    FAVORITES_EVENT
+  );
+}
+
+export function toggleFavoriteItemForUser(
+  userName: string,
+  item: Omit<FavoriteMenuItem, "savedAt" | "outletName"> & { outletName?: string }
+) {
+  if (isFavoriteItemForUser(userName, item.id)) {
+    removeFavoriteItemForUser(userName, item.id);
+    return false;
+  }
+
+  saveFavoriteItemForUser(userName, item);
+  return true;
+}
+
+export function subscribeToFavorites(callback: () => void) {
+  return subscribeToKey(FAVORITES_EVENT, FAVORITES_KEY, callback);
+}
+
 export function getOrdersSummaryTimestamp(isoDate: string) {
   return formatTimestamp(new Date(isoDate));
+}
+
+export function getRelativeTimeLabel(isoDate?: string | null, now = Date.now()) {
+  if (!isoDate) return null;
+
+  const diffMs = Math.max(0, now - new Date(isoDate).getTime());
+  const diffSeconds = Math.floor(diffMs / 1000);
+  if (diffSeconds < 10) return "just now";
+  if (diffSeconds < 60) return `${diffSeconds} sec ago`;
+
+  const diffMinutes = Math.floor(diffSeconds / 60);
+  if (diffMinutes < 60) return diffMinutes === 1 ? "1 min ago" : `${diffMinutes} min ago`;
+
+  const diffHours = Math.floor(diffMinutes / 60);
+  if (diffHours < 24) return diffHours === 1 ? "1 hr ago" : `${diffHours} hrs ago`;
+
+  const diffDays = Math.floor(diffHours / 24);
+  return diffDays === 1 ? "1 day ago" : `${diffDays} days ago`;
+}
+
+export function getOrderEtaLabel(order: ByteHiveOrder) {
+  return order.estimatedTime;
+}
+
+export function getOrderDelayCopy(order: ByteHiveOrder) {
+  if (order.delayState !== "delayed") return null;
+  return order.delayMessage ?? "Sorry, your order will be late.";
 }

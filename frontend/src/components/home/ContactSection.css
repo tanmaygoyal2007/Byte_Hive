@@ -170,10 +170,41 @@
     linear-gradient(180deg, #11161d 0%, #0b1016 100%);
 }
 
-:root[data-theme="dark"] .contact-section::before {
-  background:
-    radial-gradient(circle at 22% 18%, rgba(240, 138, 63, 0.1), transparent 28%),
-    radial-gradient(circle at 78% 26%, rgba(255, 255, 255, 0.03), transparent 24%);
+.contact-access-note {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.74);
+  font-size: 14px;
+}
+
+.contact-access-note button {
+  border: 0;
+  border-radius: 999px;
+  background: rgba(255, 140, 0, 0.16);
+  color: #ffb454;
+  font-weight: 700;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+@media (max-width: 768px) {
+  .contact-section {
+    padding: 80px 24px;
+  }
+  .contact-card-wrapper {
+    padding: 30px 20px;
+  }
+
+  .contact-access-note {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 :root[data-theme="dark"] .contact-card {
@@ -231,4 +262,10 @@
     animation: none;
     transition: none;
   }
+}
+
+[data-theme="light"] .contact-access-note {
+  background: rgba(0, 0, 0, 0.03);
+  border-color: rgba(0, 0, 0, 0.08);
+  color: rgba(0, 0, 0, 0.64);
 }

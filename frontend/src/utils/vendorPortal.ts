@@ -17,6 +17,22 @@ const VENDOR_STATUS_KEY = "vendorOutletOpen";
 const VENDOR_STATUS_EVENT = "bytehive-vendor-status-updated";
 const VENDOR_SESSION_EVENT = "bytehive-vendor-session-updated";
 
+export interface VendorOutletStatusRecord {
+  isOpen: boolean;
+  closedUntil?: string | null;
+  closureReason?: string | null;
+  closureMode?: "scheduled" | "manual";
+}
+
+export interface VendorOutletStatusInfo {
+  isOpen: boolean;
+  isTemporarilyClosed: boolean;
+  isManuallyClosed: boolean;
+  closedUntil: string | null;
+  closureReason: string | null;
+  closureMode: "scheduled" | "manual" | null;
+}
+
 function readJSON<T>(key: string, fallback: T): T {
   if (typeof window === "undefined") return fallback;
 
@@ -64,24 +80,169 @@ export function clearVendorSession() {
   window.dispatchEvent(new CustomEvent(VENDOR_SESSION_EVENT));
 }
 
+function normalizeStatusRecord(value: boolean | VendorOutletStatusRecord | undefined): VendorOutletStatusRecord {
+  if (typeof value === "boolean") {
+    return {
+      isOpen: value,
+      closedUntil: null,
+      closureReason: null,
+      closureMode: null,
+    };
+  }
+
+  return {
+    isOpen: value?.isOpen ?? true,
+    closedUntil: value?.closedUntil ?? null,
+    closureReason: value?.closureReason ?? null,
+    closureMode: value?.closureMode ?? null,
+  };
+}
+
+function getStoredVendorStatuses() {
+  return readJSON<Record<string, boolean | VendorOutletStatusRecord>>(VENDOR_STATUS_KEY, {});
+}
+
+function saveVendorStatuses(statuses: Record<string, boolean | VendorOutletStatusRecord>) {
+  writeJSON(VENDOR_STATUS_KEY, statuses, VENDOR_STATUS_EVENT);
+}
+
+export function getVendorOutletStatusInfo(outlet = getVendorOutlet()): VendorOutletStatusInfo {
+  if (!outlet) {
+    return {
+      isOpen: true,
+      isTemporarilyClosed: false,
+      isManuallyClosed: false,
+      closedUntil: null,
+      closureReason: null,
+      closureMode: null,
+    };
+  }
+
+  const statuses = getStoredVendorStatuses();
+  const normalized = normalizeStatusRecord(statuses[outlet]);
+  const closedUntilTime = normalized.closedUntil ? new Date(normalized.closedUntil).getTime() : null;
+  const isTemporarilyClosed = closedUntilTime !== null && closedUntilTime > Date.now();
+  const isManuallyClosed = normalized.isOpen === false && !isTemporarilyClosed;
+
+  if (!isTemporarilyClosed && normalized.closedUntil) {
+    const nextStatuses = {
+      ...statuses,
+      [outlet]: {
+        isOpen: true,
+        closedUntil: null,
+        closureReason: null,
+        closureMode: null,
+      },
+    };
+    saveVendorStatuses(nextStatuses);
+    return {
+      isOpen: true,
+      isTemporarilyClosed: false,
+      isManuallyClosed: false,
+      closedUntil: null,
+      closureReason: null,
+      closureMode: null,
+    };
+  }
+
+  return {
+    isOpen: normalized.isOpen && !isTemporarilyClosed && !isManuallyClosed,
+    isTemporarilyClosed,
+    isManuallyClosed,
+    closedUntil: isTemporarilyClosed ? normalized.closedUntil ?? null : null,
+    closureReason: normalized.closureReason ?? null,
+    closureMode: normalized.closureMode ?? null,
+  };
+}
+
 export function getVendorOutletStatus(outlet = getVendorOutlet()) {
-  const statuses = readJSON<Record<string, boolean>>(VENDOR_STATUS_KEY, {});
-  if (!outlet) return true;
-  return statuses[outlet] ?? true;
+  return getVendorOutletStatusInfo(outlet).isOpen;
 }
 
 export function setVendorOutletStatus(isOpen: boolean, outlet = getVendorOutlet()) {
   if (!outlet) return;
 
-  const statuses = readJSON<Record<string, boolean>>(VENDOR_STATUS_KEY, {});
-  writeJSON(
-    VENDOR_STATUS_KEY,
-    {
-      ...statuses,
-      [outlet]: isOpen,
+  const statuses = getStoredVendorStatuses();
+  saveVendorStatuses({
+    ...statuses,
+      [outlet]: {
+        isOpen,
+        closedUntil: null,
+        closureReason: null,
+        closureMode: null,
+      },
+  });
+}
+
+export function setVendorTemporaryClosure(durationMinutes: number, outlet = getVendorOutlet(), closureReason?: string | null) {
+  if (!outlet) return;
+
+  const statuses = getStoredVendorStatuses();
+  const closedUntil = new Date(Date.now() + Math.max(1, Math.round(durationMinutes)) * 60_000).toISOString();
+  saveVendorStatuses({
+    ...statuses,
+      [outlet]: {
+        isOpen: false,
+        closedUntil,
+        closureReason: closureReason?.trim() || `Temporarily closed for ${Math.max(1, Math.round(durationMinutes))} minutes.`,
+        closureMode: "scheduled",
+      },
+  });
+}
+
+export function setVendorScheduledClosure(closedUntil: string, outlet = getVendorOutlet(), closureReason?: string | null) {
+  if (!outlet) return;
+
+  const statuses = getStoredVendorStatuses();
+  saveVendorStatuses({
+    ...statuses,
+    [outlet]: {
+      isOpen: false,
+      closedUntil,
+      closureReason: closureReason?.trim() || null,
+      closureMode: "scheduled",
     },
-    VENDOR_STATUS_EVENT
-  );
+  });
+}
+
+export function setVendorManualClosure(outlet = getVendorOutlet(), closureReason?: string | null) {
+  if (!outlet) return;
+
+  const statuses = getStoredVendorStatuses();
+  saveVendorStatuses({
+    ...statuses,
+    [outlet]: {
+      isOpen: false,
+      closedUntil: null,
+      closureReason: closureReason?.trim() || "Closed until reopened manually.",
+      closureMode: "manual",
+    },
+  });
+}
+
+export function clearVendorTemporaryClosure(outlet = getVendorOutlet()) {
+  if (!outlet) return;
+  setVendorOutletStatus(true, outlet);
+}
+
+export function getVendorClosureLabel(outlet = getVendorOutlet()) {
+  const status = getVendorOutletStatusInfo(outlet);
+  if (status.isTemporarilyClosed && status.closedUntil) {
+    const closedUntilDate = new Date(status.closedUntil);
+    const sameDay = closedUntilDate.toDateString() === new Date().toDateString();
+    const dayLabel = sameDay ? "today" : "tomorrow";
+    const timeLabel = closedUntilDate.toLocaleTimeString("en-IN", {
+      hour: "numeric",
+      minute: "2-digit",
+    });
+    return `Closed until ${timeLabel} ${dayLabel}`;
+  }
+
+  if (status.isManuallyClosed) {
+    return status.closureReason ?? "Closed until reopened manually";
+  }
+
+  return null;
 }
 
 export function getVendorLocation(outlet: string) {
@@ -114,6 +275,24 @@ export function subscribeToVendorStatus(callback: () => void) {
 
   return () => {
     window.removeEventListener(VENDOR_STATUS_EVENT, callback as EventListener);
+    window.removeEventListener("storage", handleStorage);
+  };
+}
+
+export function subscribeToVendorSession(callback: () => void) {
+  if (typeof window === "undefined") {
+    return () => undefined;
+  }
+
+  const handleStorage = (event: StorageEvent) => {
+    if (event.key === VENDOR_OUTLET_KEY) callback();
+  };
+
+  window.addEventListener(VENDOR_SESSION_EVENT, callback as EventListener);
+  window.addEventListener("storage", handleStorage);
+
+  return () => {
+    window.removeEventListener(VENDOR_SESSION_EVENT, callback as EventListener);
     window.removeEventListener("storage", handleStorage);
   };
 }

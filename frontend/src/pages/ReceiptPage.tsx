@@ -6,7 +6,7 @@ import Navbar from "../components/layout/Navbar";
 import ReceiptCard from "../components/receipt/ReceiptCard";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
-import { getOrderById, getQrValueForOrder } from "../utils/orderPortal";
+import { getOrderById, getOrderDelayCopy, getQrValueForOrder } from "../utils/orderPortal";
 
 interface LocationState {
   paymentId?: string;
@@ -35,6 +35,7 @@ const ReceiptPage: React.FC = () => {
         outletName: storedOrder.outletName,
         pickupLocation: storedOrder.pickupLocation,
         estimatedTime: storedOrder.estimatedTime,
+        delayMessage: getOrderDelayCopy(storedOrder),
         items: storedOrder.items.map((item) => ({
           name: item.name,
           quantity: item.quantity,
@@ -52,6 +53,7 @@ const ReceiptPage: React.FC = () => {
         outletName: "Punjabi Bites",
         pickupLocation: "Block A - Basement",
         estimatedTime: "15-20 minutes",
+        delayMessage: null,
         items: state?.items?.map((item) => ({ name: item.name, quantity: item.quantity, price: item.price })) ?? [
           { name: "Chole Bhature", quantity: 2, price: 120 },
           { name: "Lassi", quantity: 1, price: 40 },
