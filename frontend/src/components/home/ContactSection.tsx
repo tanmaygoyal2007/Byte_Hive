@@ -115,6 +115,7 @@ const ContactSection: React.FC = () => {
     }
     setIsLoading(true);
     setStatus("idle");
+
     try {
       await emailjs.send(
         SERVICE_ID,
@@ -129,6 +130,10 @@ const ContactSection: React.FC = () => {
       );
       saveSubmissionCount(userKey, submissionCount + 1);
       setStatus("success");
+      setName("");
+      setEmail("");
+      setPhone("");
+      setQuestion("");
     } catch (err) {
       console.error("EmailJS error:", err);
       setStatus("error");
@@ -138,36 +143,78 @@ const ContactSection: React.FC = () => {
   };
 
   return (
-    <motion.section 
-      id="about" 
-      className="contact-section"
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      viewport={{ once: true }}
-      transition={{ duration: 1 }}
-    >
-      {/* Background Glow behind the card */}
-      <div className="section-glow"></div>
+    <section id="about" className="contact-section">
+      <div className="contact-inner">
+        <h1 className="contact-title">
+          <span>Have a question in your mind?</span>
+          <span>Let us help you!</span>
+        </h1>
 
-      <div className="contact-container">
-        <motion.div 
-          className="section-header"
-          initial={{ y: 30, opacity: 0 }}
-          whileInView={{ y: 0, opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-        >
-          <h1 className="contact-title glow-text">Have a question in your mind?</h1>
-          <p className="subtitle">Let us help you! Our team is just a message away.</p>
-        </motion.div>
+        {/* Success message */}
+        {status === "success" && (
+          <div className="contact-alert contact-alert-success">
+            ✅ Your question has been submitted! We'll get back to you soon.
+          </div>
+        )}
 
-        <div className="contact-centered-wrapper">
-          <motion.div 
-            className="contact-card-wrapper"
-            initial={{ scale: 0.95, opacity: 0 }}
-            whileInView={{ scale: 1, opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ type: "spring", stiffness: 100, damping: 20, delay: 0.4 }}
+        {/* Error message */}
+        {status === "error" && (
+          <div className="contact-alert contact-alert-error">
+            ❌ Please fill in your name, email and question before submitting.
+          </div>
+        )}
+
+        <form className="contact-card" onSubmit={handleSubmit}>
+          <div className="row">
+            <div className="input-group">
+              <label>Name</label>
+              <input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Your name"
+                disabled={isLoading}
+                required
+              />
+            </div>
+
+            <div className="input-group">
+              <label>Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your.email@college.edu"
+                disabled={isLoading}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="input-group full">
+            <label>Contact Number</label>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="+1 (555) 000-0000"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="input-group full">
+            <label>Your Question</label>
+            <textarea
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              placeholder="Tell us what's on your mind..."
+              disabled={isLoading}
+              required
+            />
+          </div>
+
+          <button
+            className={`submit-btn ${isLoading ? "submit-btn-loading" : ""}`}
+            type="submit"
+            disabled={isLoading}
           >
             <AnimatePresence mode="wait">
               {status === "success" ? (
@@ -292,7 +339,7 @@ const ContactSection: React.FC = () => {
           </motion.div>
         </div>
       </div>
-    </motion.section>
+    </section>
   );
 };
 

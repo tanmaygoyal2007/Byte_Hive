@@ -1,32 +1,38 @@
-/* src/pages/HomePage.css */
 .homepage {
-  width: 100%;
+  background: var(--home-surface-primary);
   min-height: 100vh;
-  position: relative;
-  background-color: #000000; /* True Black background */
-  color: #ffffff;
-  overflow-x: hidden;
-  transition: background-color 0.5s ease, color 0.5s ease;
+  color: var(--text-primary);
+  padding-top: 70px;
 }
 
-/* Light Mode Overrides (if data-theme="light" is on body/root) */
-[data-theme="light"] .homepage {
-  background-color: #FAFAFA;
-  color: #000000;
-}
-
-.content-layer {
-  position: relative;
-  z-index: 1;
-}
-
-/* Base fade-in for homepage sections only */
 .homepage section {
+  scroll-margin-top: 112px;
   width: 100%;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  position: relative;
+}
+
+.homepage-footer-divider {
+  height: clamp(72px, 10vw, 132px);
+  width: 100%;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--home-surface-secondary) 92%, transparent) 0%,
+      var(--home-surface-secondary) 100%
+    );
+  border-top: 1px solid color-mix(in srgb, var(--border-soft) 72%, transparent);
+}
+
+.homepage .homepage-footer-divider + .footer {
+  border-top: none;
+  padding-top: 0;
+}
+
+@media (max-width: 900px) {
+  .homepage {
+    padding-top: 66px;
+  }
+
+  .homepage-footer-divider {
+    height: 56px;
+  }
 }

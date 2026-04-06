@@ -1,107 +1,101 @@
-/* src/components/home/PopularCanteenCard.css */
 .canteen-card {
-  position: relative;
-  border-radius: 32px;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  border: 1px solid rgba(255, 255, 255, 0.05); /* Slight border for dark mode */
-  cursor: pointer;
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  transition: border-color 0.4s ease, box-shadow 0.4s ease;
-  height: 100%;
-}
-
-.canteen-card:hover {
-  border-color: #FF8C00;
-  box-shadow: 0 0 30px rgba(255, 140, 0, 0.3);
-}
-
-.canteen-card.featured {
-  grid-area: featured;
-}
-
-.card-image-wrapper {
-  position: absolute;
-  top: 0;
-  left: 0;
+  background: transparent;
+  padding: 0 8px;
+  text-align: center;
   width: 100%;
-  height: 100%;
-  z-index: -2;
+  animation: canteenFade 0.7s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.canteen-card-bg-img {
+.canteen-card:nth-child(1) {
+  animation-delay: 0.08s;
+}
+
+.canteen-card:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.canteen-card:nth-child(3) {
+  animation-delay: 0.24s;
+}
+
+.canteen-card-media {
+  width: min(100%, 220px);
+  aspect-ratio: 1;
+  margin: 0 auto;
+  border-radius: 999px;
+  overflow: hidden;
+  box-shadow: 0 16px 34px rgba(76, 58, 41, 0.16);
+  transition: transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+}
+
+.canteen-card:hover .canteen-card-media {
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 24px 44px rgba(76, 58, 41, 0.22);
+  filter: saturate(1.04);
+}
+
+.canteen-card img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+  display: block;
+  transition: transform 0.4s ease;
 }
 
-.canteen-card-overlay {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 60%;
-  background: linear-gradient(0deg, rgba(0,0,0,0.8) 0%, transparent 100%);
-  z-index: -1;
-  transition: opacity 0.4s ease;
-}
-
-.canteen-card:hover .canteen-card-overlay {
-  opacity: 0.9;
-}
-
-.card-content {
-  padding: 24px;
-  z-index: 1;
+.canteen-card:hover img {
+  transform: scale(1.05);
 }
 
 .canteen-card h3 {
-  font-size: 24px;
-  font-weight: 800;
-  color: #fff;
-  margin-bottom: 8px;
-  letter-spacing: -0.5px;
+  margin: 22px 0 0;
+  color: var(--text-primary);
+  font-size: 1.1rem;
+  letter-spacing: -0.04em;
 }
 
-.canteen-card.featured h3 {
-  font-size: 32px;
+.canteen-card .desc {
+  margin: 8px 0 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
 }
 
-.desc {
-  font-size: 14px;
-  color: rgba(255, 255, 255, 0.7);
-  margin-bottom: 16px;
-  line-height: 1.5;
-  max-width: 100%;
-}
-
-.view-btn {
-  background: #FF8C00;
-  color: #fff;
-  padding: 12px 28px;
-  border-radius: 50px;
-  border: none;
-  font-weight: 700;
-  font-size: 14px;
+.canteen-card .view-btn {
+  margin-top: 16px;
+  padding: 11px 16px;
+  border-radius: 12px;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--surface-card) 92%, transparent);
+  color: var(--text-primary);
   cursor: pointer;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  font-size: 0.9rem;
+  font-weight: 700;
+  box-shadow: 0 14px 24px rgba(76, 58, 41, 0.08);
+  transition: transform 0.22s ease, border-color 0.22s ease, color 0.22s ease, box-shadow 0.22s ease;
 }
 
-.view-btn:hover {
+.canteen-card .view-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(255, 140, 0, 0.4);
+  border-color: color-mix(in srgb, var(--accent) 36%, transparent);
+  color: var(--accent);
+  box-shadow: 0 16px 28px rgba(76, 58, 41, 0.1);
 }
 
-/* Light Mode Card Adjustments */
-[data-theme="light"] .canteen-card {
-  background: rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.05);
+.canteen-card .view-btn span {
+  display: inline-block;
+  transition: transform 0.22s ease;
 }
 
-[data-theme="light"] .canteen-card-overlay {
-  background: linear-gradient(0deg, rgba(0,0,0,0.4) 0%, transparent 100%);
+.canteen-card .view-btn:hover span {
+  transform: translateX(3px);
+}
+
+@keyframes canteenFade {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

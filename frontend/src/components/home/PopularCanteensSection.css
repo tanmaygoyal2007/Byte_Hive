@@ -1,124 +1,166 @@
-/* src/components/home/PopularCanteensSection.css */
 .popular {
-  height: 100vh;
-  padding: 60px 40px;
-  background: transparent;
   position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  overflow: hidden;
-}
-
-.popular-container {
-  max-width: 1400px;
-  width: 100%;
-  margin: 0 auto;
-  height: 100%;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.section-header {
+  isolation: isolate;
+  padding: 86px 24px 108px;
+  color: var(--text-primary);
   text-align: center;
-  margin-bottom: 40px;
-  opacity: 0;
-  transform: translateY(20px);
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-  transition-delay: 0s;
+  overflow: hidden;
+  background: var(--home-surface-primary);
 }
 
-.popular.visible .section-header {
-  opacity: 1;
-  transform: translateY(0);
+.popular::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 82% 24%, color-mix(in srgb, var(--accent) 6%, transparent), transparent 26%);
+  z-index: -1;
 }
 
-.section-header h2 {
-  font-size: clamp(32px, 5vw, 64px);
-  font-weight: 800;
-  margin-bottom: 12px;
-  letter-spacing: -2px;
-  line-height: 1.1;
-}
-
-.glow-text {
-  background: linear-gradient(135deg, #fff 30%, #FF8C00 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  text-shadow: 0 0 30px rgba(255, 140, 0, 0.1);
-}
-
-.subtitle {
-  font-size: 18px;
-  color: rgba(255, 255, 255, 0.6);
-  max-width: 600px;
+.popular-inner {
+  width: min(100%, 1360px);
   margin: 0 auto;
 }
 
-.canteen-bento-grid {
+.popular-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 18%, transparent);
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  animation: popularPillEnter 0.7s cubic-bezier(0.16, 1, 0.3, 1), popularPillPulse 3.8s ease-in-out 0.75s infinite;
+}
+
+.popular-kicker::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, transparent 22%, rgba(255, 255, 255, 0.38) 50%, transparent 78%);
+  transform: translateX(-140%);
+  animation: popularPillShine 5.2s ease-in-out 1.2s infinite;
+  z-index: -1;
+}
+
+.popular-kicker-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--accent);
+  box-shadow: 0 0 0 0 rgba(240, 111, 7, 0.24);
+  animation: popularDotPulse 2.7s ease-in-out infinite;
+}
+
+.popular h2 {
+  margin: 0;
+  font-size: clamp(2.55rem, 4vw, 4rem);
+  letter-spacing: -0.07em;
+  animation: popularHeadingIn 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.popular .subtitle {
+  color: var(--text-muted);
+  margin: 12px auto 46px;
+  font-size: 1rem;
+  animation: popularHeadingIn 0.82s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.canteen-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  grid-template-rows: 1fr 1fr;
-  grid-template-areas: 
-    "featured quick1"
-    "featured quick2";
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 24px;
-  width: 100%;
-  height: 100%;
-  max-height: 75vh;
+  align-items: start;
+  max-width: 980px;
+  margin: 0 auto;
+  padding-top: 10px;
 }
 
-/* Initial Hidden State for Cards */
-.canteen-card {
-  opacity: 0;
-  transform: translateY(50px) scale(0.98);
-  will-change: opacity, transform;
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-}
+@media (max-width: 980px) {
+  .popular {
+    padding: 64px 18px 88px;
+  }
 
-.popular.visible .canteen-card {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-}
-
-/* Staggered Delays */
-.popular.visible .featured {
-  transition-delay: 0.1s;
-}
-
-.popular.visible .canteen-card:nth-of-type(2) {
-  transition-delay: 0.25s;
-}
-
-.popular.visible .canteen-card:nth-of-type(3) {
-  transition-delay: 0.4s;
-}
-
-/* Map individual children to areas if they have classes, but since we map layout prop to class: */
-.canteen-card.featured {
-  grid-area: featured;
-}
-
-/* Quick picks just flow into the other slots, but I'll ensure they are handled */
-.canteen-card.quick:nth-of-type(2) { grid-area: quick1; }
-.canteen-card.quick:nth-of-type(3) { grid-area: quick2; }
-
-@media (max-width: 1024px) {
-  .canteen-bento-grid {
-    grid-template-columns: 1fr;
-    grid-template-rows: auto;
-    grid-template-areas: 
-      "featured"
-      "quick1"
-      "quick2";
+  .canteen-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
-@media (max-width: 768px) {
-  .popular {
-    padding: 80px 24px;
+@media (max-width: 640px) {
+  .canteen-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@keyframes popularHeadingIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes popularPillEnter {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes popularPillPulse {
+  0%,
+  100% {
+    transform: translateY(0);
+    box-shadow: 0 0 0 rgba(248, 120, 30, 0);
+  }
+  50% {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 28px rgba(248, 120, 30, 0.12);
+  }
+}
+
+@keyframes popularPillShine {
+  0%,
+  100% {
+    transform: translateX(-140%);
+  }
+  45%,
+  65% {
+    transform: translateX(140%);
+  }
+}
+
+@keyframes popularDotPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(240, 111, 7, 0.24);
+  }
+  50% {
+    transform: scale(1.14);
+    box-shadow: 0 0 0 7px rgba(240, 111, 7, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .popular-kicker,
+  .popular h2,
+  .popular .subtitle {
+    animation: none;
   }
 }

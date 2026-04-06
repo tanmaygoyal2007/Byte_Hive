@@ -23,6 +23,8 @@ body,
   --dropdown-bg: #fffaf4;
   --surface-muted: rgba(215, 111, 33, 0.08);
   --surface-card: rgba(255, 255, 255, 0.82);
+  --home-surface-primary: linear-gradient(180deg, #fffdf9 0%, #f7f1ea 100%);
+  --home-surface-secondary: linear-gradient(180deg, #f5ede5 0%, #fffaf5 100%);
   --text-primary: #1f1f1f;
   --text-muted: #6d655d;
   --border-soft: rgba(117, 95, 71, 0.18);
@@ -33,13 +35,17 @@ body,
   color-scheme: dark;
   --accent: #f08a3f;
   --accent-soft: rgba(240, 138, 63, 0.45);
-  --bg-base: #0f0d0b;
-  --bg-gradient: radial-gradient(circle at top left, rgba(240, 138, 63, 0.1), transparent 24%),
-    linear-gradient(180deg, #12100e 0%, #090807 100%);
+  --bg-base: #0c0e12;
+  --bg-gradient:
+    radial-gradient(circle at top center, rgba(255, 255, 255, 0.035), transparent 24%),
+    radial-gradient(circle at bottom right, rgba(255, 255, 255, 0.02), transparent 28%),
+    linear-gradient(180deg, #11141a 0%, #090b0f 100%);
   --nav-surface: rgba(18, 16, 14, 0.92);
   --dropdown-bg: #171412;
-  --surface-muted: rgba(240, 138, 63, 0.12);
-  --surface-card: rgba(24, 21, 19, 0.86);
+  --surface-muted: rgba(255, 255, 255, 0.06);
+  --surface-card: rgba(20, 24, 31, 0.86);
+  --home-surface-primary: linear-gradient(180deg, #10141a 0%, #0c1016 100%);
+  --home-surface-secondary: linear-gradient(180deg, #141920 0%, #10151c 100%);
   --text-primary: #f5efe9;
   --text-muted: #c7b8aa;
   --border-soft: rgba(255, 255, 255, 0.1);
