@@ -6,7 +6,7 @@ import {
   verifyPayment,
 } from "../../services/paymentService";
 import { createOrder, getCurrentUserSession, getOutletMetaById, requestAuthPrompt } from "../../utils/orderPortal";
-import { getVendorOutletStatus, openVendorPortalWindow } from "../../utils/vendorPortal";
+import { getVendorClosureLabel, getVendorOutletStatus, subscribeToVendorStatus } from "../../utils/vendorPortal";
 
 interface CartItem {
   id: string;
@@ -50,10 +50,39 @@ export default function PaymentButton({
   const [status, setStatus] = useState<"idle" | "loading" | "processing" | "success" | "failed">("idle");
   const [error, setError] = useState<string | null>(null);
   const [scriptReady, setScriptReady] = useState(false);
+  const outletMeta = getOutletMetaById(canteenId);
+  const [isOutletOpen, setIsOutletOpen] = useState(() =>
+    canteenId && canteenId !== "default" ? getVendorOutletStatus(outletMeta.name) : true
+  );
+  const [closureLabel, setClosureLabel] = useState<string | null>(() =>
+    canteenId && canteenId !== "default" ? getVendorClosureLabel(outletMeta.name) : null
+  );
 
   useEffect(() => {
     loadRazorpayScript().then(setScriptReady);
   }, []);
+
+  useEffect(() => {
+    const syncVendorStatus = () => {
+      if (!canteenId || canteenId === "default") {
+        setIsOutletOpen(true);
+        setClosureLabel(null);
+        return;
+      }
+
+      setIsOutletOpen(getVendorOutletStatus(outletMeta.name));
+      setClosureLabel(getVendorClosureLabel(outletMeta.name));
+    };
+
+    syncVendorStatus();
+    const unsubscribe = subscribeToVendorStatus(syncVendorStatus);
+    const interval = window.setInterval(syncVendorStatus, 30000);
+
+    return () => {
+      window.clearInterval(interval);
+      unsubscribe();
+    };
+  }, [canteenId, outletMeta.name]);
 
   const handlePayment = async () => {
     if (!scriptReady) {
@@ -90,10 +119,8 @@ export default function PaymentButton({
       return;
     }
 
-    const outletMeta = getOutletMetaById(canteenId);
-    if (!getVendorOutletStatus(outletMeta.name)) {
-      setError(`${outletMeta.name} is currently closed. Please try again after the vendor reopens the outlet.`);
-      openVendorPortalWindow(outletMeta.name);
+    if (!isOutletOpen) {
+      setError(closureLabel ?? `${outletMeta.name} is currently closed for checkout. Please try again after the vendor reopens the outlet.`);
       return;
     }
 
@@ -180,13 +207,13 @@ export default function PaymentButton({
       )}
 
       <button
-        className={`payment-btn payment-btn--${status}`}
+        className={`payment-btn payment-btn--${!isOutletOpen && !isLoading ? "blocked" : status}`}
         onClick={handlePayment}
         disabled={isLoading || items.length === 0}
       >
         {status === "loading" && <><span className="payment-spinner" /> Creating order...</>}
         {status === "processing" && <><span className="payment-spinner" /> Processing...</>}
-        {status === "idle" && <>Pay Rs {total.toFixed(2)} Securely</>}
+        {status === "idle" && <>{isOutletOpen ? `Pay Rs ${total.toFixed(2)} Securely` : "Checkout Temporarily Closed"}</>}
         {status === "success" && <>Payment Successful!</>}
         {status === "failed" && <>Try Again</>}
       </button>

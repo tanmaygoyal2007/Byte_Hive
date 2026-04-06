@@ -9,6 +9,7 @@ import { Link } from "react-router-dom";
 import CartContext from "../context/CartContext";
 import { resolveMenuImageUrl } from "../utils/menuImage";
 import { getOutletMetaById } from "../utils/orderPortal";
+import { getVendorClosureLabel, getVendorOutletStatus } from "../utils/vendorPortal";
 
 function CartPage() {
   const ctx = useContext(CartContext);
@@ -19,6 +20,8 @@ function CartPage() {
   const subtotal = total();
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const outletMeta = items[0]?.canteenId ? getOutletMetaById(items[0].canteenId) : null;
+  const isOutletOpen = outletMeta ? getVendorOutletStatus(outletMeta.name) : true;
+  const closureLabel = outletMeta ? getVendorClosureLabel(outletMeta.name) : null;
 
   return (
     <div className="cart-page">
@@ -48,6 +51,11 @@ function CartPage() {
               </div>
             </div>
           </div>
+          {!isOutletOpen && outletMeta && (
+            <div className="payment-error" style={{ marginTop: "1rem" }}>
+              <span>{closureLabel ?? `${outletMeta.name} is temporarily closed for checkout. You can keep items in cart and try again once it reopens.`}</span>
+            </div>
+          )}
 
           <div className="cart-toolbar">
             <Link to="/explore" className="cart-toolbar-btn cart-toolbar-btn--ghost">

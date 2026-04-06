@@ -53,6 +53,11 @@
     font-weight: 700;
 }
 
+.open-badge-closed {
+    background: rgba(220, 38, 38, 0.14);
+    color: #ef4444;
+}
+
 .timings {
     color: var(--text-muted);
     font-weight: 500;

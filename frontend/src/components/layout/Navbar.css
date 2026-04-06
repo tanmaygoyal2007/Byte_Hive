@@ -446,6 +446,48 @@
   color: var(--text-primary);
 }
 
+.delay-order-toast {
+  position: fixed;
+  right: 22px;
+  bottom: 100px;
+  z-index: 225;
+  width: min(100%, 360px);
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(208, 71, 71, 0.24);
+  background: color-mix(in srgb, var(--dropdown-bg) 94%, rgba(208, 71, 71, 0.1));
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.18);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.delay-order-toast-copy {
+  flex: 1;
+}
+
+.delay-order-toast-copy strong {
+  display: block;
+  color: #d04747;
+  margin-bottom: 6px;
+}
+
+.delay-order-toast-copy p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.delay-order-toast-close {
+  border: 0;
+  border-radius: 12px;
+  background: rgba(208, 71, 71, 0.12);
+  color: #d04747;
+  padding: 10px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 @media (max-width: 1120px) {
   .navbar { padding: 11px 24px; }
   .navbar-logo .logo-box { height: 40px; min-width: 40px; }
@@ -491,4 +533,10 @@
   .logo-text { font-size: 1.25rem; }
   .theme-btn, .menu-toggle { border-width: 1.5px; }
   .navbar-actions { gap: 8px; }
+  .delay-order-toast {
+    right: 12px;
+    left: 12px;
+    width: auto;
+    bottom: 86px;
+  }
 }

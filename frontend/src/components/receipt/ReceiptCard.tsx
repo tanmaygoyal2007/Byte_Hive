@@ -16,6 +16,7 @@ interface ReceiptCardProps {
   outletName: string;
   pickupLocation: string;
   estimatedTime: string;
+  delayMessage?: string | null;
   items: Item[];
   subtotal: number;
   taxes: number;
@@ -33,6 +34,7 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
   outletName,
   pickupLocation,
   estimatedTime,
+  delayMessage,
   items,
   subtotal,
   taxes,
@@ -82,6 +84,7 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
               <MapPin size={16} />
               {pickupLocation}
             </p>
+            {delayMessage && <p className="receipt-delay-note">{delayMessage}</p>}
           </div>
 
           <div className="qr-section">

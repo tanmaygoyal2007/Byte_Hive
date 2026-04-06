@@ -20,8 +20,8 @@
   z-index: 1;
 }
 
-/* Base fade-in for sections as they enter viewport */
-section {
+/* Base fade-in for homepage sections only */
+.homepage section {
   width: 100%;
   min-height: 100vh;
   display: flex;

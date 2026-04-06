@@ -1,7 +1,8 @@
 {
   "private": true,
   "scripts": {
-    "dev": "node scripts/dev-stack.mjs",
+    "dev": "node scripts/dev.mjs",
+    "dev:stack": "node scripts/dev-stack.mjs",
     "dev:frontend": "npm --prefix frontend run dev",
     "dev:backend": "cross-env FIREBASE_AUTH_EMULATOR_HOST=127.0.0.1:19199 FIRESTORE_EMULATOR_HOST=127.0.0.1:18180 FIREBASE_PROJECT_ID=demo-bytehive npm --prefix backend run dev",
     "dev:firebase": "firebase emulators:start --only auth,firestore"

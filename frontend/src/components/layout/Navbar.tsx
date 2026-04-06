@@ -10,6 +10,7 @@ import StudentLoginModal from "../portal/StudentLoginModal";
 import {
   getActiveOrdersForUser,
   getCurrentUserSession,
+  getOrderDelayCopy,
   getQrValueForOrder,
   setCurrentUserSession,
   subscribeToAuthPrompt,
@@ -24,21 +25,22 @@ type AuthRole = UserRole;
 type PendingAuthRole = "student" | "faculty" | null;
 
 const READY_PROMPT_KEY = "bytehiveReadyPromptState";
+const DELAY_PROMPT_KEY = "bytehiveDelayPromptState";
 
-function readReadyPromptState() {
+function readPromptState(key: string) {
   if (typeof window === "undefined") return {} as Record<string, string>;
 
   try {
-    const stored = localStorage.getItem(READY_PROMPT_KEY);
+    const stored = localStorage.getItem(key);
     return stored ? JSON.parse(stored) as Record<string, string> : {};
   } catch {
     return {};
   }
 }
 
-function saveReadyPromptState(state: Record<string, string>) {
+function savePromptState(key: string, state: Record<string, string>) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(READY_PROMPT_KEY, JSON.stringify(state));
+  localStorage.setItem(key, JSON.stringify(state));
 }
 
 const Navbar: React.FC = () => {
@@ -63,7 +65,8 @@ const Navbar: React.FC = () => {
   const [isMobileView, setIsMobileView] = useState(false);
   const [readyOrderPrompt, setReadyOrderPrompt] = useState<ByteHiveOrder | null>(null);
   const [handoffPrompt, setHandoffPrompt] = useState<ByteHiveOrder | null>(null);
-  const { user, authRole, signIn, signUp, logout } = useAuth();
+  const [delayedOrderPrompt, setDelayedOrderPrompt] = useState<ByteHiveOrder | null>(null);
+  const { user, authRole, signIn, signInWithGoogle, signUp, logout } = useAuth();
 
   const location = useLocation();
   const blockDropdownRef = useRef<HTMLDivElement>(null);
@@ -135,14 +138,19 @@ const Navbar: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    setIsMenuOpen(false);
-    setIsBlockOpen(false);
-    setIsPortalOpen(false);
+    const timeout = window.setTimeout(() => {
+      setIsMenuOpen(false);
+      setIsBlockOpen(false);
+      setIsPortalOpen(false);
+    }, 0);
+
+    return () => window.clearTimeout(timeout);
   }, [location.pathname, location.hash]);
 
   useEffect(() => {
     if (user) {
-      setGuestMode(false);
+      const timeout = window.setTimeout(() => setGuestMode(false), 0);
+      return () => window.clearTimeout(timeout);
     }
   }, [user]);
 
@@ -152,6 +160,7 @@ const Navbar: React.FC = () => {
         setHasActiveOrder(false);
         setReadyOrderPrompt(null);
         setHandoffPrompt(null);
+        setDelayedOrderPrompt(null);
         return;
       }
 
@@ -161,16 +170,19 @@ const Navbar: React.FC = () => {
       if (location.pathname.startsWith("/vendor")) {
         setReadyOrderPrompt(null);
         setHandoffPrompt(null);
+        setDelayedOrderPrompt(null);
         return;
       }
 
-      const promptState = readReadyPromptState();
+      const readyPromptState = readPromptState(READY_PROMPT_KEY);
+      const delayPromptState = readPromptState(DELAY_PROMPT_KEY);
       const latestHandoffOrder = activeOrders.find((order) => order.status === "handoff") ?? null;
       const latestReadyOrder = activeOrders.find((order) => order.status === "ready") ?? null;
+      const latestDelayedOrder = activeOrders.find((order) => order.delayState === "delayed") ?? null;
 
       if (
         latestHandoffOrder &&
-        promptState[latestHandoffOrder.id] !== latestHandoffOrder.updatedAt
+        readyPromptState[latestHandoffOrder.id] !== latestHandoffOrder.updatedAt
       ) {
         setHandoffPrompt(latestHandoffOrder);
       } else if (!latestHandoffOrder) {
@@ -179,18 +191,27 @@ const Navbar: React.FC = () => {
 
       if (
         latestReadyOrder &&
-        promptState[latestReadyOrder.id] !== latestReadyOrder.updatedAt &&
+        readyPromptState[latestReadyOrder.id] !== latestReadyOrder.updatedAt &&
         (!latestHandoffOrder || latestHandoffOrder.id !== latestReadyOrder.id)
       ) {
         setReadyOrderPrompt(latestReadyOrder);
       } else if (!latestReadyOrder || latestHandoffOrder?.id === latestReadyOrder.id) {
         setReadyOrderPrompt(null);
       }
+
+      if (
+        latestDelayedOrder &&
+        delayPromptState[latestDelayedOrder.id] !== latestDelayedOrder.updatedAt
+      ) {
+        setDelayedOrderPrompt(latestDelayedOrder);
+      } else if (!latestDelayedOrder) {
+        setDelayedOrderPrompt(null);
+      }
     };
 
     syncOrders();
     return subscribeToOrders(syncOrders);
-  }, [authRole, location.pathname, userName]);
+  }, [authRole, guestMode, location.pathname, userName]);
 
   useEffect(() => {
     return subscribeToAuthPrompt((detail) => {
@@ -275,8 +296,8 @@ const Navbar: React.FC = () => {
 
   const handleReadyPromptDismiss = () => {
     if (!readyOrderPrompt) return;
-    saveReadyPromptState({
-      ...readReadyPromptState(),
+    savePromptState(READY_PROMPT_KEY, {
+      ...readPromptState(READY_PROMPT_KEY),
       [readyOrderPrompt.id]: readyOrderPrompt.updatedAt,
     });
     setReadyOrderPrompt(null);
@@ -284,8 +305,8 @@ const Navbar: React.FC = () => {
 
   const handleHandoffPromptDismiss = () => {
     if (!handoffPrompt) return;
-    saveReadyPromptState({
-      ...readReadyPromptState(),
+    savePromptState(READY_PROMPT_KEY, {
+      ...readPromptState(READY_PROMPT_KEY),
       [handoffPrompt.id]: handoffPrompt.updatedAt,
     });
     setHandoffPrompt(null);
@@ -294,11 +315,20 @@ const Navbar: React.FC = () => {
   const handleOrderPicked = () => {
     if (!handoffPrompt) return;
     updateOrderStatus(handoffPrompt.id, "collected");
-    saveReadyPromptState({
-      ...readReadyPromptState(),
+    savePromptState(READY_PROMPT_KEY, {
+      ...readPromptState(READY_PROMPT_KEY),
       [handoffPrompt.id]: handoffPrompt.updatedAt,
     });
     setHandoffPrompt(null);
+  };
+
+  const handleDelayPromptDismiss = () => {
+    if (!delayedOrderPrompt) return;
+    savePromptState(DELAY_PROMPT_KEY, {
+      ...readPromptState(DELAY_PROMPT_KEY),
+      [delayedOrderPrompt.id]: delayedOrderPrompt.updatedAt,
+    });
+    setDelayedOrderPrompt(null);
   };
 
   const isDarkMode = theme === "dark";
@@ -318,7 +348,8 @@ const Navbar: React.FC = () => {
         <div className={`navbar-menu ${isMenuOpen ? "navbar-menu-open" : ""}`}>
           {showPrimaryNav && <Link to="/" className="nav-link">Home</Link>}
           {showPrimaryNav && <Link to="/#popular" className="nav-link">Popular</Link>}
-          <Link to="/about" className="nav-link">About Us</Link>
+          {isVendorRoute && <Link to="/vendor/guidance" className="nav-link">Guidance</Link>}
+          <Link to={isVendorRoute ? "/vendor/about" : "/about"} className="nav-link">About Us</Link>
 
           {showPrimaryNav && (
             <div className="nav-dropdown" ref={blockDropdownRef}>
@@ -416,6 +447,13 @@ const Navbar: React.FC = () => {
           role={pendingAuthRole}
           onClose={() => setIsAuthModalOpen(false)}
           onSubmit={handleAuthSubmit}
+          onGoogleAuth={async (role) => {
+            await signInWithGoogle(role);
+            setGuestMode(false);
+            setIsPortalOpen(false);
+            setIsMenuOpen(false);
+            setIsProfileOpen(true);
+          }}
         />
       )}
 
@@ -466,6 +504,21 @@ const Navbar: React.FC = () => {
               <button type="button" className="ready-order-primary" onClick={handleOrderPicked}>Yes, order picked</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {delayedOrderPrompt && (
+        <div className="delay-order-toast" role="status" aria-live="assertive">
+          <div className="delay-order-toast-copy">
+            <strong>Your order is delayed</strong>
+            <p>
+              Order #{delayedOrderPrompt.id} from {delayedOrderPrompt.outletName} has been delayed.
+              {getOrderDelayCopy(delayedOrderPrompt) ? ` ${getOrderDelayCopy(delayedOrderPrompt)}` : ""}
+            </p>
+          </div>
+          <button type="button" className="delay-order-toast-close" onClick={handleDelayPromptDismiss}>
+            Dismiss
+          </button>
         </div>
       )}
     </>

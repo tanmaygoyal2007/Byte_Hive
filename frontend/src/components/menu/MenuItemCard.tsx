@@ -2,8 +2,11 @@ import { useEffect, useState } from "react";
 import useCart from "../../hooks/useCart";
 import {
   getCurrentUserSession,
+  isFavoriteItemForUser,
   requestAuthPrompt,
+  subscribeToFavorites,
   subscribeToUserSession,
+  toggleFavoriteItemForUser,
   type UserSession,
 } from "../../utils/orderPortal";
 import { resolveMenuImageUrl } from "../../utils/menuImage";
@@ -21,11 +24,11 @@ type MenuItem = {
   description?: string;
 };
 
-function MenuItemCard({ item, isOutletOpen = true }: { item: MenuItem; isOutletOpen?: boolean }) {
+function MenuItemCard({ item }: { item: MenuItem }) {
   const { addItem } = useCart();
   const [session, setSession] = useState<UserSession | null>(() => getCurrentUserSession());
-  const isItemAvailable = item.isAvailable !== false;
   const [isFavorite, setIsFavorite] = useState(false);
+  const isItemAvailable = item.isAvailable !== false;
   const imageUrl = resolveMenuImageUrl(item.image);
 
   const fallbackDescription =
@@ -37,13 +40,22 @@ function MenuItemCard({ item, isOutletOpen = true }: { item: MenuItem; isOutletO
     return subscribeToUserSession(syncSession);
   }, []);
 
+  useEffect(() => {
+    const syncFavorite = () => {
+      setIsFavorite(session?.userName ? isFavoriteItemForUser(session.userName, item.id) : false);
+    };
+
+    syncFavorite();
+    return subscribeToFavorites(syncFavorite);
+  }, [item.id, session?.userName]);
+
   const handleAdd = () => {
     if (!session) {
       requestAuthPrompt({ reason: "add-to-cart", role: "student" });
       return;
     }
 
-    if (!isItemAvailable || !isOutletOpen) return;
+    if (!isItemAvailable) return;
 
     addItem({
       id: item.id,
@@ -54,38 +66,48 @@ function MenuItemCard({ item, isOutletOpen = true }: { item: MenuItem; isOutletO
     });
   };
 
+  const handleFavoriteToggle = () => {
+    if (!session) {
+      requestAuthPrompt({ reason: "upgrade-guest", role: "student" });
+      return;
+    }
+
+    toggleFavoriteItemForUser(session.userName, {
+      id: item.id,
+      canteenId: item.canteenId ?? "",
+      name: item.name,
+      price: item.price,
+      category: item.category ?? "Featured",
+      image: item.image,
+      description: item.description,
+      isVeg: item.isVeg,
+      isAvailable: item.isAvailable !== false,
+    });
+  };
+
   return (
     <div className="menu-item-card">
-      <img
-        className="menu-item-image"
-        src={imageUrl || "/images/CANTEEN1.jpg"}
-        alt={item.name}
-      />
+      <img className="menu-item-image" src={imageUrl || "/images/CANTEEN1.jpg"} alt={item.name} />
       <div className="menu-item-body">
         <div className="menu-item-copy">
           <h4 className="menu-item-title">{item.name}</h4>
           <p className="menu-item-desc">{fallbackDescription}</p>
         </div>
         <div className="menu-item-controls">
-          <div className="menu-item-price">₹{item.price}</div>
+          <div className="menu-item-price">Rs {item.price}</div>
           <div className="menu-item-actions">
             <button
               className="menu-item-fav"
               type="button"
-              aria-label={`Save ${item.name}`}
-              onClick={() => setIsFavorite((current) => !current)}
+              aria-label={`${isFavorite ? "Remove" : "Save"} ${item.name} as favorite`}
+              onClick={handleFavoriteToggle}
             >
               <span className={`menu-item-fav-icon${isFavorite ? " menu-item-fav-icon-active" : ""}`}>
                 {isFavorite ? "★" : "☆"}
               </span>
             </button>
-            <button
-              className="menu-item-add"
-              type="button"
-              onClick={handleAdd}
-              disabled={isItemAvailable ? !isOutletOpen : true}
-            >
-              {!session ? "Login to Add" : isOutletOpen ? (isItemAvailable ? "+ Add" : "Unavailable") : "Outlet Closed"}
+            <button className="menu-item-add" type="button" onClick={handleAdd} disabled={!isItemAvailable}>
+              {!session ? "Login to Add to Cart" : isItemAvailable ? "Add to Cart" : "Unavailable"}
             </button>
           </div>
         </div>

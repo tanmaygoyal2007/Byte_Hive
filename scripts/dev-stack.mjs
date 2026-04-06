@@ -12,6 +12,7 @@ const isWindows = process.platform === "win32"
 const firebaseCliPath = path.join(repoRoot, "node_modules", "firebase-tools", "lib", "bin", "firebase.js")
 const pidFile = path.join(repoRoot, ".dev-stack-pids.json")
 const firebaseConfigFile = path.join(repoRoot, ".firebase.dev-stack.json")
+const localConfigHome = path.join(repoRoot, ".dev-home")
 
 const defaultFrontendPort = 3101
 const defaultBackendPort = 18010
@@ -21,6 +22,7 @@ const defaultAuthPort = 19199
 
 let runtimeBaseEnv = {
   ...process.env,
+  XDG_CONFIG_HOME: localConfigHome,
   VITE_FIREBASE_API_KEY: "demo-api-key",
   VITE_FIREBASE_AUTH_DOMAIN: "demo-bytehive.firebaseapp.com",
   VITE_FIREBASE_PROJECT_ID: "demo-bytehive",
@@ -42,6 +44,17 @@ function requireFile(filepath, description) {
 
 function getNpmExecutable() {
   return isWindows ? "npm.cmd" : "npm"
+}
+
+function resolveSpawnCommand(command, args) {
+  if (isWindows && command === getNpmExecutable()) {
+    return {
+      command: process.env.ComSpec || "cmd.exe",
+      args: ["/d", "/s", "/c", `${command} ${args.join(" ")}`],
+    }
+  }
+
+  return { command, args }
 }
 
 function loadPidFile() {
@@ -117,7 +130,9 @@ function cleanupPreviousRun() {
 }
 
 function startProcess(name, command, args, cwd, extraEnv = {}) {
-  const child = spawn(command, args, {
+  const resolved = resolveSpawnCommand(command, args)
+
+  const child = spawn(resolved.command, resolved.args, {
     cwd,
     env: { ...runtimeBaseEnv, ...extraEnv },
     stdio: "inherit",
@@ -165,6 +180,7 @@ async function findAvailablePort(startPort) {
 }
 
 function writeFirebaseConfig({ authPort, firestorePort, firebaseUiPort }) {
+  fs.mkdirSync(localConfigHome, { recursive: true })
   fs.writeFileSync(
     firebaseConfigFile,
     `${JSON.stringify(
