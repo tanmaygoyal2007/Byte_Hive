@@ -6,10 +6,9 @@ type StudentLoginModalProps = {
   isOpen: boolean;
   onClose: () => void;
   onChooseRole: (role: "student" | "faculty") => void;
-  onContinueAsGuest: () => void;
 };
 
-function StudentLoginModal({ isOpen, onClose, onChooseRole, onContinueAsGuest }: StudentLoginModalProps) {
+function StudentLoginModal({ isOpen, onClose, onChooseRole }: StudentLoginModalProps) {
   useEffect(() => {
     if (!isOpen) return;
 
@@ -30,11 +29,6 @@ function StudentLoginModal({ isOpen, onClose, onChooseRole, onContinueAsGuest }:
 
   const handleRolePick = (role: "student" | "faculty") => {
     onChooseRole(role);
-    onClose();
-  };
-
-  const handleGuest = () => {
-    onContinueAsGuest();
     onClose();
   };
 
@@ -71,13 +65,13 @@ function StudentLoginModal({ isOpen, onClose, onChooseRole, onContinueAsGuest }:
             </span>
           </button>
 
-          <button type="button" className="student-login-option" onClick={handleGuest}>
+          <button type="button" className="student-login-option student-login-option-disabled" disabled aria-disabled="true">
             <span className="student-login-icon student-login-icon-muted">
               <UserCircle size={24} />
             </span>
             <span className="student-login-copy">
-              <strong>Continue as Guest</strong>
-              <small>Browse in guest mode and upgrade later from your profile.</small>
+              <strong>Guest Mode Coming Soon</strong>
+              <small>This option is not available right now.</small>
             </span>
           </button>
         </div>

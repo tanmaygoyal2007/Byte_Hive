@@ -21,7 +21,7 @@ export interface VendorOutletStatusRecord {
   isOpen: boolean;
   closedUntil?: string | null;
   closureReason?: string | null;
-  closureMode?: "scheduled" | "manual";
+  closureMode?: "scheduled" | "manual" | null;
 }
 
 export interface VendorOutletStatusInfo {

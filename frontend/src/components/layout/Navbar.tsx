@@ -9,7 +9,6 @@ import ProfileHub from "../portal/ProfileHub";
 import StudentLoginModal from "../portal/StudentLoginModal";
 import {
   getActiveOrdersForUser,
-  getCurrentUserSession,
   getOrderDelayCopy,
   getQrValueForOrder,
   setCurrentUserSession,
@@ -51,7 +50,7 @@ const Navbar: React.FC = () => {
     } catch (error) {
       console.error("Unable to read stored theme:", error);
     }
-    return "light";
+    return "dark";
   });
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isBlockOpen, setIsBlockOpen] = useState(false);
@@ -59,14 +58,14 @@ const Navbar: React.FC = () => {
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [pendingAuthRole, setPendingAuthRole] = useState<PendingAuthRole>(null);
-  const [guestMode, setGuestMode] = useState(() => getCurrentUserSession()?.authRole === "guest");
+  const [guestMode, setGuestMode] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [hasActiveOrder, setHasActiveOrder] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
   const [readyOrderPrompt, setReadyOrderPrompt] = useState<ByteHiveOrder | null>(null);
   const [handoffPrompt, setHandoffPrompt] = useState<ByteHiveOrder | null>(null);
   const [delayedOrderPrompt, setDelayedOrderPrompt] = useState<ByteHiveOrder | null>(null);
-  const { user, authRole, signIn, signInWithGoogle, signUp, logout } = useAuth();
+  const { user, authRole, signIn, signUp, logout } = useAuth();
 
   const location = useLocation();
   const blockDropdownRef = useRef<HTMLDivElement>(null);
@@ -245,13 +244,6 @@ const Navbar: React.FC = () => {
     setPendingAuthRole(role);
     setIsAuthModalOpen(true);
     setIsLoginModalOpen(false);
-  };
-
-  const handleGuestContinue = () => {
-    setGuestMode(true);
-    setIsPortalOpen(false);
-    setIsMenuOpen(false);
-    setIsProfileOpen(true);
   };
 
   const handleAuthSubmit = async ({
@@ -438,7 +430,6 @@ const Navbar: React.FC = () => {
         isOpen={isLoginModalOpen}
         onClose={() => setIsLoginModalOpen(false)}
         onChooseRole={openAuthFlow}
-        onContinueAsGuest={handleGuestContinue}
       />
 
       {pendingAuthRole && (
@@ -447,13 +438,6 @@ const Navbar: React.FC = () => {
           role={pendingAuthRole}
           onClose={() => setIsAuthModalOpen(false)}
           onSubmit={handleAuthSubmit}
-          onGoogleAuth={async (role) => {
-            await signInWithGoogle(role);
-            setGuestMode(false);
-            setIsPortalOpen(false);
-            setIsMenuOpen(false);
-            setIsProfileOpen(true);
-          }}
         />
       )}
 

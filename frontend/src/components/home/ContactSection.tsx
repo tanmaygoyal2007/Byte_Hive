@@ -1,7 +1,6 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import emailjs from "@emailjs/browser";
 import "./ContactSection.css";
-import { motion, AnimatePresence, useMotionValue, useSpring } from "framer-motion";
 import { Send, CheckCircle, Lock } from "lucide-react";
 import useAuth from "../../hooks/useAuth";
 import { requestAuthPrompt } from "../../utils/orderPortal";
@@ -64,33 +63,11 @@ const ContactSection: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
 
-  const submitRef = useRef<HTMLButtonElement>(null);
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
-  const springConfig = { damping: 15, stiffness: 150, mass: 0.1 };
-  const magneticX = useSpring(x, springConfig);
-  const magneticY = useSpring(y, springConfig);
-
   useEffect(() => {
     if (!user) return;
     setName((current) => current || user.displayName || "");
     setEmail((current) => current || user.email || "");
   }, [user]);
-
-  const handleTrack = (e: React.MouseEvent) => {
-    if (!submitRef.current || status === "success") return;
-    const { clientX, clientY } = e;
-    const { height, width, left, top } = submitRef.current.getBoundingClientRect();
-    const middleX = clientX - (left + width / 2);
-    const middleY = clientY - (top + height / 2);
-    x.set(middleX * 0.25);
-    y.set(middleY * 0.25);
-  };
-
-  const handleLeave = () => {
-    x.set(0);
-    y.set(0);
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,194 +127,110 @@ const ContactSection: React.FC = () => {
           <span>Let us help you!</span>
         </h1>
 
-        {/* Success message */}
-        {status === "success" && (
-          <div className="contact-alert contact-alert-success">
-            ✅ Your question has been submitted! We'll get back to you soon.
+        {status === "success" ? (
+          <div className="contact-card success-content">
+            <CheckCircle className="success-icon" size={80} />
+            <h2 className="success-title">Message Sent Successfully!</h2>
+            <p className="success-subtitle">We'll get back to you shortly.</p>
+            <button className="reset-btn" type="button" onClick={() => setStatus("idle")}>
+              Send Another Message
+            </button>
           </div>
-        )}
-
-        {/* Error message */}
-        {status === "error" && (
-          <div className="contact-alert contact-alert-error">
-            ❌ Please fill in your name, email and question before submitting.
-          </div>
-        )}
-
-        <form className="contact-card" onSubmit={handleSubmit}>
-          <div className="row">
+        ) : (
+          <form className="contact-card" onSubmit={handleSubmit}>
             <div className="input-group">
-              <label>Name</label>
               <input
+                id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
-                disabled={isLoading}
+                placeholder=" "
+                disabled={isLoading || !user}
                 required
               />
+              <label htmlFor="name">Your Name</label>
             </div>
 
             <div className="input-group">
-              <label>Email</label>
               <input
+                id="email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="your.email@college.edu"
-                disabled={isLoading}
+                placeholder=" "
+                disabled={isLoading || !user}
                 required
               />
+              <label htmlFor="email">Email Address</label>
             </div>
-          </div>
 
-          <div className="input-group full">
-            <label>Contact Number</label>
-            <input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              placeholder="+1 (555) 000-0000"
-              disabled={isLoading}
-            />
-          </div>
+            <div className="input-group">
+              <input
+                id="phone"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder=" "
+                disabled={isLoading || !user}
+              />
+              <label htmlFor="phone">Contact Number (Optional)</label>
+            </div>
 
-          <div className="input-group full">
-            <label>Your Question</label>
-            <textarea
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              placeholder="Tell us what's on your mind..."
-              disabled={isLoading}
-              required
-            />
-          </div>
+            <div className="input-group">
+              <textarea
+                id="question"
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder=" "
+                disabled={isLoading || !user || submissionsLeft === 0}
+                required
+              />
+              <label htmlFor="question">Your Question</label>
+            </div>
 
-          <button
-            className={`submit-btn ${isLoading ? "submit-btn-loading" : ""}`}
-            type="submit"
-            disabled={isLoading}
-          >
-            <AnimatePresence mode="wait">
-              {status === "success" ? (
-                <motion.div 
-                  key="success"
-                  className="success-content"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.9 }}
-                  transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-                >
-                  <motion.div 
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: "spring", stiffness: 200, damping: 10, delay: 0.2 }}
-                  >
-                    <CheckCircle className="success-icon" size={80} />
-                  </motion.div>
-                  <h2 className="success-title">Message Sent Successfully!</h2>
-                  <p className="success-subtitle">We'll get back to you shortly.</p>
-                  <button className="reset-btn" onClick={() => setStatus("idle")}>
-                    Send Another message
+            <div className="contact-access-note">
+              {!user ? (
+                <>
+                  <Lock size={16} />
+                  <span>You need to log in before sending a question.</span>
+                  <button type="button" onClick={() => requestAuthPrompt({ reason: "upgrade-guest", role: "student" })}>
+                    Login
                   </button>
-                </motion.div>
+                </>
               ) : (
-                <motion.form 
-                  key="form"
-                  className="contact-card" 
-                  onSubmit={handleSubmit}
-                  onMouseMove={handleTrack}
-                  onMouseLeave={handleLeave}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                >
-                  <div className="input-group">
-                    <input
-                      id="name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder=" "
-                      disabled={isLoading || !user}
-                      required
-                    />
-                    <label htmlFor="name">Your Name</label>
-                  </div>
-
-                  <div className="input-group">
-                    <input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder=" "
-                      disabled={isLoading || !user}
-                      required
-                    />
-                    <label htmlFor="email">Email Address</label>
-                  </div>
-
-                  <div className="input-group">
-                    <input
-                      id="phone"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder=" "
-                      disabled={isLoading || !user}
-                    />
-                    <label htmlFor="phone">Contact Number (Optional)</label>
-                  </div>
-
-                  <div className="input-group">
-                    <textarea
-                      id="question"
-                      value={question}
-                      onChange={(e) => setQuestion(e.target.value)}
-                      placeholder=" "
-                      disabled={isLoading || !user || submissionsLeft === 0}
-                      required
-                    />
-                    <label htmlFor="question">Your Question</label>
-                  </div>
-
-                  <div className="contact-access-note">
-                    {!user ? (
-                      <>
-                        <Lock size={16} />
-                        <span>You need to log in before sending a question.</span>
-                        <button type="button" onClick={() => requestAuthPrompt({ reason: "upgrade-guest", role: "student" })}>
-                          Login
-                        </button>
-                      </>
-                    ) : (
-                      <span>{submissionsLeft} of {MAX_SUBMISSIONS_PER_USER} submissions remaining for your account.</span>
-                    )}
-                  </div>
-
-                  <motion.button
-                    ref={submitRef}
-                    className={`submit-btn premium-btn ${isLoading ? "loading" : ""}`}
-                    type="submit"
-                    disabled={isLoading || !canSubmit}
-                    style={{ x: magneticX, y: magneticY }}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    {isLoading ? "Sending..." : !user ? <><Lock size={18} /> Login to Submit</> : submissionsLeft === 0 ? "Submission Limit Reached" : <><Send size={18} /> Submit Question</>}
-                  </motion.button>
-                  
-                  {status === "error" && (
-                    <p className="error-text">
-                      {!user
-                        ? "Please log in before sending a question."
-                        : submissionsLeft === 0
-                          ? "You have reached the 5-question limit for this account."
-                          : "Please fill in all required fields."}
-                    </p>
-                  )}
-                </motion.form>
+                <span>{submissionsLeft} of {MAX_SUBMISSIONS_PER_USER} submissions remaining for your account.</span>
               )}
-            </AnimatePresence>
-          </motion.div>
-        </div>
+            </div>
+
+            <button
+              className={`submit-btn premium-btn ${isLoading ? "loading" : ""}`}
+              type="submit"
+              disabled={isLoading || !canSubmit}
+            >
+              {isLoading ? (
+                "Sending..."
+              ) : !user ? (
+                <>
+                  <Lock size={18} /> Login to Submit
+                </>
+              ) : submissionsLeft === 0 ? (
+                "Submission Limit Reached"
+              ) : (
+                <>
+                  <Send size={18} /> Submit Question
+                </>
+              )}
+            </button>
+
+            {status === "error" && (
+              <p className="error-text">
+                {!user
+                  ? "Please log in before sending a question."
+                  : submissionsLeft === 0
+                    ? "You have reached the 5-question limit for this account."
+                    : "Please fill in all required fields."}
+              </p>
+            )}
+          </form>
+        )}
       </div>
     </section>
   );

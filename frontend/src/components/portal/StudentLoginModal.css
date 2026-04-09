@@ -80,6 +80,16 @@
   background: var(--surface-muted);
 }
 
+.student-login-option:disabled {
+  cursor: not-allowed;
+}
+
+.student-login-option-disabled,
+.student-login-option-disabled:hover {
+  opacity: 0.6;
+  background: color-mix(in srgb, var(--nav-surface) 72%, transparent);
+}
+
 .student-login-option-primary {
   border-color: color-mix(in srgb, var(--accent) 30%, var(--border-soft));
   background: color-mix(in srgb, var(--accent) 10%, var(--dropdown-bg));

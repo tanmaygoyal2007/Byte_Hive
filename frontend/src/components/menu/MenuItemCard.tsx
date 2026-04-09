@@ -50,11 +50,6 @@ function MenuItemCard({ item }: { item: MenuItem }) {
   }, [item.id, session?.userName]);
 
   const handleAdd = () => {
-    if (!session) {
-      requestAuthPrompt({ reason: "add-to-cart", role: "student" });
-      return;
-    }
-
     if (!isItemAvailable) return;
 
     addItem({
@@ -107,7 +102,7 @@ function MenuItemCard({ item }: { item: MenuItem }) {
               </span>
             </button>
             <button className="menu-item-add" type="button" onClick={handleAdd} disabled={!isItemAvailable}>
-              {!session ? "Login to Add to Cart" : isItemAvailable ? "Add to Cart" : "Unavailable"}
+              {isItemAvailable ? "Add to Cart" : "Unavailable"}
             </button>
           </div>
         </div>

@@ -10,7 +10,6 @@ type AuthModalProps = {
   role: AuthRole;
   onClose: () => void;
   onSubmit: (payload: { role: AuthRole; mode: AuthMode; name: string; email: string; password: string }) => Promise<void>;
-  onGoogleAuth: (role: AuthRole) => Promise<void>;
 };
 
 const SAVED_EMAILS_KEY = "bytehive-saved-auth-emails";
@@ -56,13 +55,12 @@ function saveRememberedEmail(email: string) {
   localStorage.setItem(SAVED_EMAILS_KEY, JSON.stringify(nextEmails));
 }
 
-function AuthModal({ isOpen, role, onClose, onSubmit, onGoogleAuth }: AuthModalProps) {
+function AuthModal({ isOpen, role, onClose, onSubmit }: AuthModalProps) {
   const [mode, setMode] = useState<AuthMode>("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isGoogleSubmitting, setIsGoogleSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [savedEmails, setSavedEmails] = useState<string[]>([]);
 
@@ -89,7 +87,6 @@ function AuthModal({ isOpen, role, onClose, onSubmit, onGoogleAuth }: AuthModalP
       setEmail("");
       setPassword("");
       setIsSubmitting(false);
-      setIsGoogleSubmitting(false);
       setErrorMessage("");
     }
   }, [isOpen]);
@@ -138,20 +135,6 @@ function AuthModal({ isOpen, role, onClose, onSubmit, onGoogleAuth }: AuthModalP
     }
   };
 
-  const handleGoogleContinue = async () => {
-    setErrorMessage("");
-    setIsGoogleSubmitting(true);
-
-    try {
-      await onGoogleAuth(role);
-      onClose();
-    } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "Google sign-in failed.");
-    } finally {
-      setIsGoogleSubmitting(false);
-    }
-  };
-
   return (
     <div className="auth-modal-backdrop" onClick={onClose} role="dialog" aria-modal="true">
       <div className="auth-modal" onClick={(event) => event.stopPropagation()}>
@@ -188,25 +171,6 @@ function AuthModal({ isOpen, role, onClose, onSubmit, onGoogleAuth }: AuthModalP
             <UserPlus size={16} />
             Sign Up
           </button>
-        </div>
-
-        <div className="auth-modal-google-card">
-          <button
-            type="button"
-            className="auth-modal-google-btn"
-            onClick={handleGoogleContinue}
-            disabled={isGoogleSubmitting || isSubmitting}
-          >
-            <span className="auth-modal-google-mark" aria-hidden="true">G</span>
-            {isGoogleSubmitting ? "Connecting..." : `Continue with Google`}
-          </button>
-          <small className="auth-modal-hint">
-            Recommended: use your Christ University Google account for the fastest sign-in.
-          </small>
-        </div>
-
-        <div className="auth-modal-divider">
-          <span>or use email and password</span>
         </div>
 
         <form className="auth-modal-form" onSubmit={handleSubmit}>
@@ -250,7 +214,7 @@ function AuthModal({ isOpen, role, onClose, onSubmit, onGoogleAuth }: AuthModalP
 
           {errorMessage && <p className="auth-modal-error">{errorMessage}</p>}
 
-          <button type="submit" className="auth-modal-submit" disabled={isSubmitting || isGoogleSubmitting}>
+          <button type="submit" className="auth-modal-submit" disabled={isSubmitting}>
             {mode === "login" ? (
               <>
                 {role === "student" ? <GraduationCap size={18} /> : <ShieldCheck size={18} />}
