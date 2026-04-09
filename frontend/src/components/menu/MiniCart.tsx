@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getCurrentUserSession, getOutletMetaById, subscribeToUserSession, type UserSession } from "../../utils/orderPortal";
+import { getOutletMetaById } from "../../utils/orderPortal";
 import { resolveMenuImageUrl } from "../../utils/menuImage";
 import { getVendorClosureLabel, getVendorOutletStatus, subscribeToVendorStatus } from "../../utils/vendorPortal";
 import useCart from "../../hooks/useCart";
@@ -8,20 +8,14 @@ import "./MiniCart.css";
 
 function MiniCart() {
   const { state, increment, decrement, removeItem, total } = useCart();
-  const [session, setSession] = useState<UserSession | null>(() => getCurrentUserSession());
   const [checkoutNotice, setCheckoutNotice] = useState<string | null>(null);
   const [isOutletOpen, setIsOutletOpen] = useState(true);
   const [closureLabel, setClosureLabel] = useState<string | null>(null);
   const isEmpty = state.items.length === 0;
   const cartOutletId = state.items[0]?.canteenId ?? null;
   const cartOutletName = cartOutletId ? getOutletMetaById(cartOutletId).name : null;
-  const canOpenCart = !!session && !isEmpty;
+  const canOpenCart = !isEmpty;
   const isCheckoutBlocked = canOpenCart && !isOutletOpen;
-
-  useEffect(() => {
-    const syncSession = () => setSession(getCurrentUserSession());
-    return subscribeToUserSession(syncSession);
-  }, []);
 
   useEffect(() => {
     const syncVendorStatus = () => {

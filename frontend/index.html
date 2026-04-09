@@ -3,9 +3,23 @@
   <head>
     <meta charset="UTF-8" />
     <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <link rel="icon" type="image/png" href="/images/bytehive-navbar-logo.png" />
+    <meta name="theme-color" content="#090b0f" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>bite-hive</title>
+    <title>byte-Hive</title>
+    <script>
+      try {
+        var storedTheme = localStorage.getItem("theme");
+        var theme = storedTheme === "light" || storedTheme === "dark" ? storedTheme : "dark";
+        document.documentElement.setAttribute("data-theme", theme);
+        document.addEventListener("DOMContentLoaded", function () {
+          document.body.classList.remove("light", "dark");
+          document.body.classList.add(theme);
+        });
+      } catch (error) {
+        document.documentElement.setAttribute("data-theme", "dark");
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -51,6 +51,7 @@ function formatCurrency(value: number) {
 function AppShell() {
   const location = useLocation();
   const { state: cartState, addItem } = useCart();
+  type CartStateItem = (typeof cartState.items)[number];
   const [menuItems, setMenuItems] = useState<MenuCatalogItem[]>(() => getAllMenuItems());
   const [userSession, setUserSession] = useState<UserSession | null>(() => getCurrentUserSession());
   const [activeOrders, setActiveOrders] = useState(() =>
@@ -151,10 +152,10 @@ function AppShell() {
       userName: userSession?.userName ?? null,
       userRole: userSession?.authRole ?? null,
       cart: {
-        itemCount: cartState.items.reduce((sum, item) => sum + item.quantity, 0),
-        total: cartState.items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+        itemCount: cartState.items.reduce((sum: number, item: CartStateItem) => sum + item.quantity, 0),
+        total: cartState.items.reduce((sum: number, item: CartStateItem) => sum + item.price * item.quantity, 0),
         outletId: cartState.items[0]?.canteenId ?? null,
-        items: cartState.items.map((item) => ({
+        items: cartState.items.map((item: CartStateItem) => ({
           id: item.id,
           name: item.name,
           quantity: item.quantity,

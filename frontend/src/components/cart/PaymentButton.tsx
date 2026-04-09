@@ -5,7 +5,14 @@ import {
   openRazorpayCheckout,
   verifyPayment,
 } from "../../services/paymentService";
-import { createOrder, getCurrentUserSession, getOutletMetaById, requestAuthPrompt } from "../../utils/orderPortal";
+import {
+  createOrder,
+  getCurrentUserSession,
+  getOutletMetaById,
+  requestAuthPrompt,
+  subscribeToUserSession,
+  type UserSession,
+} from "../../utils/orderPortal";
 import { getVendorClosureLabel, getVendorOutletStatus, subscribeToVendorStatus } from "../../utils/vendorPortal";
 
 interface CartItem {
@@ -50,6 +57,7 @@ export default function PaymentButton({
   const [status, setStatus] = useState<"idle" | "loading" | "processing" | "success" | "failed">("idle");
   const [error, setError] = useState<string | null>(null);
   const [scriptReady, setScriptReady] = useState(false);
+  const [userSession, setUserSession] = useState<UserSession | null>(() => getCurrentUserSession());
   const outletMeta = getOutletMetaById(canteenId);
   const [isOutletOpen, setIsOutletOpen] = useState(() =>
     canteenId && canteenId !== "default" ? getVendorOutletStatus(outletMeta.name) : true
@@ -60,6 +68,11 @@ export default function PaymentButton({
 
   useEffect(() => {
     loadRazorpayScript().then(setScriptReady);
+  }, []);
+
+  useEffect(() => {
+    const syncSession = () => setUserSession(getCurrentUserSession());
+    return subscribeToUserSession(syncSession);
   }, []);
 
   useEffect(() => {
@@ -95,7 +108,6 @@ export default function PaymentButton({
       return;
     }
 
-    const userSession = getCurrentUserSession();
     if (!userSession) {
       setError("Please login or sign up before placing an order.");
       requestAuthPrompt({ reason: "checkout", role: "student" });
@@ -196,6 +208,12 @@ export default function PaymentButton({
   };
 
   const isLoading = status === "loading" || status === "processing";
+  const requiresAuth = !userSession || userSession.authRole === "guest";
+  const ctaLabel = !isOutletOpen
+    ? "Checkout Temporarily Closed"
+    : requiresAuth
+      ? "Login or Sign Up for Payment"
+      : `Pay Rs ${total.toFixed(2)} Securely`;
 
   return (
     <div className="payment-button-wrapper">
@@ -213,7 +231,7 @@ export default function PaymentButton({
       >
         {status === "loading" && <><span className="payment-spinner" /> Creating order...</>}
         {status === "processing" && <><span className="payment-spinner" /> Processing...</>}
-        {status === "idle" && <>{isOutletOpen ? `Pay Rs ${total.toFixed(2)} Securely` : "Checkout Temporarily Closed"}</>}
+        {status === "idle" && <>{ctaLabel}</>}
         {status === "success" && <>Payment Successful!</>}
         {status === "failed" && <>Try Again</>}
       </button>

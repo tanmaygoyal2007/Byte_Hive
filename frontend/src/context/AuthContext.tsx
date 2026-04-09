@@ -3,7 +3,6 @@ import { createContext, useEffect, useMemo, useState, type ReactNode } from "rea
 import {
   configureAuthPersistence,
   getStoredAuthRole,
-  loginWithGoogle,
   loginWithEmail,
   logoutUser,
   signupWithEmail,
@@ -19,7 +18,6 @@ type AuthContextType = {
   loading: boolean;
   signUp: (payload: { role: AuthRole; email: string; password: string; name: string }) => Promise<void>;
   signIn: (payload: { role: AuthRole; email: string; password: string }) => Promise<void>;
-  signInWithGoogle: (role: AuthRole) => Promise<void>;
   logout: () => Promise<void>;
 };
 
@@ -41,12 +39,6 @@ function formatAuthError(error: unknown) {
       return "Enter a valid email address.";
     case "auth/network-request-failed":
       return "Network error. Check your connection and try again.";
-    case "auth/unauthorized-domain":
-      return "Use your Christ University Google account to continue.";
-    case "auth/popup-closed-by-user":
-      return "Google sign-in was closed before completion.";
-    case "auth/google-requires-firebase":
-      return "Google sign-in needs real Firebase config to be enabled.";
     default:
       return error instanceof Error && error.message ? error.message : "Authentication failed. Please try again.";
   }
@@ -84,14 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async signIn({ role, email, password }) {
       try {
         await loginWithEmail({ role, email, password });
-        setAuthRole(role);
-      } catch (error) {
-        throw new Error(formatAuthError(error));
-      }
-    },
-    async signInWithGoogle(role) {
-      try {
-        await loginWithGoogle(role);
         setAuthRole(role);
       } catch (error) {
         throw new Error(formatAuthError(error));
