@@ -1,5 +1,10 @@
 # Dependencies
 node_modules/
+.next/
+.dev-home/
+.dev-stack-pids.json
+.firebase.dev-stack.json
+firestore-debug.log
 
 # .env files
 .env
