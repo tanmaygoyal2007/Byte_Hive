@@ -1,0 +1,121 @@
+@import "../component/components/layout/Footer.css";
+@import "../component/components/layout/Navbar.css";
+@import "../component/components/ui/BlockBadge.css";
+@import "../component/components/ui/Button.css";
+@import "../component/components/ui/RatingBadge.css";
+@import "../component/components/ui/SearchInput.css";
+@import "../component/components/ui/SiriBorder.css";
+@import "../features/about/components/AboutPage.css";
+@import "../features/auth/components/AuthModal.css";
+@import "../features/auth/components/PortalDropdown.css";
+@import "../features/auth/components/ProfileHub.css";
+@import "../features/auth/components/StudentLoginModal.css";
+@import "../features/canteens/components/CanteenCard.css";
+@import "../features/canteens/components/CanteenCardsPage.css";
+@import "../features/cart/components/CartItem.css";
+@import "../features/cart/components/CartPage.css";
+@import "../features/cart/components/CartSummary.css";
+@import "../features/chat/components/ChatWidget.css";
+@import "../features/home/components/ContactSection.css";
+@import "../features/home/components/HeroSection.css";
+@import "../features/home/components/HomePage.css";
+@import "../features/home/components/PopularCanteenCard.css";
+@import "../features/home/components/PopularCanteensSection.css";
+@import "../features/home/components/QuickDeliverySection.css";
+@import "../features/menu/components/CanteenHeader.css";
+@import "../features/menu/components/CanteenMenuPage.css";
+@import "../features/menu/components/CategorySidebar.css";
+@import "../features/menu/components/ImageGallery.css";
+@import "../features/menu/components/MenuItemCard.css";
+@import "../features/menu/components/MenuSearch.css";
+@import "../features/menu/components/MiniCart.css";
+@import "../features/orders/components/ReceiptCard.css";
+@import "../features/vendor/components/VendorPortal.css";
+
+:root {
+  color-scheme: light;
+  --font-sans: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --bg-base: #f6efe7;
+  --bg-gradient:
+    radial-gradient(circle at top left, rgba(255, 122, 26, 0.08), transparent 28%),
+    linear-gradient(180deg, #f7f0e8 0%, #f3ebe2 46%, #efe4d8 100%);
+  --text-primary: #1f1812;
+  --text-muted: #6f6257;
+  --accent: #ef6f00;
+  --accent-soft: rgba(239, 111, 0, 0.2);
+  --nav-surface: rgba(255, 250, 245, 0.88);
+  --surface-card: rgba(255, 252, 247, 0.94);
+  --surface-muted: rgba(239, 111, 0, 0.08);
+  --dropdown-bg: rgba(255, 252, 247, 0.96);
+  --border-soft: rgba(84, 60, 39, 0.14);
+  --shadow-soft: 0 18px 42px rgba(76, 58, 41, 0.12);
+  --home-surface-primary:
+    radial-gradient(circle at top left, rgba(255, 122, 26, 0.08), transparent 28%),
+    linear-gradient(180deg, #f9f3ec 0%, #f5ede4 52%, #f1e7dc 100%);
+  --home-surface-secondary:
+    radial-gradient(circle at top right, rgba(255, 122, 26, 0.08), transparent 26%),
+    linear-gradient(180deg, #efe2d3 0%, #e5d4c2 100%);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg-base: #000000;
+  --bg-gradient:
+    linear-gradient(180deg, #090909 0%, #030303 50%, #000000 100%);
+  --text-primary: #f5efe8;
+  --text-muted: #b4a495;
+  --accent: #ff8a3d;
+  --accent-soft: rgba(255, 138, 61, 0.22);
+  --nav-surface: rgba(10, 10, 10, 0.86);
+  --surface-card: rgba(16, 16, 16, 0.92);
+  --surface-muted: rgba(255, 138, 61, 0.1);
+  --dropdown-bg: rgba(12, 12, 12, 0.96);
+  --border-soft: rgba(255, 255, 255, 0.1);
+  --shadow-soft: 0 24px 54px rgba(0, 0, 0, 0.34);
+  --home-surface-primary:
+    radial-gradient(circle at top left, rgba(255, 138, 61, 0.08), transparent 30%),
+    linear-gradient(180deg, #161616 0%, #0d0d0d 52%, #050505 100%);
+  --home-surface-secondary:
+    linear-gradient(180deg, #050505 0%, #000000 100%);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  background: var(--bg-base);
+}
+
+body {
+  background: var(--bg-gradient);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+body,
+button,
+input,
+textarea,
+select {
+  font-family: var(--font-sans);
+}
+
+a {
+  color: inherit;
+}
+
+img {
+  max-width: 100%;
+}
