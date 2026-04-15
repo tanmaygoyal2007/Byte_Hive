@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, ClipboardList, MessageCircle, Package, RotateCcw, Send, SlidersHorizontal, X } from "lucide-react";
 import { useChat, type ChatAction } from "@/features/chat/hooks/useChat";
-import SiriBorder from "@/component/components/ui/SiriBorder";
+import SiriBorder from "@/components/components/ui/SiriBorder";
 
 const STUDENT_QUICK_PROMPTS = [
   "What's vegetarian?",

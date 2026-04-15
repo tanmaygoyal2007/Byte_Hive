@@ -146,6 +146,37 @@
   flex-direction: column;
 }
 
+.vendor-auth-switcher {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.vendor-auth-switcher button {
+  min-height: 46px;
+  padding: 0 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: transparent;
+  color: var(--text-primary);
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.vendor-auth-switcher button:hover {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--border-soft));
+}
+
+.vendor-auth-switch-active {
+  background: color-mix(in srgb, var(--accent) 14%, transparent);
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+}
+
 .vendor-field {
   display: flex;
   flex-direction: column;
@@ -177,6 +208,58 @@
   background: color-mix(in srgb, var(--nav-surface) 82%, transparent);
   color: var(--text-primary);
   outline: none;
+}
+
+.vendor-password-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.vendor-master-key-wrap {
+  position: relative;
+  flex: 1;
+}
+
+.vendor-master-key-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+}
+
+.vendor-input-master-key {
+  padding-left: 46px;
+}
+
+.vendor-password-toggle {
+  flex-shrink: 0;
+  min-width: 82px;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: 16px;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--surface-card) 72%, transparent);
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.vendor-password-toggle:hover {
+  transform: translateY(-1px);
+  background: color-mix(in srgb, var(--accent) 14%, var(--surface-card));
+  border-color: color-mix(in srgb, var(--accent) 40%, var(--border-soft));
+  color: var(--accent);
+}
+
+.vendor-form-success {
+  color: #289c56;
 }
 
 .vendor-input:focus,
@@ -1102,5 +1185,14 @@
   .vendor-form-header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .vendor-password-field {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .vendor-password-toggle {
+    width: 100%;
   }
 }

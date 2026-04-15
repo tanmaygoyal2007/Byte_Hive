@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Menu, Moon, Sun, X } from "lucide-react";
-import { Link, useLocation } from "@/component/lib/router";
+import { Link, useLocation } from "@/components/lib/router";
 import { getVendorOutlet, getVendorOutletId } from "@/features/vendor/services/vendor-portal.service";
 import { QRCodeSVG } from "qrcode.react";
 import useAuth from "@/features/auth/hooks/useAuth";
@@ -362,6 +362,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletI
         <div className={`navbar-menu ${isMenuOpen ? "navbar-menu-open" : ""}`}>
           {showPrimaryNav && <Link to="/" className="nav-link">Home</Link>}
           {showPrimaryNav && <Link to="/#popular" className="nav-link">Popular</Link>}
+          {isVendorRoute && <Link to="/vendor/dashboard" className="nav-link">Dashboard</Link>}
           {isVendorRoute && <Link to="/vendor/guidance" className="nav-link">Guidance</Link>}
           {isVendorRoute && vendorOutletId && (
             <Link to={`/canteens/${vendorOutletId}?preview=vendor&src=navbar`} className="nav-link">Preview</Link>

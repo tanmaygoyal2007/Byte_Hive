@@ -1,6 +1,10 @@
+import { getRedisClient } from "@/lib/services/redis";
+
 const OTP_TTL_MS = 5 * 60 * 1000;
-const OTP_RESEND_MS = 30 * 1000;
-const REQUIRED_EMAIL_SUFFIX = ".christuniversity.in";
+const OTP_TTL_SECONDS = Math.floor(OTP_TTL_MS / 1000);
+const OTP_RESEND_MS = 60 * 1000;
+const otpKey = (email: string) => `bytehive:otp:${normalizeOtpEmail(email)}`;
+type OtpRole = "student" | "faculty";
 
 type OtpRecord = {
   code: string;
@@ -9,27 +13,18 @@ type OtpRecord = {
   verified: boolean;
 };
 
-const globalOtpStore = globalThis as typeof globalThis & {
-  __bytehiveOtpStore?: Map<string, OtpRecord>;
-};
-
-function getStore() {
-  if (!globalOtpStore.__bytehiveOtpStore) {
-    globalOtpStore.__bytehiveOtpStore = new Map<string, OtpRecord>();
-  }
-
-  return globalOtpStore.__bytehiveOtpStore;
-}
-
 export function normalizeOtpEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-export function isValidOtpEmail(email: string) {
+export function getRequiredOtpDomain(role: OtpRole) {
+  return role === "faculty" ? "christuniversity.in" : ".christuniversity.in";
+}
+
+export function isValidOtpEmail(email: string, role: OtpRole = "student") {
   const normalized = normalizeOtpEmail(email);
   if (!normalized || normalized.length > 254) return false;
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) return false;
-  if (!normalized.endsWith(REQUIRED_EMAIL_SUFFIX)) return false;
   if (normalized.includes("..")) return false;
 
   const [localPart, domain] = normalized.split("@");
@@ -37,6 +32,7 @@ export function isValidOtpEmail(email: string) {
   if (localPart.startsWith(".") || localPart.endsWith(".")) return false;
   if (domain.startsWith("-") || domain.endsWith("-")) return false;
   if (domain.startsWith(".") || domain.endsWith(".")) return false;
+  if (role === "faculty" ? domain !== "christuniversity.in" : !normalized.endsWith(".christuniversity.in")) return false;
 
   return true;
 }
@@ -45,10 +41,35 @@ export function generateOtpCode() {
   return String(Math.floor(100000 + Math.random() * 900000));
 }
 
-export function createOtp(email: string) {
-  const store = getStore();
+async function readOtpRecord(email: string) {
+  const client = await getRedisClient();
+  const serialized = await client.get(otpKey(email));
+
+  if (!serialized) {
+    return null;
+  }
+
+  try {
+    const record = JSON.parse(serialized) as OtpRecord;
+    if (record.expiresAt <= Date.now()) {
+      await client.del(otpKey(email));
+      return null;
+    }
+    return record;
+  } catch {
+    await client.del(otpKey(email));
+    return null;
+  }
+}
+
+async function writeOtpRecord(email: string, record: OtpRecord) {
+  const client = await getRedisClient();
+  await client.setEx(otpKey(email), OTP_TTL_SECONDS, JSON.stringify(record));
+}
+
+export async function createOtp(email: string) {
   const normalizedEmail = normalizeOtpEmail(email);
-  const existing = store.get(normalizedEmail);
+  const existing = await readOtpRecord(normalizedEmail);
   const now = Date.now();
 
   if (existing && existing.resendAvailableAt > now) {
@@ -56,31 +77,33 @@ export function createOtp(email: string) {
   }
 
   const code = generateOtpCode();
-  store.set(normalizedEmail, {
+  const record = {
     code,
     expiresAt: now + OTP_TTL_MS,
     resendAvailableAt: now + OTP_RESEND_MS,
     verified: false,
-  });
+  } satisfies OtpRecord;
+
+  await writeOtpRecord(normalizedEmail, record);
 
   return {
     code,
-    expiresAt: now + OTP_TTL_MS,
-    resendAvailableAt: now + OTP_RESEND_MS,
+    expiresAt: record.expiresAt,
+    resendAvailableAt: record.resendAvailableAt,
   };
 }
 
-export function verifyOtp(email: string, code: string) {
-  const store = getStore();
+export async function verifyOtp(email: string, code: string) {
   const normalizedEmail = normalizeOtpEmail(email);
-  const record = store.get(normalizedEmail);
+  const record = await readOtpRecord(normalizedEmail);
 
   if (!record) {
     throw new Error("Send an OTP first.");
   }
 
   if (Date.now() > record.expiresAt) {
-    store.delete(normalizedEmail);
+    const client = await getRedisClient();
+    await client.del(otpKey(normalizedEmail));
     throw new Error("OTP expired. Please request a new code.");
   }
 
@@ -88,10 +111,11 @@ export function verifyOtp(email: string, code: string) {
     throw new Error("Incorrect OTP. Please try again.");
   }
 
-  store.set(normalizedEmail, { ...record, verified: true });
+  await writeOtpRecord(normalizedEmail, { ...record, verified: true });
   return true;
 }
 
-export function clearOtp(email: string) {
-  getStore().delete(normalizeOtpEmail(email));
+export async function clearOtp(email: string) {
+  const client = await getRedisClient();
+  await client.del(otpKey(email));
 }

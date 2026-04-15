@@ -1,5 +1,5 @@
 import { MapPin, Star } from "lucide-react";
-import { Link } from "@/component/lib/router";
+import { Link } from "@/components/lib/router";
 import type { Canteen } from "./canteens";
 
 export function CanteenCard(props: Canteen) {

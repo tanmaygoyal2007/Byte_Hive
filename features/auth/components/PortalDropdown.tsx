@@ -1,5 +1,5 @@
 import { GraduationCap, Store } from "lucide-react";
-import { Link } from "@/component/lib/router";
+import { Link } from "@/components/lib/router";
 import { getVendorLoginHref } from "@/features/vendor/services/vendor-portal.service";
 
 type PortalDropdownProps = {

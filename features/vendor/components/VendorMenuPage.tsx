@@ -1,8 +1,8 @@
 import { ChevronLeft, Edit3, Eye, Plus, Search, Trash2, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "@/component/lib/router";
-import Footer from "@/component/components/layout/Footer";
-import Navbar from "@/component/components/layout/Navbar";
+import { Link, useNavigate } from "@/components/lib/router";
+import Footer from "@/components/components/layout/Footer";
+import Navbar from "@/components/components/layout/Navbar";
 import {
   getOutletIdByName,
   getMenuItemsForOutlet,
@@ -422,7 +422,7 @@ function VendorMenuPage() {
         </>
       )}
 
-      <Footer />
+      <Footer variant="vendor" />
     </div>
   );
 }

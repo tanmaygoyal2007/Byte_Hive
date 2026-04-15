@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "@/component/lib/router";
+import { useNavigate } from "@/components/lib/router";
 import {
   createPaymentOrder,
   openRazorpayCheckout,

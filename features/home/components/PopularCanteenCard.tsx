@@ -1,5 +1,5 @@
 import React from "react";
-import { useNavigate } from "@/component/lib/router";
+import { useNavigate } from "@/components/lib/router";
 
 interface Props {
 	id: string;

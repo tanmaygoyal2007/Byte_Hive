@@ -1,8 +1,8 @@
 import { useEffect } from "react";
 import { Clock3, Github, Linkedin, MapPin, Shield, Smartphone, Target, UtensilsCrossed, Users } from "lucide-react";
-import { Link, useLocation } from "@/component/lib/router";
-import Navbar from "@/component/components/layout/Navbar";
-import Footer from "@/component/components/layout/Footer";
+import { Link, useLocation } from "@/components/lib/router";
+import Navbar from "@/components/components/layout/Navbar";
+import Footer from "@/components/components/layout/Footer";
 
 const stats = [
   { value: "9+", label: "Campus Outlets" },
@@ -227,7 +227,7 @@ function AboutPage() {
           </p>
         </section>
       </main>
-      <Footer />
+      <Footer variant={isVendorAbout ? "vendor" : "default"} />
     </div>
   );
 }

@@ -1,8 +1,8 @@
-import Navbar from "@/component/components/layout/Navbar";
-import Footer from "@/component/components/layout/Footer";
+import Navbar from "@/components/components/layout/Navbar";
+import Footer from "@/components/components/layout/Footer";
 import PaymentButton from "@/features/cart/components/PaymentButton";
 import { useContext } from "react";
-import { Link } from "@/component/lib/router";
+import { Link } from "@/components/lib/router";
 import CartContext from "@/features/cart/store/cart.store";
 import { resolveMenuImageUrl } from "@/features/menu/services/menu-image.service";
 import { getOutletMetaById } from "@/features/orders/services/order-portal.service";

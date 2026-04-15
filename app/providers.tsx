@@ -6,7 +6,7 @@ import { AuthProvider } from "@/features/auth/components/AuthProvider";
 import { CartProvider } from "@/features/cart/store/cart.store";
 
 const AppOverlays = dynamic(
-  () => import("@/component/components/feedback/AppOverlays"),
+  () => import("@/components/components/feedback/AppOverlays"),
   { ssr: false }
 );
 

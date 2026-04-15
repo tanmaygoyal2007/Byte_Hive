@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
-import { useParams, useSearchParams } from "@/component/lib/router";
-import Footer from "@/component/components/layout/Footer";
-import Navbar from "@/component/components/layout/Navbar";
+import { useParams, useSearchParams } from "@/components/lib/router";
+import Footer from "@/components/components/layout/Footer";
+import Navbar from "@/components/components/layout/Navbar";
 import CategorySidebar from "@/features/menu/components/CategorySidebar";
 import CanteenHeader from "@/features/menu/components/CanteenHeader";
 import ImageGallery from "@/features/menu/components/ImageGallery";
@@ -173,10 +173,9 @@ function CanteenMenuPage() {
             </div>
           </aside>
         </div>
-
-        <div className="menu-footer-wrap">
-          <Footer />
-        </div>
+      </div>
+      <div className="menu-footer-wrap">
+        <Footer variant={isPreviewMode ? "vendor" : "default"} />
       </div>
     </div>
   );

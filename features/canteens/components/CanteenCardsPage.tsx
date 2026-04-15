@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "@/component/lib/router";
+import { useSearchParams, useNavigate } from "@/components/lib/router";
 import { Search, Trash2 } from "lucide-react";
-import Navbar from "@/component/components/layout/Navbar";
+import Navbar from "@/components/components/layout/Navbar";
 import { CanteenCard } from "@/features/canteens/components/CanteenCard";
-import Footer from "@/component/components/layout/Footer";
+import Footer from "@/components/components/layout/Footer";
 import { CANTEENS } from "@/features/canteens/components/canteens";
 import menuData from "@/features/menu/data/menu.json";
 

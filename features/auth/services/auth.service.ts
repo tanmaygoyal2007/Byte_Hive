@@ -5,9 +5,6 @@ export type AuthUser = {
   displayName: string;
 };
 
-const roleKey = (uid: string) => `bytehive-auth-role:${uid}`;
-const LOCAL_AUTH_USERS_KEY = "bytehive-local-auth-users";
-const LOCAL_AUTH_SESSION_KEY = "bytehive-local-auth-session";
 const LOCAL_AUTH_EVENT = "bytehive-local-auth-changed";
 type LocalAuthUserRecord = {
   uid: string;
@@ -17,52 +14,54 @@ type LocalAuthUserRecord = {
   role: LocalAuthRole;
 };
 
+type LocalAuthMemory = {
+  currentUid: string | null;
+  roleByUid: Map<string, LocalAuthRole>;
+  users: LocalAuthUserRecord[];
+};
+
+const globalAuthMemory = globalThis as typeof globalThis & {
+  __bytehiveAuthMemory?: LocalAuthMemory;
+};
+
 function createAuthError(code: string) {
   const error = new Error(code) as Error & { code: string };
   error.code = code;
   return error;
 }
 
-function readLocalUsers() {
-  if (typeof window === "undefined") return [] as LocalAuthUserRecord[];
-
-  try {
-    const stored = localStorage.getItem(LOCAL_AUTH_USERS_KEY);
-    return stored ? JSON.parse(stored) as LocalAuthUserRecord[] : [];
-  } catch {
-    return [] as LocalAuthUserRecord[];
+function getAuthMemory() {
+  if (!globalAuthMemory.__bytehiveAuthMemory) {
+    globalAuthMemory.__bytehiveAuthMemory = {
+      currentUid: null,
+      roleByUid: new Map<string, LocalAuthRole>(),
+      users: [],
+    };
   }
+
+  return globalAuthMemory.__bytehiveAuthMemory;
+}
+
+function readLocalUsers() {
+  return getAuthMemory().users;
 }
 
 function saveLocalUsers(users: LocalAuthUserRecord[]) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(LOCAL_AUTH_USERS_KEY, JSON.stringify(users));
+  getAuthMemory().users = users;
 }
 
 function readLocalSession() {
-  if (typeof window === "undefined") return null as LocalAuthUserRecord | null;
-
-  try {
-    const stored = localStorage.getItem(LOCAL_AUTH_SESSION_KEY);
-    if (!stored) return null;
-    const session = JSON.parse(stored) as { uid: string } | null;
-    if (!session?.uid) return null;
-    return readLocalUsers().find((user) => user.uid === session.uid) ?? null;
-  } catch {
-    return null as LocalAuthUserRecord | null;
-  }
+  const { currentUid, users } = getAuthMemory();
+  if (!currentUid) return null;
+  return users.find((user) => user.uid === currentUid) ?? null;
 }
 
 function saveLocalSession(uid: string | null) {
-  if (typeof window === "undefined") return;
+  getAuthMemory().currentUid = uid;
 
-  if (uid) {
-    localStorage.setItem(LOCAL_AUTH_SESSION_KEY, JSON.stringify({ uid }));
-  } else {
-    localStorage.removeItem(LOCAL_AUTH_SESSION_KEY);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(LOCAL_AUTH_EVENT));
   }
-
-  window.dispatchEvent(new CustomEvent(LOCAL_AUTH_EVENT));
 }
 
 function toLocalUser(record: LocalAuthUserRecord | null) {
@@ -76,14 +75,23 @@ function toLocalUser(record: LocalAuthUserRecord | null) {
 }
 
 export function getStoredAuthRole(uid: string) {
-  return localStorage.getItem(roleKey(uid)) as LocalAuthRole | null;
+  return getAuthMemory().roleByUid.get(uid) ?? null;
 }
 
 export function setStoredAuthRole(uid: string, role: LocalAuthRole) {
-  localStorage.setItem(roleKey(uid), role);
+  getAuthMemory().roleByUid.set(uid, role);
+}
+
+export function hasLocalAccount(email: string) {
+  const normalizedEmail = email.trim().toLowerCase();
+  return readLocalUsers().some((user) => user.email === normalizedEmail);
 }
 
 export async function configureAuthPersistence() {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem("bytehive-local-auth-users");
+    localStorage.removeItem("bytehive-local-auth-session");
+  }
   return;
 }
 
@@ -144,10 +152,8 @@ export function subscribeToAuthState(callback: (user: AuthUser | null) => void) 
   }
 
   window.addEventListener(LOCAL_AUTH_EVENT, sync);
-  window.addEventListener("storage", sync);
 
   return () => {
     window.removeEventListener(LOCAL_AUTH_EVENT, sync);
-    window.removeEventListener("storage", sync);
   };
 }
