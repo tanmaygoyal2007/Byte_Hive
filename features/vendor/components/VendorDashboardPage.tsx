@@ -1,9 +1,9 @@
 import { CheckCircle2, ChevronDown, ChevronUp, Clock3, MapPin, Package, QrCode, Settings, Store } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "@/component/lib/router";
-import Footer from "@/component/components/layout/Footer";
-import Navbar from "@/component/components/layout/Navbar";
-import useSecondClock from "@/component/hooks/useSecondClock";
+import { Link, useNavigate } from "@/components/lib/router";
+import Footer from "@/components/components/layout/Footer";
+import Navbar from "@/components/components/layout/Navbar";
+import useSecondClock from "@/components/hooks/useSecondClock";
 import {
   getLivePrepMinutes,
   getOrderCountdownState,
@@ -504,7 +504,7 @@ function VendorDashboardPage() {
           )}
         </div>
       </main>
-      <Footer />
+      <Footer variant="vendor" />
     </div>
   );
 }

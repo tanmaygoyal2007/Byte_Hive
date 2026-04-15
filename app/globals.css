@@ -1,10 +1,10 @@
-@import "../component/components/layout/Footer.css";
-@import "../component/components/layout/Navbar.css";
-@import "../component/components/ui/BlockBadge.css";
-@import "../component/components/ui/Button.css";
-@import "../component/components/ui/RatingBadge.css";
-@import "../component/components/ui/SearchInput.css";
-@import "../component/components/ui/SiriBorder.css";
+@import "../components/components/layout/Footer.css";
+@import "../components/components/layout/Navbar.css";
+@import "../components/components/ui/BlockBadge.css";
+@import "../components/components/ui/Button.css";
+@import "../components/components/ui/RatingBadge.css";
+@import "../components/components/ui/SearchInput.css";
+@import "../components/components/ui/SiriBorder.css";
 @import "../features/about/components/AboutPage.css";
 @import "../features/auth/components/AuthModal.css";
 @import "../features/auth/components/PortalDropdown.css";

@@ -1,8 +1,8 @@
 import { AlertCircle, ArrowLeft, Camera, CheckCircle2, QrCode, ScanLine, XCircle } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Link, useNavigate } from "@/component/lib/router";
-import Footer from "@/component/components/layout/Footer";
-import Navbar from "@/component/components/layout/Navbar";
+import { Link, useNavigate } from "@/components/lib/router";
+import Footer from "@/components/components/layout/Footer";
+import Navbar from "@/components/components/layout/Navbar";
 import {
   getOrderById,
   getOrderForOutletByPickupCode,
@@ -417,7 +417,7 @@ function VendorQrScannerPage() {
         </div>
       </main>
 
-      <Footer />
+      <Footer variant="vendor" />
     </div>
   );
 }

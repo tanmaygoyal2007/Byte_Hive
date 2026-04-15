@@ -1,4 +1,4 @@
-import { Link } from "@/component/lib/router";
+import { Link } from "@/components/lib/router";
 
 interface CanteenHeaderProps {
   canteen?: {

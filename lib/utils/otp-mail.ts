@@ -1,24 +1,37 @@
-import { Resend } from "resend";
+import nodemailer from "nodemailer";
+
+type SendOtpEmailResult = {
+  delivered: boolean;
+};
 
 export async function sendOtpEmail(params: {
   to: string;
   code: string;
-}) {
-  const apiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.OTP_FROM_EMAIL;
+}): Promise<SendOtpEmailResult> {
+  const host = process.env.SMTP_HOST;
+  const port = Number(process.env.SMTP_PORT || 0);
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+  const secure = ["true", "1", "yes"].includes((process.env.SMTP_SECURE || "").toLowerCase());
+  const fromEmail = process.env.OTP_FROM_EMAIL || user;
 
-  if (!apiKey) {
-    throw new Error("OTP email delivery is not configured yet. Add RESEND_API_KEY in .env.local.");
+  if (!host || !port || !user || !pass || !fromEmail) {
+    throw new Error("OTP email is not configured.");
   }
 
-  if (!fromEmail) {
-    throw new Error("OTP sender address is missing. Add OTP_FROM_EMAIL in .env.local.");
-  }
+  const transporter = nodemailer.createTransport({
+    host,
+    port,
+    secure,
+    auth: {
+      user,
+      pass,
+    },
+  });
 
-  const resend = new Resend(apiKey);
-  const { error } = await resend.emails.send({
+  await transporter.sendMail({
     from: fromEmail,
-    to: [params.to],
+    to: params.to,
     subject: "Your ByteHive OTP Verification Code",
     html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #111827;">
@@ -33,7 +46,5 @@ export async function sendOtpEmail(params: {
     `,
   });
 
-  if (error) {
-    throw new Error(error.message || "Unable to send OTP email.");
-  }
+  return { delivered: true };
 }

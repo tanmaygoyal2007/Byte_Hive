@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "@/component/lib/router";
+import { Link } from "@/components/lib/router";
 import { getOutletMetaById } from "@/features/orders/services/order-portal.service";
 import { resolveMenuImageUrl } from "@/features/menu/services/menu-image.service";
 import { getVendorClosureLabel, getVendorOutletStatus, subscribeToVendorStatus } from "@/features/vendor/services/vendor-portal.service";

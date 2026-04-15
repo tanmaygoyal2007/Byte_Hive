@@ -63,11 +63,13 @@
 .footer-nav-link{
 	color:var(--text-muted);
 	text-decoration:none;
-	transition: color 0.3s ease;
+	transition: color 0.3s ease, transform 0.2s ease;
+	display:inline-flex;
 }
 
 .footer-nav-link:hover{
 	color:#ff7a1a;
+	transform: translateX(2px);
 }
 
 .footer-contact p{

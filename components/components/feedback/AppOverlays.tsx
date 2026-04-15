@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useLocation } from "@/component/lib/router";
+import { useLocation } from "@/components/lib/router";
 import ChatWidget from "@/features/chat/components/ChatWidget";
 import type { ChatAction } from "@/features/chat/hooks/useChat";
 import useCart from "@/features/cart/hooks/useCart";

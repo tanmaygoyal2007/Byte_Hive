@@ -1,8 +1,8 @@
 import React, { useMemo, useState } from "react";
 import { CheckCircle2, House, ReceiptText } from "lucide-react";
-import { useLocation, useNavigate, useSearchParams } from "@/component/lib/router";
-import Footer from "@/component/components/layout/Footer";
-import Navbar from "@/component/components/layout/Navbar";
+import { useLocation, useNavigate, useSearchParams } from "@/components/lib/router";
+import Footer from "@/components/components/layout/Footer";
+import Navbar from "@/components/components/layout/Navbar";
 import ReceiptCard from "@/features/orders/components/ReceiptCard";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";

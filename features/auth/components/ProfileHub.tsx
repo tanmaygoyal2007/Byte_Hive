@@ -1,9 +1,9 @@
 import { CheckCircle2, ChevronLeft, Clock3, Heart, LogIn, LogOut, Package, ShoppingBag, Star, Trash2, UserPlus, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Link } from "@/component/lib/router";
+import { Link } from "@/components/lib/router";
 import useCart from "@/features/cart/hooks/useCart";
-import useSecondClock from "@/component/hooks/useSecondClock";
+import useSecondClock from "@/components/hooks/useSecondClock";
 import { resolveMenuImageUrl } from "@/features/menu/services/menu-image.service";
 import {
   getFavoriteItemsForUser,

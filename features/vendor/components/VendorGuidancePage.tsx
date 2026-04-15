@@ -1,7 +1,7 @@
 import { Bot, CircleDollarSign, Clock3, MapPin, PackageCheck, QrCode, ShieldCheck, Store, UtensilsCrossed } from "lucide-react";
-import { Link } from "@/component/lib/router";
-import Footer from "@/component/components/layout/Footer";
-import Navbar from "@/component/components/layout/Navbar";
+import { Link } from "@/components/lib/router";
+import Footer from "@/components/components/layout/Footer";
+import Navbar from "@/components/components/layout/Navbar";
 import { getVendorLocation, getVendorOutlet } from "@/features/vendor/services/vendor-portal.service";
 
 const workflowSteps = [
@@ -194,7 +194,7 @@ function VendorGuidancePage() {
           </section>
         </div>
       </main>
-      <Footer />
+      <Footer variant="vendor" />
     </div>
   );
 }
