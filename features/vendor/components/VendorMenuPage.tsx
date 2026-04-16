@@ -1,4 +1,4 @@
-import { ChevronLeft, Edit3, Eye, Plus, Search, Trash2, X } from "lucide-react";
+import { ChevronLeft, Edit3, Eye, Plus, Search, Trash2, X, Palette } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "@/components/lib/router";
 import Footer from "@/components/components/layout/Footer";
@@ -19,10 +19,41 @@ type MenuForm = {
   price: string;
   description: string;
   isAvailable: boolean;
+  labels: string[];
 };
 
+type CustomLabel = {
+  name: string;
+  color: string;
+};
+
+const LABEL_STORAGE_KEY = "bytehive-vendor-labels";
+
 const suggestedCategories = ["Breakfast", "Main Course", "Beverages", "Snacks", "Desserts"];
-const emptyForm: MenuForm = { name: "", category: "", price: "", description: "", isAvailable: true };
+const defaultColors = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899"];
+const emptyForm: MenuForm = { name: "", category: "", price: "", description: "", isAvailable: true, labels: [] };
+
+function getStoredLabels(outletId: string): CustomLabel[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = localStorage.getItem(LABEL_STORAGE_KEY);
+    if (!stored) return [];
+    const all = JSON.parse(stored) as Record<string, CustomLabel[]>;
+    return all[outletId] || [];
+  } catch {
+    return [];
+  }
+}
+
+function saveStoredLabels(outletId: string, labels: CustomLabel[]) {
+  if (typeof window === "undefined") return;
+  try {
+    const stored = localStorage.getItem(LABEL_STORAGE_KEY);
+    const all = stored ? JSON.parse(stored) : {};
+    all[outletId] = labels;
+    localStorage.setItem(LABEL_STORAGE_KEY, JSON.stringify(all));
+  } catch {}
+}
 
 function VendorMenuPage() {
   const navigate = useNavigate();
@@ -34,6 +65,10 @@ function VendorMenuPage() {
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [formData, setFormData] = useState<MenuForm>(emptyForm);
   const [isMobile, setIsMobile] = useState(false);
+  const [showLabelManager, setShowLabelManager] = useState(false);
+  const [customLabels, setCustomLabels] = useState<CustomLabel[]>(() => getStoredLabels(outletId || ""));
+  const [newLabelName, setNewLabelName] = useState("");
+  const [newLabelColor, setNewLabelColor] = useState(defaultColors[0]);
 
   useEffect(() => {
     const syncOutlet = () => setOutletName(getVendorOutlet());
@@ -76,18 +111,39 @@ function VendorMenuPage() {
         categories.add(item.category.trim());
       }
     });
+    customLabels.forEach((label) => {
+      categories.add(label.name);
+    });
     if (formData.category.trim()) {
       categories.add(formData.category.trim());
     }
 
     return Array.from(categories).sort((left, right) => left.localeCompare(right));
-  }, [formData.category, menuItems]);
+  }, [formData.category, menuItems, customLabels]);
 
   const persistMenu = (items: MenuCatalogItem[]) => {
     setMenuItems(items);
     if (outletId) {
       saveMenuItemsForOutlet(outletId, items);
     }
+  };
+
+  const handleAddLabel = () => {
+    if (!newLabelName.trim() || !outletId) return;
+    const exists = customLabels.find((l) => l.name.toLowerCase() === newLabelName.trim().toLowerCase());
+    if (exists) return;
+    
+    const updated = [...customLabels, { name: newLabelName.trim(), color: newLabelColor }];
+    setCustomLabels(updated);
+    saveStoredLabels(outletId, updated);
+    setNewLabelName("");
+  };
+
+  const handleDeleteLabel = (name: string) => {
+    if (!outletId) return;
+    const updated = customLabels.filter((l) => l.name !== name);
+    setCustomLabels(updated);
+    saveStoredLabels(outletId, updated);
   };
 
   const closeForm = () => {
@@ -110,6 +166,7 @@ function VendorMenuPage() {
       price: String(item.price),
       description: item.description ?? "",
       isAvailable: item.isAvailable,
+      labels: item.labels || [],
     });
     setShowForm(true);
   };
@@ -143,6 +200,7 @@ function VendorMenuPage() {
       image: menuItems.find((item) => item.id === editingItem)?.image,
       isAvailable: formData.isAvailable,
       isVeg: menuItems.find((item) => item.id === editingItem)?.isVeg,
+      labels: formData.labels,
     };
 
     if (editingItem) {
@@ -177,6 +235,9 @@ function VendorMenuPage() {
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <button type="button" className="vendor-button-secondary vendor-preview-btn" onClick={handlePreview} disabled={!outletId}>
                   <Eye size={18} /> Preview Menu
+                </button>
+                <button type="button" className="vendor-button-secondary" onClick={() => setShowLabelManager(true)}>
+                  <Palette size={18} /> Manage Labels
                 </button>
                 <button type="button" className="vendor-button" onClick={handleAddNew}>
                   <Plus size={18} /> Add Item
@@ -359,7 +420,7 @@ function VendorMenuPage() {
                 </div>
                 <div className="vendor-form-row">
                   <div className="vendor-field">
-                    <label htmlFor="vendor-item-category">Category</label>
+                    <label htmlFor="vendor-item-category">Category / Label</label>
                     <input
                       id="vendor-item-category"
                       className="vendor-input"
@@ -395,6 +456,43 @@ function VendorMenuPage() {
                     onChange={(event) => setFormData({ ...formData, description: event.target.value })}
                   />
                 </div>
+                <div className="vendor-field">
+                  <label>Labels</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                    {customLabels.length === 0 && (
+                      <p className="vendor-muted" style={{ fontSize: 14 }}>No labels created yet. Use "Manage Labels" button first.</p>
+                    )}
+                    {customLabels.map((label) => {
+                      const isSelected = formData.labels.includes(label.name);
+                      return (
+                        <button
+                          key={label.name}
+                          type="button"
+                          onClick={() => {
+                            const current = formData.labels;
+                            const updated = isSelected 
+                              ? current.filter(l => l !== label.name)
+                              : [...current, label.name];
+                            setFormData({ ...formData, labels: updated });
+                          }}
+                          style={{
+                            padding: "6px 12px",
+                            borderRadius: 8,
+                            border: "1px solid",
+                            borderColor: isSelected ? label.color : "var(--border-soft)",
+                            background: isSelected ? `${label.color}20` : "transparent",
+                            color: isSelected ? label.color : "var(--text-muted)",
+                            cursor: "pointer",
+                            fontWeight: isSelected ? 600 : 400,
+                            fontSize: 13,
+                          }}
+                        >
+                          {label.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
                 <label className="vendor-form-check">
                   <input
                     type="checkbox"
@@ -415,6 +513,106 @@ function VendorMenuPage() {
                   onClick={handleSubmit}
                 >
                   {editingItem ? "Update Item" : "Add Item"}
+                </button>
+              </div>
+            </section>
+          </div>
+        </>
+      )}
+
+      {showLabelManager && (
+        <>
+          <div className="vendor-form-backdrop" onClick={() => setShowLabelManager(false)} />
+          <div className="vendor-form-wrap">
+            <section className="vendor-form-panel" role="dialog" aria-modal="true" aria-label="Manage Labels">
+              <div className="vendor-form-header">
+                <div>
+                  <h2>Manage Labels</h2>
+                  <p className="vendor-muted">Create custom labels with colors for your menu categories.</p>
+                </div>
+                <button type="button" className="vendor-icon-button" onClick={() => setShowLabelManager(false)} aria-label="Close">
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="vendor-form-body">
+                <div className="vendor-field">
+                  <label>Create New Label</label>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input
+                      className="vendor-input"
+                      value={newLabelName}
+                      onChange={(e) => setNewLabelName(e.target.value)}
+                      placeholder="Label name"
+                      style={{ flex: 1 }}
+                    />
+                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                      {defaultColors.map((color) => (
+                        <button
+                          key={color}
+                          type="button"
+                          onClick={() => setNewLabelColor(color)}
+                          style={{
+                            width: 28,
+                            height: 28,
+                            borderRadius: 6,
+                            background: color,
+                            border: newLabelColor === color ? "2px solid var(--text-primary)" : "2px solid transparent",
+                            cursor: "pointer",
+                          }}
+                          aria-label={`Select color ${color}`}
+                        />
+                      ))}
+                    </div>
+                    <button type="button" className="vendor-button" onClick={handleAddLabel} disabled={!newLabelName.trim()}>
+                      Add
+                    </button>
+                  </div>
+                </div>
+                
+                <div style={{ marginTop: 16 }}>
+                  <label>Your Labels</label>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                    {customLabels.length === 0 && (
+                      <p className="vendor-muted" style={{ fontSize: 14 }}>No custom labels yet. Create one above.</p>
+                    )}
+                    {customLabels.map((label) => (
+                      <div
+                        key={label.name}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          padding: "6px 10px",
+                          borderRadius: 8,
+                          background: `${label.color}20`,
+                          border: `1px solid ${label.color}`,
+                        }}
+                      >
+                        <span style={{ width: 12, height: 12, borderRadius: 3, background: label.color }} />
+                        <span style={{ fontWeight: 500, fontSize: 14 }}>{label.name}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteLabel(label.name)}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            cursor: "pointer",
+                            padding: 2,
+                            display: "flex",
+                            color: "var(--text-muted)",
+                          }}
+                          aria-label={`Delete ${label.name}`}
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              <div className="vendor-form-actions">
+                <button type="button" className="vendor-button-ghost" onClick={() => setShowLabelManager(false)}>
+                  Done
                 </button>
               </div>
             </section>

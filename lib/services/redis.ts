@@ -81,6 +81,8 @@ function createFallbackRedisClient(): ByteHiveRedisClient {
   };
 }
 
+const REDIS_CONNECT_TIMEOUT_MS = 5000;
+
 export async function getRedisClient() {
   if (globalRedis.__bytehiveRedisClient?.isReady) {
     return globalRedis.__bytehiveRedisClient;
@@ -96,17 +98,23 @@ export async function getRedisClient() {
       return fallbackClient;
     }
 
-    const client = createClient({ url });
-    client.on("error", (error) => {
-      console.error("Redis connection error:", error);
-    });
+    const fallbackClient = createFallbackRedisClient();
+    const client = createClient({ url, socket: { connectTimeout: REDIS_CONNECT_TIMEOUT_MS } });
+    client.on("error", () => {});
 
-    globalRedis.__bytehiveRedisPromise = client.connect().then(() => {
+    const connectWithTimeout = Promise.race([
+      client.connect(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Redis connection timeout")), REDIS_CONNECT_TIMEOUT_MS)
+      ),
+    ]);
+
+    globalRedis.__bytehiveRedisPromise = connectWithTimeout.then(() => {
       globalRedis.__bytehiveRedisClient = client;
       return client;
-    }).catch((error) => {
-      globalRedis.__bytehiveRedisPromise = undefined;
-      throw error;
+    }).catch(() => {
+      globalRedis.__bytehiveRedisClient = fallbackClient;
+      return fallbackClient;
     });
   }
 

@@ -65,37 +65,71 @@
   flex-direction: column;
   text-align: left;
   flex: 1;
+  position: relative;
+  margin-bottom: 24px;
 }
 
 .input-group.full {
   width: 100%;
-  margin-top: 16px;
+  margin-top: 24px;
 }
 
 .input-group label {
-  color: color-mix(in srgb, var(--text-primary) 78%, transparent);
-  font-size: 0.84rem;
-  font-weight: 700;
-  margin-bottom: 8px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 500;
+  display: block;
+  position: absolute;
+  left: 14px;
+  top: 16px;
+  pointer-events: none;
+  transition: transform 0.2s ease, color 0.2s ease;
+  background: var(--surface-card);
+  padding: 0 6px;
+  border-radius: 6px;
+  z-index: 1;
+}
+
+.input-group input:focus + label,
+.input-group textarea:focus + label,
+.input-group input:not(:placeholder-shown) + label,
+.input-group textarea:not(:placeholder-shown) + label {
+  transform: translateY(-26px) scale(0.85);
+  color: var(--accent);
+  font-weight: 600;
 }
 
 .input-group input,
 .input-group textarea {
-  background: color-mix(in srgb, var(--nav-surface) 88%, transparent);
-  border: 1px solid var(--border-soft);
-  padding: 13px 16px;
+  background: var(--surface-card);
+  border: 2px solid var(--border-soft);
+  padding: 16px 14px 8px;
   border-radius: 14px;
   color: var(--text-primary);
   outline: none;
   font: inherit;
+  width: 100%;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.input-group input:focus + label,
+.input-group textarea:focus + label,
+.input-group input:not(:placeholder-shown) + label,
+.input-group textarea:not(:placeholder-shown) + label {
+  transform: translateY(-24px) scale(0.85);
+  color: var(--accent);
 }
 
 .input-group input:focus,
 .input-group textarea:focus {
-  border-color: color-mix(in srgb, var(--accent) 46%, transparent);
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 14%, transparent);
+  border-color: var(--accent);
+  box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.15);
   transform: translateY(-1px);
+}
+
+.input-group input::placeholder,
+.input-group textarea::placeholder {
+  color: transparent;
 }
 
 .input-group textarea {
@@ -215,10 +249,23 @@
   box-shadow: 0 30px 58px rgba(0, 0, 0, 0.38);
 }
 
+:root[data-theme="dark"] .input-group label {
+  background: rgba(35, 28, 22, 0.95);
+}
+
 :root[data-theme="dark"] .input-group input,
 :root[data-theme="dark"] .input-group textarea {
-  background: rgba(18, 13, 10, 0.86);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(35, 28, 22, 0.95);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+:root[data-theme="dark"] .input-group input:focus + label,
+:root[data-theme="dark"] .input-group textarea:focus + label,
+:root[data-theme="dark"] .input-group input:not(:placeholder-shown) + label,
+:root[data-theme="dark"] .input-group textarea:not(:placeholder-shown) + label {
+  color: var(--accent);
+  font-weight: 600;
 }
 
 @media (max-width: 880px) {

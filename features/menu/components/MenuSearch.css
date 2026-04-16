@@ -43,3 +43,23 @@
 .menu-search input::placeholder {
 	color: color-mix(in srgb, var(--text-muted) 76%, transparent);
 }
+
+.menu-search-clear {
+	background: none;
+	border: none;
+	color: var(--text-muted);
+	cursor: pointer;
+	padding: 4px;
+	font-size: 1rem;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.2s ease;
+	border-radius: 8px;
+}
+
+.menu-search-clear:hover {
+	color: var(--accent);
+	background: rgba(249, 115, 22, 0.1);
+	transform: scale(1.1);
+}

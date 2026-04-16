@@ -60,6 +60,7 @@ export interface MenuCatalogItem {
   description?: string;
   image?: string;
   isAvailable: boolean;
+  labels?: string[];
 }
 
 export interface MenuItemDraftInput {

@@ -14,6 +14,7 @@ function CartPage() {
 
   const { state, increment, decrement, removeItem, clear, total } = ctx;
   const items = state.items;
+  const sourceCanteen = state.sourceCanteen;
   const subtotal = total();
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const outletMeta = items[0]?.canteenId ? getOutletMetaById(items[0].canteenId) : null;
@@ -88,7 +89,7 @@ function CartPage() {
               </div>
 
               <div className="cart-items" role="list" aria-label="Cart items">
-                {items.map((item, index) => (
+                {[...items].sort((a, b) => a.name.localeCompare(b.name)).map((item, index) => (
                   <article
                     key={item.id}
                     className="cart-item"
@@ -179,7 +180,7 @@ function CartPage() {
               </div>
 
               <div className="summary-mini-list">
-                {items.map((item) => (
+                {[...items].sort((a, b) => a.name.localeCompare(b.name)).map((item) => (
                   <div key={item.id} className="summary-mini-row">
                     <span>{item.name} x {item.quantity}</span>
                     <span>₹{(item.price * item.quantity).toFixed(2)}</span>
@@ -210,7 +211,7 @@ function CartPage() {
                 onPaymentFailure={(err) => console.error("Payment failed:", err)}
               />
 
-              <Link to="/canteens" className="summary-secondary-btn">
+              <Link to={sourceCanteen ? `/canteens/${sourceCanteen}` : "/canteens"} className="summary-secondary-btn">
                 Continue Shopping
               </Link>
             </div>

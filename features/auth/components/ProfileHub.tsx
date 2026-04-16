@@ -389,17 +389,34 @@ function ProfileHub({
   const renderFavoritesView = () => (
     <>
       {renderBackButton()}
-      <div className="profile-stack">
+      <div className="profile-favorites-grid">
         {favorites.length ? favorites.map((item) => (
-          <div key={item.id} className="profile-panel-card profile-favorite-row">
-            <div className="profile-favorite-copy">
-              <div className="profile-favorite-title"><Star size={16} /> <strong>{item.name}</strong></div>
-              <p>{item.outletName}</p>
-              <small>{item.category}</small>
+          <div key={item.id} className="profile-favorite-card">
+            <div className="profile-favorite-image-wrapper">
+              <img
+                src={resolveMenuImageUrl(item.image) || "/placeholder.svg"}
+                alt={item.name}
+                className="profile-favorite-image"
+              />
+              <button
+                type="button"
+                className="profile-favorite-card-remove"
+                onClick={() => handleFavoriteRemove(item.id)}
+                aria-label="Remove from favorites"
+              >
+                <X size={14} />
+              </button>
+              {item.isVeg !== undefined && (
+                <span className={`profile-favorite-veg ${item.isVeg ? "veg" : "non-veg"}`}>
+                  {item.isVeg ? "●" : "■"}
+                </span>
+              )}
             </div>
-            <div className="profile-favorite-side">
-              <strong>Rs {item.price}</strong>
-              <div className="profile-favorite-actions">
+            <div className="profile-favorite-content">
+              <h4>{item.name}</h4>
+              <p className="profile-favorite-outlet">{item.outletName}</p>
+              <div className="profile-favorite-bottom">
+                <span className="profile-favorite-price">Rs {item.price}</span>
                 {getCartQuantityForFavorite(item.id) > 0 ? (
                   <div className="profile-favorite-qty">
                     <button type="button" onClick={() => decrement(item.id)}>-</button>
@@ -407,16 +424,16 @@ function ProfileHub({
                     <button type="button" onClick={() => increment(item.id)}>+</button>
                   </div>
                 ) : (
-                  <button type="button" onClick={() => handleFavoriteAdd(item)}>Add to Cart</button>
+                  <button type="button" className="profile-favorite-add-btn" onClick={() => handleFavoriteAdd(item)}>
+                    Add
+                  </button>
                 )}
-                <button type="button" className="profile-favorite-remove" onClick={() => handleFavoriteRemove(item.id)}>
-                  Remove Favorite
-                </button>
               </div>
             </div>
           </div>
         )) : (
-          <div className="profile-panel-card">
+          <div className="profile-panel-card profile-favorites-empty">
+            <Star size={32} />
             <strong>No favorites yet</strong>
             <p>Tap the star beside any menu item to save it here for quick reordering.</p>
           </div>

@@ -373,7 +373,7 @@ function AuthModal({ isOpen, role, onClose, onSubmit }: AuthModalProps) {
         </div>
 
         <form className="auth-modal-form" onSubmit={handleSubmit}>
-          {mode === "signup" && (
+          {mode === "signup" && signupStep === "identity" && (
             <label>
               Full Name
               <input
@@ -388,38 +388,61 @@ function AuthModal({ isOpen, role, onClose, onSubmit }: AuthModalProps) {
             </label>
           )}
 
-          <label>
-            College Email
-            <input
-              type="email"
-              value={email}
-              onChange={(event) => {
-                setEmail(event.target.value);
-                if (mode === "signup" && signupStep !== "identity") resetSignupFlow();
-              }}
-              placeholder={role === "student" ? "student@dept.christuniversity.in" : "faculty@christuniversity.in"}
-              list="bytehive-saved-auth-emails"
-              required
-            />
-            {savedEmails.length > 0 && (
-              <datalist id="bytehive-saved-auth-emails">
-                {savedEmails.map((savedEmail) => (
-                  <option key={savedEmail} value={savedEmail} />
-                ))}
-              </datalist>
-            )}
-            <small className="auth-modal-hint">{getCollegeEmailMessage(roleLabel)}</small>
-          </label>
+          {mode === "signup" && signupStep !== "password" && (
+            <label>
+              College Email
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                  if (mode === "signup" && signupStep !== "identity") resetSignupFlow();
+                }}
+                placeholder={role === "student" ? "student@dept.christuniversity.in" : "faculty@christuniversity.in"}
+                list="bytehive-saved-auth-emails"
+                required
+              />
+              {savedEmails.length > 0 && (
+                <datalist id="bytehive-saved-auth-emails">
+                  {savedEmails.map((savedEmail) => (
+                    <option key={savedEmail} value={savedEmail} />
+                  ))}
+                </datalist>
+              )}
+              <small className="auth-modal-hint">{getCollegeEmailMessage(roleLabel)}</small>
+            </label>
+          )}
 
           {mode === "login" && (
-            renderPasswordField({
-              label: "Password",
-              value: password,
-              onChange: setPassword,
-              placeholder: "Enter password",
-              visible: showPassword,
-              onToggle: () => setShowPassword((current) => !current),
-            })
+            <>
+              <label>
+                College Email
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder={role === "student" ? "student@dept.christuniversity.in" : "faculty@christuniversity.in"}
+                  list="bytehive-saved-auth-emails"
+                  required
+                />
+                {savedEmails.length > 0 && (
+                  <datalist id="bytehive-saved-auth-emails">
+                    {savedEmails.map((savedEmail) => (
+                      <option key={savedEmail} value={savedEmail} />
+                    ))}
+                  </datalist>
+                )}
+              </label>
+
+              {renderPasswordField({
+                label: "Password",
+                value: password,
+                onChange: setPassword,
+                placeholder: "Enter password",
+                visible: showPassword,
+                onToggle: () => setShowPassword((current) => !current),
+              })}
+            </>
           )}
 
           {mode === "signup" && signupStep === "otp" && (
@@ -472,11 +495,6 @@ function AuthModal({ isOpen, role, onClose, onSubmit }: AuthModalProps) {
 
           {mode === "signup" && signupStep === "password" && (
             <>
-              <div className="auth-otp-success">
-                <CheckCircle2 size={18} />
-                <span>OTP verified for {normalizedEmail}</span>
-              </div>
-
               {renderPasswordField({
                 label: "Password",
                 value: password,

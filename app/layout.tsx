@@ -5,6 +5,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "ByteHive",
   description: "Campus food ordering and vendor operations platform.",
+  icons: {
+    icon: "/images/bytehive-navbar-logo.png",
+  },
 };
 
 export default function RootLayout({
