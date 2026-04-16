@@ -5,7 +5,7 @@
     "dev:helper": "node --experimental-strip-types scripts/dev.ts",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint ."
   },
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
@@ -24,11 +24,13 @@
     "redis": "^5.12.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.59.1",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.5",
     "@types/react-dom": "^19.2.3",
     "eslint": "^9.39.1",
     "eslint-config-next": "16.1.6",
+    "playwright": "^1.59.1",
     "typescript": "^5"
   }
 }

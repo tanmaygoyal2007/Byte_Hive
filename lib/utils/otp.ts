@@ -17,8 +17,12 @@ export function normalizeOtpEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
-export function getRequiredOtpDomain(role: OtpRole) {
-  return role === "faculty" ? "christuniversity.in" : ".christuniversity.in";
+export function getRequiredOtpDomain(_role: OtpRole) {
+  return "christuniversity.in";
+}
+
+function matchesOtpDomain(domain: string, requiredDomain: string) {
+  return domain === requiredDomain || domain.endsWith(`.${requiredDomain}`);
 }
 
 export function isValidOtpEmail(email: string, role: OtpRole = "student") {
@@ -32,7 +36,7 @@ export function isValidOtpEmail(email: string, role: OtpRole = "student") {
   if (localPart.startsWith(".") || localPart.endsWith(".")) return false;
   if (domain.startsWith("-") || domain.endsWith("-")) return false;
   if (domain.startsWith(".") || domain.endsWith(".")) return false;
-  if (role === "faculty" ? domain !== "christuniversity.in" : !normalized.endsWith(".christuniversity.in")) return false;
+  if (!matchesOtpDomain(domain, getRequiredOtpDomain(role))) return false;
 
   return true;
 }

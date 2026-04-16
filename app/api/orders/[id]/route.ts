@@ -1,17 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrderById } from "@/features/orders/services/order-portal.service";
+import { getStoredOrderById, updateStoredOrderStatus, updateStoredOrderTiming } from "@/lib/server/order-store";
 
-export function GET(
+export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  return params.then(({ id }) => {
-    const order = getOrderById(id);
+  const { id } = await params;
+  const order = await getStoredOrderById(id);
 
-    if (!order) {
-      return NextResponse.json({ error: "Order not found." }, { status: 404 });
+  if (!order) {
+    return NextResponse.json({ error: "Order not found." }, { status: 404 });
+  }
+
+  return NextResponse.json(order, {
+    headers: {
+      "Cache-Control": "no-store",
+    },
+  });
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const payload = await request.json();
+
+    if (typeof payload?.status === "string") {
+      const updated = await updateStoredOrderStatus(id, payload.status);
+      if (!updated) {
+        return NextResponse.json({ error: "Order not found." }, { status: 404 });
+      }
+      return NextResponse.json(updated);
     }
 
-    return NextResponse.json(order);
-  });
+    const updated = await updateStoredOrderTiming(id, payload ?? {});
+    if (!updated) {
+      return NextResponse.json({ error: "Order not found." }, { status: 404 });
+    }
+    return NextResponse.json(updated);
+  } catch {
+    return NextResponse.json({ error: "Unable to update order." }, { status: 500 });
+  }
 }

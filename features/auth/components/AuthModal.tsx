@@ -208,7 +208,7 @@ function AuthModal({ isOpen, role, onClose, onSubmit }: AuthModalProps) {
       setOtpVerified(false);
       setOtpExpiresAt(response.expiresAt);
       setResendAvailableAt(response.resendAvailableAt);
-      setSuccessMessage("OTP sent to your college email.");
+      setSuccessMessage(response.message);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Unable to send OTP.");
     } finally {

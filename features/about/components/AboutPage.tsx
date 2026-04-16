@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { Clock3, Github, Linkedin, MapPin, Shield, Smartphone, Target, UtensilsCrossed, Users } from "lucide-react";
+import { ArrowLeft, Clock3, Github, Linkedin, MapPin, Shield, Smartphone, Target, UtensilsCrossed, Users } from "lucide-react";
 import { Link, useLocation } from "@/components/lib/router";
 import Navbar from "@/components/components/layout/Navbar";
 import Footer from "@/components/components/layout/Footer";
@@ -96,6 +96,7 @@ function AboutPage() {
         {isVendorAbout && (
           <div className="vendor-shell" style={{ marginBottom: "12px" }}>
             <Link to="/vendor/dashboard" className="vendor-back-link">
+              <ArrowLeft size={18} />
               Back to Vendor Portal
             </Link>
           </div>
@@ -214,17 +215,19 @@ function AboutPage() {
               </span>
             ))}
           </div>
-          <p className="about-section-copy">
-            ByteHive is developed as part of our semester Web Stack project, showcasing our commitment to
-            <strong> teamwork, accessibility,</strong> and <strong>real-world problem-solving.</strong>
-          </p>
-          <p className="about-section-copy">
-            This project represents our dedication to creating meaningful digital solutions that address genuine campus
-            challenges while demonstrating technical proficiency and user-centered design thinking.
-          </p>
-          <p className="about-mission-note">
-            Designed with real-world usability in mind, ByteHive bridges academic learning with practical application.
-          </p>
+          <div className="about-purpose-copy-wrap">
+            <p className="about-section-copy">
+              ByteHive is developed as part of our semester Web Stack project, showcasing our commitment to
+              <strong> teamwork, accessibility,</strong> and <strong>real-world problem-solving.</strong>
+            </p>
+            <p className="about-section-copy">
+              This project represents our dedication to creating meaningful digital solutions that address genuine campus
+              challenges while demonstrating technical proficiency and user-centered design thinking.
+            </p>
+            <p className="about-mission-note about-purpose-note">
+              Designed with real-world usability in mind, ByteHive bridges academic learning with practical application.
+            </p>
+          </div>
         </section>
       </main>
       <Footer variant={isVendorAbout ? "vendor" : "default"} />

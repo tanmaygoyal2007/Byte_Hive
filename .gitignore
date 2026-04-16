@@ -9,3 +9,6 @@ firestore-debug.log
 # .env files
 .env
 .env.local
+
+certificates
+data/runtime/

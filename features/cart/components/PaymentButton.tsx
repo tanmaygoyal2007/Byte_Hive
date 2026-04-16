@@ -161,7 +161,7 @@ export default function PaymentButton({
               orderId: orderData.orderId,
             });
 
-            const savedOrder = createOrder({
+            const savedOrder = await createOrder({
               paymentId: result.paymentId,
               outletId: canteenId,
               customerName: userSession?.userName ?? "Guest User",

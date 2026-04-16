@@ -1,6 +1,8 @@
 type SendOtpResponse = {
   ok: true;
+  delivered: boolean;
   message: string;
+  debugCode: string | null;
   expiresAt: number;
   expiresInSeconds: number;
   resendAvailableAt: number;

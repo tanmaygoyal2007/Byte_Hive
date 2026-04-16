@@ -1,4 +1,4 @@
-import { Bot, CircleDollarSign, Clock3, MapPin, PackageCheck, QrCode, ShieldCheck, Store, UtensilsCrossed } from "lucide-react";
+import { ArrowLeft, Bot, CircleDollarSign, Clock3, Eye, MapPin, PackageCheck, Palette, QrCode, ShieldCheck, Smartphone, Store, UtensilsCrossed } from "lucide-react";
 import { Link } from "@/components/lib/router";
 import Footer from "@/components/components/layout/Footer";
 import Navbar from "@/components/components/layout/Navbar";
@@ -13,9 +13,9 @@ const workflowSteps = [
   },
   {
     icon: UtensilsCrossed,
-    title: "Control menu availability and pricing",
+    title: "Control menu, labels, and pricing",
     description:
-      "Mark items available or unavailable, adjust prices, add new menu items, and keep the student-facing menu aligned with the real kitchen state.",
+      "Mark items available or unavailable, adjust prices, add new menu items, create custom labels, and keep the student-facing menu aligned with the real kitchen state.",
   },
   {
     icon: Clock3,
@@ -27,7 +27,13 @@ const workflowSteps = [
     icon: QrCode,
     title: "Complete pickups with QR verification",
     description:
-      "Use the QR scanner page to verify student pickup codes and move ready orders cleanly into completed history.",
+      "Use the QR scanner page to scan live codes, paste a payload manually, or verify the latest ready order and move it into handoff confirmation.",
+  },
+  {
+    icon: Eye,
+    title: "Preview the student experience",
+    description:
+      "Open the Preview page to see exactly how your outlet, menu availability, and item pricing appear in the student ordering flow.",
   },
 ];
 
@@ -39,15 +45,26 @@ const capabilityGroups = [
       "See live ETA countdowns with seconds for active orders.",
       "Hide completed orders when you want a cleaner working view.",
       "Use quick order actions like Accept Order and Mark as Ready.",
+      "Close the outlet manually or schedule a reopen time with a student-facing closure note.",
     ],
   },
   {
-    title: "Preparation and delay tools",
+    title: "Preparation and queue tools",
     points: [
       "Increase or reduce prep time using fixed minute buttons or a custom value.",
       "Pause the live timer by marking an order delayed.",
       "Send a delay notice to students directly from the order card.",
       "Reset timing changes when the kitchen catches up.",
+      "Expand orders to inspect items, customer info, pickup point, and live countdown state.",
+    ],
+  },
+  {
+    title: "Menu and preview controls",
+    points: [
+      "Preview the outlet exactly the way a student sees it before service starts.",
+      "Search items by name, category, or description from the menu manager.",
+      "Create custom color labels and attach them while editing menu items.",
+      "Add, edit, delete, and toggle item availability from both desktop and mobile layouts.",
     ],
   },
   {
@@ -57,23 +74,45 @@ const capabilityGroups = [
       "Use the Advanced menu for menu controls, pricing updates, and outlet actions.",
       "Confirm changes before the chatbot applies them, so operational edits stay safe.",
       "Ask the bot to summarize your queue, close the outlet, or manage menu availability.",
+      "Use it as a shortcut layer, but keep final control with the confirmation step.",
     ],
   },
   {
-    title: "Student-side impact",
+    title: "Cross-device and student-side behavior",
     points: [
+      "Orders now sync through the shared app server, so vendor devices and student devices can see the same live order updates.",
       "Menu edits reflect in the student portal and customer chatbot.",
       "Order ETA and delay updates appear in student order tracking automatically.",
       "Outlet closures block checkout while still allowing browsing and cart building.",
-      "Pickup verification moves orders into completed history and closes the student flow properly.",
+      "Pickup verification moves orders into handoff first, then collected after the student confirms receipt.",
     ],
+  },
+];
+
+const newerFeatures = [
+  {
+    icon: Eye,
+    title: "Preview Mode",
+    description: "Jump into the student menu view directly from the vendor navbar or menu page and review your outlet before customers do.",
+  },
+  {
+    icon: Palette,
+    title: "Label Manager",
+    description: "Create outlet-specific labels with colors, then reuse them inside the menu editor to organize specials, tags, and categories.",
+  },
+  {
+    icon: Smartphone,
+    title: "Cross-device Sync",
+    description: "Orders sync across devices through the local app server, so a student order placed on one device can be managed from another vendor device.",
   },
 ];
 
 const bestPractices = [
   "Accept new orders quickly so students see progress instead of a static preparing state.",
+  "Use Preview Mode after important menu edits so you see exactly what students will see.",
   "Update prep time as soon as kitchen load changes to keep ETA trustworthy.",
   "Use delay notices when timing slips instead of silently increasing prep minutes.",
+  "Keep the QR page open near pickup time and switch the camera off only when you need to save battery or use manual verification.",
   "Keep unavailable items updated early to avoid failed customer expectations.",
   "Use the AI copilot for bulk changes carefully and confirm previews before applying them.",
 ];
@@ -88,6 +127,7 @@ function VendorGuidancePage() {
       <main className="vendor-main">
         <div className="vendor-shell vendor-stack">
           <Link to="/vendor/dashboard" className="vendor-back-link">
+            <ArrowLeft size={18} />
             Back to Vendor Portal
           </Link>
 
@@ -128,7 +168,7 @@ function VendorGuidancePage() {
           <section className="vendor-card">
             <div className="vendor-section-title">
               <h2>What you can do</h2>
-              <p>Everything below is already connected to the live student and vendor flows.</p>
+              <p>Everything below reflects the portal as it works now, including the newer menu, preview, and sync features.</p>
             </div>
             <div className="vendor-guidance-columns">
               {capabilityGroups.map((group) => (
@@ -139,6 +179,25 @@ function VendorGuidancePage() {
                       <li key={point}>{point}</li>
                     ))}
                   </ul>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="vendor-card">
+            <div className="vendor-card-header">
+              <div className="vendor-section-title">
+                <h2>What was added later</h2>
+                <p>These are some of the newer vendor-side features that were added after the original portal guidance was drafted.</p>
+              </div>
+              <span className="vendor-section-icon"><PackageCheck size={22} /></span>
+            </div>
+            <div className="vendor-guidance-grid">
+              {newerFeatures.map(({ icon: Icon, title, description }) => (
+                <article key={title} className="vendor-guidance-card">
+                  <span className="vendor-section-icon"><Icon size={20} /></span>
+                  <h3>{title}</h3>
+                  <p>{description}</p>
                 </article>
               ))}
             </div>

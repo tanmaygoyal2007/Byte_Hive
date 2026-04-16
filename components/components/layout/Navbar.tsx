@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Menu, Moon, Sun, X } from "lucide-react";
 import { Link, useLocation } from "@/components/lib/router";
-import { getVendorOutlet, getVendorOutletId } from "@/features/vendor/services/vendor-portal.service";
+import { getVendorOutlet, getVendorOutletId, subscribeToVendorSession } from "@/features/vendor/services/vendor-portal.service";
 import { QRCodeSVG } from "qrcode.react";
 import useAuth from "@/features/auth/hooks/useAuth";
 import AuthModal from "@/features/auth/components/AuthModal";
@@ -68,6 +68,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletI
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [hasActiveOrder, setHasActiveOrder] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
+  const [vendorOutlet, setVendorOutlet] = useState(() => (typeof window !== "undefined" ? getVendorOutlet() : ""));
   const [readyOrderPrompt, setReadyOrderPrompt] = useState<ByteHiveOrder | null>(null);
   const [handoffPrompt, setHandoffPrompt] = useState<ByteHiveOrder | null>(null);
   const [delayedOrderPrompt, setDelayedOrderPrompt] = useState<ByteHiveOrder | null>(null);
@@ -82,6 +83,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletI
   const showPrimaryNav = !isVendorRoute;
   const isAuthenticated = guestMode || !!user;
   const showUserProfileControls = !isVendorRoute && isAuthenticated;
+  const showPortalDropdown = !isVendorRoute && !isAuthenticated;
 
   const blockLinks: Array<{ label: string; to: string; sublabel?: string }> = useMemo(
     () => [
@@ -92,7 +94,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletI
     []
   );
 
-  const vendorOutletId = previewOutletId ?? (typeof window !== "undefined" ? getVendorOutletId() : undefined);
+  const vendorOutletId = previewOutletId ?? (vendorOutlet ? getVendorOutletId(vendorOutlet) : undefined);
 
   const renderDropdownIcon = (item: { label: string; to: string }) => {
     if (item.label === "Dominos") {
@@ -144,6 +146,12 @@ const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletI
     checkMobile();
     window.addEventListener("resize", checkMobile);
     return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
+  useEffect(() => {
+    const syncVendorOutlet = () => setVendorOutlet(getVendorOutlet());
+    syncVendorOutlet();
+    return subscribeToVendorSession(syncVendorOutlet);
   }, []);
 
   useEffect(() => {
@@ -326,9 +334,9 @@ const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletI
     setHandoffPrompt(null);
   };
 
-  const handleOrderPicked = () => {
+  const handleOrderPicked = async () => {
     if (!handoffPrompt) return;
-    updateOrderStatus(handoffPrompt.id, "collected");
+    await updateOrderStatus(handoffPrompt.id, "collected");
     savePromptState(READY_PROMPT_KEY, {
       ...readPromptState(READY_PROMPT_KEY),
       [handoffPrompt.id]: handoffPrompt.updatedAt,
@@ -398,7 +406,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletI
             </div>
           )}
 
-          {!isVendorRoute && !isAuthenticated && (
+          {showPortalDropdown && (
             <div className="nav-dropdown" ref={portalDropdownRef}>
               <button
                 type="button"

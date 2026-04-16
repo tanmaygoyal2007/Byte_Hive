@@ -232,7 +232,7 @@ function VendorMenuPage() {
                 <h1 className="vendor-page-title">Menu Management</h1>
                 <p>{outletName}</p>
               </div>
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+              <div className="vendor-toolbar-actions">
                 <button type="button" className="vendor-button-secondary vendor-preview-btn" onClick={handlePreview} disabled={!outletId}>
                   <Eye size={18} /> Preview Menu
                 </button>
@@ -255,21 +255,14 @@ function VendorMenuPage() {
           <section className="vendor-card">
             <div className="vendor-field vendor-menu-search">
               <label htmlFor="vendor-menu-search">Search items</label>
-              <div style={{ position: "relative" }}>
+              <div className="vendor-search-input-wrap">
                 <Search
                   size={18}
-                  style={{
-                    position: "absolute",
-                    left: 16,
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    color: "var(--text-muted)",
-                  }}
+                  className="vendor-search-input-icon"
                 />
                 <input
                   id="vendor-menu-search"
-                  className="vendor-input"
-                  style={{ paddingLeft: 46 }}
+                  className="vendor-input vendor-input-has-icon"
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
                   placeholder="Search by name, category, or description"
@@ -289,7 +282,7 @@ function VendorMenuPage() {
                     </div>
                     <span className="vendor-category-tag">{item.category}</span>
                   </div>
-                  <div className="vendor-card-header" style={{ marginTop: 12 }}>
+                  <div className="vendor-card-header vendor-menu-card-meta">
                     <span className="vendor-menu-price">Rs {item.price}</span>
                     <button
                       type="button"
@@ -327,7 +320,7 @@ function VendorMenuPage() {
                     <th>Category</th>
                     <th>Price</th>
                     <th>Status</th>
-                    <th style={{ textAlign: "right" }}>Actions</th>
+                    <th className="vendor-table-actions-heading">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -335,7 +328,7 @@ function VendorMenuPage() {
                     <tr key={item.id}>
                       <td>
                         <strong>{item.name}</strong>
-                        <p className="vendor-muted" style={{ margin: "6px 0 0" }}>
+                        <p className="vendor-muted vendor-item-description">
                           {item.description}
                         </p>
                       </td>
@@ -355,7 +348,7 @@ function VendorMenuPage() {
                         </button>
                       </td>
                       <td>
-                        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
+                        <div className="vendor-table-actions">
                           <button
                             type="button"
                             className="vendor-icon-button"
@@ -458,9 +451,9 @@ function VendorMenuPage() {
                 </div>
                 <div className="vendor-field">
                   <label>Labels</label>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  <div className="vendor-label-picker">
                     {customLabels.length === 0 && (
-                      <p className="vendor-muted" style={{ fontSize: 14 }}>No labels created yet. Use "Manage Labels" button first.</p>
+                      <p className="vendor-muted vendor-inline-note">No labels created yet. Use "Manage Labels" button first.</p>
                     )}
                     {customLabels.map((label) => {
                       const isSelected = formData.labels.includes(label.name);
@@ -475,16 +468,11 @@ function VendorMenuPage() {
                               : [...current, label.name];
                             setFormData({ ...formData, labels: updated });
                           }}
+                          className={`vendor-label-toggle ${isSelected ? "vendor-label-toggle-selected" : ""}`}
                           style={{
-                            padding: "6px 12px",
-                            borderRadius: 8,
-                            border: "1px solid",
-                            borderColor: isSelected ? label.color : "var(--border-soft)",
-                            background: isSelected ? `${label.color}20` : "transparent",
-                            color: isSelected ? label.color : "var(--text-muted)",
-                            cursor: "pointer",
-                            fontWeight: isSelected ? 600 : 400,
-                            fontSize: 13,
+                            borderColor: isSelected ? label.color : undefined,
+                            background: isSelected ? `${label.color}20` : undefined,
+                            color: isSelected ? label.color : undefined,
                           }}
                         >
                           {label.name}
@@ -537,28 +525,21 @@ function VendorMenuPage() {
               <div className="vendor-form-body">
                 <div className="vendor-field">
                   <label>Create New Label</label>
-                  <div style={{ display: "flex", gap: 8 }}>
+                  <div className="vendor-label-create-row">
                     <input
-                      className="vendor-input"
+                      className="vendor-input vendor-label-name-input"
                       value={newLabelName}
                       onChange={(e) => setNewLabelName(e.target.value)}
                       placeholder="Label name"
-                      style={{ flex: 1 }}
                     />
-                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                    <div className="vendor-color-swatch-row">
                       {defaultColors.map((color) => (
                         <button
                           key={color}
                           type="button"
                           onClick={() => setNewLabelColor(color)}
-                          style={{
-                            width: 28,
-                            height: 28,
-                            borderRadius: 6,
-                            background: color,
-                            border: newLabelColor === color ? "2px solid var(--text-primary)" : "2px solid transparent",
-                            cursor: "pointer",
-                          }}
+                          className={`vendor-color-swatch-button ${newLabelColor === color ? "vendor-color-swatch-button-selected" : ""}`}
+                          style={{ background: color }}
                           aria-label={`Select color ${color}`}
                         />
                       ))}
@@ -569,38 +550,24 @@ function VendorMenuPage() {
                   </div>
                 </div>
                 
-                <div style={{ marginTop: 16 }}>
+                <div className="vendor-label-list-block">
                   <label>Your Labels</label>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 8 }}>
+                  <div className="vendor-label-list">
                     {customLabels.length === 0 && (
-                      <p className="vendor-muted" style={{ fontSize: 14 }}>No custom labels yet. Create one above.</p>
+                      <p className="vendor-muted vendor-inline-note">No custom labels yet. Create one above.</p>
                     )}
                     {customLabels.map((label) => (
                       <div
                         key={label.name}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 6,
-                          padding: "6px 10px",
-                          borderRadius: 8,
-                          background: `${label.color}20`,
-                          border: `1px solid ${label.color}`,
-                        }}
+                        className="vendor-label-chip"
+                        style={{ background: `${label.color}20`, borderColor: label.color }}
                       >
-                        <span style={{ width: 12, height: 12, borderRadius: 3, background: label.color }} />
-                        <span style={{ fontWeight: 500, fontSize: 14 }}>{label.name}</span>
+                        <span className="vendor-label-chip-swatch" style={{ background: label.color }} />
+                        <span className="vendor-label-chip-name">{label.name}</span>
                         <button
                           type="button"
                           onClick={() => handleDeleteLabel(label.name)}
-                          style={{
-                            background: "none",
-                            border: "none",
-                            cursor: "pointer",
-                            padding: 2,
-                            display: "flex",
-                            color: "var(--text-muted)",
-                          }}
+                          className="vendor-label-chip-delete"
                           aria-label={`Delete ${label.name}`}
                         >
                           <X size={14} />

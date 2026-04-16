@@ -138,18 +138,18 @@ function VendorDashboardPage() {
   };
 
   const handleOrderAction = (orderId: string, currentStatus: ByteHiveOrder["status"]) => {
-    if (currentStatus === "preparing") updateOrderStatus(orderId, "accepted");
-    if (currentStatus === "accepted") updateOrderStatus(orderId, "ready");
+    if (currentStatus === "preparing") void updateOrderStatus(orderId, "accepted");
+    if (currentStatus === "accepted") void updateOrderStatus(orderId, "ready");
   };
 
   const handleAddPrepTime = (order: ByteHiveOrder, minutesToAdd: number) => {
-    updateOrderTiming(order.id, {
+    void updateOrderTiming(order.id, {
       prepMinutes: getLivePrepMinutes(order) + minutesToAdd,
     });
   };
 
   const handleReducePrepTime = (order: ByteHiveOrder, minutesToRemove: number) => {
-    updateOrderTiming(order.id, {
+    void updateOrderTiming(order.id, {
       prepMinutes: Math.max(0, getLivePrepMinutes(order) - minutesToRemove),
     });
   };
@@ -164,13 +164,13 @@ function VendorDashboardPage() {
       return;
     }
 
-    updateOrderTiming(order.id, {
+    void updateOrderTiming(order.id, {
       prepMinutes: parsedMinutes,
     });
   };
 
   const handleResetTiming = (order: ByteHiveOrder) => {
-    updateOrderTiming(order.id, {
+    void updateOrderTiming(order.id, {
       resetToBase: true,
       delayState: "on-time",
       delayMessage: null,
@@ -179,7 +179,7 @@ function VendorDashboardPage() {
 
   const handleDelayToggle = (order: ByteHiveOrder) => {
     if (order.delayState === "delayed") {
-      updateOrderTiming(order.id, {
+      void updateOrderTiming(order.id, {
         delayState: "on-time",
         delayMessage: null,
       });
@@ -193,7 +193,7 @@ function VendorDashboardPage() {
 
     if (delayNote === null) return;
 
-    updateOrderTiming(order.id, {
+    void updateOrderTiming(order.id, {
       delayState: "delayed",
       delayMessage: delayNote.trim() || "Sorry, your order will be late.",
     });
@@ -416,7 +416,7 @@ function VendorDashboardPage() {
               </div>
             </div>
             {!outletStatusInfo.isOpen && (
-              <div className="vendor-order-delay-banner" style={{ marginTop: 18 }}>
+              <div className="vendor-order-delay-banner vendor-order-delay-banner-spaced">
                 <strong>{outletStatusInfo.isManuallyClosed ? "Outlet is manually closed" : "Scheduled closure active"}</strong>
                 <p>{outletClosureLabel ?? "This outlet is currently closed for checkout."}</p>
               </div>
@@ -429,7 +429,7 @@ function VendorDashboardPage() {
                 <div className="vendor-outlet-meta">
                   <span className="vendor-section-icon"><QrCode size={22} /></span>
                   <div>
-                    <h1 className="vendor-page-title" style={{ fontSize: "1.5rem" }}>QR Verification</h1>
+                    <h1 className="vendor-page-title vendor-section-title-compact">QR Verification</h1>
                     <p>Scan customer QR codes to verify pickups and complete ready orders.</p>
                   </div>
                 </div>
@@ -453,7 +453,7 @@ function VendorDashboardPage() {
           {isMobile ? (
             <section className="vendor-card">
               <div className="vendor-section-title">
-                <h1 className="vendor-page-title" style={{ fontSize: "1.5rem" }}>{activeTab === "active" ? "Active Orders" : "Completed Orders"}</h1>
+                <h1 className="vendor-page-title vendor-section-title-compact">{activeTab === "active" ? "Active Orders" : "Completed Orders"}</h1>
               </div>
               {isLoadingOrders
                 ? renderSkeletons()
@@ -470,7 +470,7 @@ function VendorDashboardPage() {
               <section className="vendor-card">
                 <div className="vendor-card-header">
                   <div className="vendor-section-title">
-                    <h1 className="vendor-page-title" style={{ fontSize: "1.5rem" }}>Active Orders</h1>
+                    <h1 className="vendor-page-title vendor-section-title-compact">Active Orders</h1>
                     <p>Track new, accepted, and ready orders in one place.</p>
                   </div>
                   <span className="vendor-badge">{activeOrders.length}</span>
@@ -481,7 +481,7 @@ function VendorDashboardPage() {
               <section className="vendor-card">
                 <div className="vendor-card-header">
                   <div className="vendor-section-title">
-                    <h1 className="vendor-page-title" style={{ fontSize: "1.5rem" }}>Completed Orders</h1>
+                    <h1 className="vendor-page-title vendor-section-title-compact">Completed Orders</h1>
                     <p>Collected orders move here automatically after verification.</p>
                   </div>
                   <button

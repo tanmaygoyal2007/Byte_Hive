@@ -438,6 +438,26 @@
   text-align: center;
 }
 
+.about-purpose-copy-wrap {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 28px 28px 0;
+  border: 1px solid var(--border-soft);
+  border-radius: 28px;
+  background: color-mix(in srgb, var(--surface-card) 94%, transparent);
+  box-shadow: var(--shadow-soft);
+}
+
+.about-purpose-copy-wrap .about-section-copy + .about-section-copy {
+  margin-top: 18px;
+}
+
+.about-purpose-note {
+  max-width: 640px;
+  margin-top: 28px;
+  padding-top: 24px;
+}
+
 .about-pill-row {
   display: flex;
   justify-content: center;
@@ -643,5 +663,10 @@
   .about-quote {
     padding: 18px;
     font-size: 1.02rem;
+  }
+
+  .about-purpose-copy-wrap {
+    padding: 22px 18px 0;
+    border-radius: 22px;
   }
 }

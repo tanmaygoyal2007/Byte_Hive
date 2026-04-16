@@ -16,20 +16,33 @@
 }
 
 .back-link {
-    color: var(--text-muted);
-    font-size: 0.92rem;
+    width: fit-content;
+    color: var(--text-primary);
+    font-size: 0.94rem;
     text-decoration: none;
-    font-weight: 600;
+    font-weight: 700;
     display: inline-flex;
     align-items: center;
-    gap: 8px;
-    padding: 6px 0;
-    transition: color 0.2s ease, transform 0.2s ease;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--accent) 18%, var(--border-soft));
+    background: color-mix(in srgb, var(--surface-card) 92%, transparent);
+    box-shadow: var(--shadow-soft);
+    transition: color 0.2s ease, transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .back-link:hover {
     color: var(--accent);
     transform: translateX(-2px);
+    border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+    background: color-mix(in srgb, var(--accent) 8%, var(--surface-card));
+}
+
+.back-link:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--accent) 42%, transparent);
+    outline-offset: 2px;
 }
 
 .canteen-sub {
