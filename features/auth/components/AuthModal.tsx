@@ -1,10 +1,11 @@
-import { CheckCircle2, Eye, EyeOff, GraduationCap, LogIn, Mail, RotateCw, ShieldCheck, UserPlus, X } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, GraduationCap, KeyRound, LogIn, Mail, RotateCw, ShieldCheck, UserPlus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { hasLocalAccount } from "@/features/auth/services/auth.service";
+import { changePassword, hasLocalAccount } from "@/features/auth/services/auth.service";
 import { sendSignupOtp, verifySignupOtp } from "@/features/auth/services/otp.service";
 
 type AuthRole = "student" | "faculty";
 type AuthMode = "login" | "signup";
+type PasswordChangeMode = "login" | "password-change";
 
 type AuthModalProps = {
   isOpen: boolean;
@@ -62,12 +63,18 @@ function saveRememberedEmail(email: string) {
 
 function AuthModal({ isOpen, role, onClose, onSubmit }: AuthModalProps) {
   const [mode, setMode] = useState<AuthMode>("login");
+  const [passwordChangeMode, setPasswordChangeMode] = useState<PasswordChangeMode>("login");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [signupStep, setSignupStep] = useState<SignupStep>("identity");
   const [otpVerified, setOtpVerified] = useState(false);
@@ -77,6 +84,7 @@ function AuthModal({ isOpen, role, onClose, onSubmit }: AuthModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
   const [savedEmails, setSavedEmails] = useState<string[]>([]);
@@ -100,12 +108,18 @@ function AuthModal({ isOpen, role, onClose, onSubmit }: AuthModalProps) {
   useEffect(() => {
     if (!isOpen) {
       setMode("login");
+      setPasswordChangeMode("login");
       setName("");
       setEmail("");
       setPassword("");
       setConfirmPassword("");
       setShowPassword(false);
       setShowConfirmPassword(false);
+      setOldPassword("");
+      setNewPassword("");
+      setShowOldPassword(false);
+      setShowNewPassword(false);
+      setShowConfirmNewPassword(false);
       setOtpCode("");
       setSignupStep("identity");
       setOtpVerified(false);
@@ -114,6 +128,7 @@ function AuthModal({ isOpen, role, onClose, onSubmit }: AuthModalProps) {
       setIsSubmitting(false);
       setIsSendingOtp(false);
       setIsVerifyingOtp(false);
+      setIsChangingPassword(false);
       setErrorMessage("");
       setSuccessMessage("");
     }
@@ -154,6 +169,18 @@ function AuthModal({ isOpen, role, onClose, onSubmit }: AuthModalProps) {
     setOtpVerified(false);
     setOtpExpiresAt(null);
     setResendAvailableAt(null);
+    setSuccessMessage("");
+  };
+
+  const resetPasswordChangeFlow = () => {
+    setPasswordChangeMode("login");
+    setOldPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setShowOldPassword(false);
+    setShowNewPassword(false);
+    setShowConfirmNewPassword(false);
+    setErrorMessage("");
     setSuccessMessage("");
   };
 
@@ -244,10 +271,64 @@ function AuthModal({ isOpen, role, onClose, onSubmit }: AuthModalProps) {
     }
   };
 
+  const handleChangePassword = async () => {
+    setErrorMessage("");
+    setSuccessMessage("");
+
+    if (!oldPassword) {
+      setErrorMessage("Enter your current password.");
+      return;
+    }
+
+    if (!newPassword) {
+      setErrorMessage("Enter a new password.");
+      return;
+    }
+
+    if (newPassword.length < 6) {
+      setErrorMessage("New password must be at least 6 characters.");
+      return;
+    }
+
+    if (newPassword === oldPassword) {
+      setErrorMessage("New password cannot be the same as current password.");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setErrorMessage("New passwords do not match.");
+      return;
+    }
+
+    setIsChangingPassword(true);
+
+    try {
+      await changePassword({ email: normalizedEmail, oldPassword, newPassword });
+      setSuccessMessage("Password changed successfully.");
+      setTimeout(() => {
+        setPasswordChangeMode("login");
+        setOldPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setErrorMessage("");
+        setSuccessMessage("");
+      }, 1500);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to change password.");
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setErrorMessage("");
     setSuccessMessage("");
+
+    if (passwordChangeMode === "password-change") {
+      await handleChangePassword();
+      return;
+    }
 
     if (!validateEmailForAuth()) {
       return;
@@ -352,6 +433,7 @@ function AuthModal({ isOpen, role, onClose, onSubmit }: AuthModalProps) {
               setErrorMessage("");
               setSuccessMessage("");
               resetSignupFlow();
+              resetPasswordChangeFlow();
             }}
           >
             <LogIn size={16} />
@@ -415,33 +497,85 @@ function AuthModal({ isOpen, role, onClose, onSubmit }: AuthModalProps) {
 
           {mode === "login" && (
             <>
-              <label>
-                College Email
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  placeholder={role === "student" ? "student@dept.christuniversity.in" : "faculty@christuniversity.in"}
-                  list="bytehive-saved-auth-emails"
-                  required
-                />
-                {savedEmails.length > 0 && (
-                  <datalist id="bytehive-saved-auth-emails">
-                    {savedEmails.map((savedEmail) => (
-                      <option key={savedEmail} value={savedEmail} />
-                    ))}
-                  </datalist>
-                )}
-              </label>
+              {passwordChangeMode === "password-change" ? (
+                <>
+                  <label>
+                    College Email
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      placeholder={role === "student" ? "student@dept.christuniversity.in" : "faculty@christuniversity.in"}
+                      list="bytehive-saved-auth-emails"
+                      required
+                    />
+                    {savedEmails.length > 0 && (
+                      <datalist id="bytehive-saved-auth-emails">
+                        {savedEmails.map((savedEmail) => (
+                          <option key={savedEmail} value={savedEmail} />
+                        ))}
+                      </datalist>
+                    )}
+                  </label>
 
-              {renderPasswordField({
-                label: "Password",
-                value: password,
-                onChange: setPassword,
-                placeholder: "Enter password",
-                visible: showPassword,
-                onToggle: () => setShowPassword((current) => !current),
-              })}
+                  {renderPasswordField({
+                    label: "Current Password",
+                    value: oldPassword,
+                    onChange: setOldPassword,
+                    placeholder: "Enter current password",
+                    visible: showOldPassword,
+                    onToggle: () => setShowOldPassword((current) => !current),
+                  })}
+
+                  {renderPasswordField({
+                    label: "New Password",
+                    value: newPassword,
+                    onChange: setNewPassword,
+                    placeholder: "Enter new password",
+                    visible: showNewPassword,
+                    onToggle: () => setShowNewPassword((current) => !current),
+                  })}
+
+                  {renderPasswordField({
+                    label: "Confirm New Password",
+                    value: confirmPassword,
+                    onChange: setConfirmPassword,
+                    placeholder: "Confirm new password",
+                    visible: showConfirmNewPassword,
+                    onToggle: () => setShowConfirmNewPassword((current) => !current),
+                  })}
+                </>
+              ) : (
+                <>
+                  <label>
+                    College Email
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                      placeholder={role === "student" ? "student@dept.christuniversity.in" : "faculty@christuniversity.in"}
+                      list="bytehive-saved-auth-emails"
+                      required
+                    />
+                    {savedEmails.length > 0 && (
+                      <datalist id="bytehive-saved-auth-emails">
+                        {savedEmails.map((savedEmail) => (
+                          <option key={savedEmail} value={savedEmail} />
+                        ))}
+                      </datalist>
+                    )}
+                  </label>
+
+                  {renderPasswordField({
+                    label: "Password",
+                    value: password,
+                    onChange: setPassword,
+                    placeholder: "Enter password",
+                    visible: showPassword,
+                    onToggle: () => setShowPassword((current) => !current),
+                  })}
+                </>
+              )}
             </>
           )}
 
@@ -521,13 +655,20 @@ function AuthModal({ isOpen, role, onClose, onSubmit }: AuthModalProps) {
           <button
             type="submit"
             className="auth-modal-submit"
-            disabled={isSubmitting || isSendingOtp || isVerifyingOtp}
+            disabled={isSubmitting || isSendingOtp || isVerifyingOtp || isChangingPassword}
           >
             {mode === "login" ? (
-              <>
-                {role === "student" ? <GraduationCap size={18} /> : <ShieldCheck size={18} />}
-                {isSubmitting ? "Signing In..." : `Continue to ${roleLabel} Portal`}
-              </>
+              passwordChangeMode === "password-change" ? (
+                <>
+                  <KeyRound size={18} />
+                  {isChangingPassword ? "Changing Password..." : "Change Password"}
+                </>
+              ) : (
+                <>
+                  {role === "student" ? <GraduationCap size={18} /> : <ShieldCheck size={18} />}
+                  {isSubmitting ? "Signing In..." : `Continue to ${roleLabel} Portal`}
+                </>
+              )
             ) : (
               <>
                 <Mail size={18} />
@@ -537,6 +678,33 @@ function AuthModal({ isOpen, role, onClose, onSubmit }: AuthModalProps) {
               </>
             )}
           </button>
+
+          {mode === "login" && passwordChangeMode === "login" && (
+            <button
+              type="button"
+              className="auth-change-password-link"
+              onClick={() => {
+                setPasswordChangeMode("password-change");
+                setErrorMessage("");
+                setSuccessMessage("");
+              }}
+            >
+              <KeyRound size={14} />
+              Change Password
+            </button>
+          )}
+
+          {mode === "login" && passwordChangeMode === "password-change" && (
+            <button
+              type="button"
+              className="auth-change-password-link"
+              onClick={() => {
+                resetPasswordChangeFlow();
+              }}
+            >
+              Back to Login
+            </button>
+          )}
         </form>
       </div>
     </div>

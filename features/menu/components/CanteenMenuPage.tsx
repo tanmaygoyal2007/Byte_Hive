@@ -10,29 +10,7 @@ import MenuSearch from "@/features/menu/components/MenuSearch";
 import MiniCart from "@/features/menu/components/MiniCart";
 import { CANTEENS } from "@/features/canteens/components/canteens";
 import { getMenuItemsForOutlet, subscribeToMenu, type MenuCatalogItem } from "@/features/orders/services/order-portal.service";
-
-const LABEL_STORAGE_KEY = "bytehive-vendor-labels";
-
-type CustomLabel = {
-  name: string;
-  color: string;
-};
-
-function getStoredCanteenLabels(canteenId: string): CustomLabel[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const stored = localStorage.getItem(LABEL_STORAGE_KEY);
-    if (!stored) return [];
-    const all = JSON.parse(stored) as Record<string, CustomLabel[]>;
-    return all[canteenId] || [];
-  } catch { return []; }
-}
-
-function getCategoryColor(canteenId: string, categoryName: string): string | null {
-  const labels = getStoredCanteenLabels(canteenId);
-  const found = labels.find(l => l.name.toLowerCase() === categoryName.toLowerCase());
-  return found?.color || null;
-}
+import { getLabelColorsForCanteen } from "@/lib/utils/label-utils";
 import { getVendorClosureLabel, getVendorOutletStatus, subscribeToVendorStatus } from "@/features/vendor/services/vendor-portal.service";
 
 function CanteenMenuPage() {
@@ -71,10 +49,7 @@ function CanteenMenuPage() {
   }, [items]);
 
   const labelColors = useMemo(() => {
-    const map: Record<string, string> = {};
-    const labels = getStoredCanteenLabels(activeCanteenId);
-    labels.forEach(l => { map[l.name.toLowerCase()] = l.color; });
-    return map;
+    return getLabelColorsForCanteen(activeCanteenId);
   }, [activeCanteenId]);
 
   const canteen = useMemo(

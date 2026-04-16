@@ -10,6 +10,7 @@ import {
   type UserSession,
 } from "@/features/orders/services/order-portal.service";
 import { resolveMenuImageUrl } from "@/features/menu/services/menu-image.service";
+import { getLabelColorsForCanteen } from "@/lib/utils/label-utils";
 
 type MenuItem = {
   id: string;
@@ -32,17 +33,7 @@ function MenuItemCard({ item, previewOnly = false }: { item: MenuItem; previewOn
   const imageUrl = resolveMenuImageUrl(item.image);
 
   const labelColors = useMemo(() => {
-    const map: Record<string, string> = {};
-    if (item.canteenId) {
-      try {
-        const stored = localStorage.getItem("bytehive-vendor-labels");
-        if (stored) {
-          const all = JSON.parse(stored) as Record<string, { name: string; color: string }[]>;
-          (all[item.canteenId] || []).forEach(l => { map[l.name.toLowerCase()] = l.color; });
-        }
-      } catch {}
-    }
-    return map;
+    return getLabelColorsForCanteen(item.canteenId);
   }, [item.canteenId]);
 
   const fallbackDescription =
@@ -103,22 +94,16 @@ function MenuItemCard({ item, previewOnly = false }: { item: MenuItem; previewOn
           <h4 className="menu-item-title">{item.name}</h4>
           <p className="menu-item-desc">{fallbackDescription}</p>
           {item.labels && item.labels.length > 0 && (
-            <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+            <div className="menu-item-labels">
               {item.labels.map((label) => {
                 const color = labelColors[label.toLowerCase()] || "var(--accent)";
                 return (
                   <span
                     key={label}
-                    style={{
-                      padding: "5px 12px",
-                      borderRadius: 6,
-                      fontSize: 13,
-                      fontWeight: 600,
-                      background: `${color}20`,
-                      color: color,
-                      display: "inline-block",
-                    }}
+                    className="menu-item-label"
+                    style={{ "--label-color": color } as React.CSSProperties}
                   >
+                    <span className="menu-item-label-dot" />
                     {label}
                   </span>
                 );

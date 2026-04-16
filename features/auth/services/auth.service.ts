@@ -143,6 +143,40 @@ export async function logoutUser() {
   saveLocalSession(null);
 }
 
+export async function changePassword(payload: {
+  email: string;
+  oldPassword: string;
+  newPassword: string;
+}) {
+  const normalizedEmail = payload.email.trim().toLowerCase();
+  const users = readLocalUsers();
+  const userIndex = users.findIndex((user) => user.email === normalizedEmail);
+
+  if (userIndex === -1) {
+    throw createAuthError("auth/user-not-found");
+  }
+
+  const user = users[userIndex];
+
+  if (user.password !== payload.oldPassword) {
+    throw createAuthError("auth/wrong-password");
+  }
+
+  if (payload.oldPassword === payload.newPassword) {
+    throw createAuthError("auth/password-same");
+  }
+
+  if (payload.newPassword.length < 6) {
+    throw createAuthError("auth/weak-password");
+  }
+
+  const updatedUsers = [...users];
+  updatedUsers[userIndex] = { ...user, password: payload.newPassword };
+  saveLocalUsers(updatedUsers);
+
+  return { success: true };
+}
+
 export function subscribeToAuthState(callback: (user: AuthUser | null) => void) {
   const sync = () => callback(toLocalUser(readLocalSession()));
   sync();

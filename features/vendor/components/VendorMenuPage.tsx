@@ -12,6 +12,7 @@ import {
   type MenuCatalogItem,
 } from "@/features/orders/services/order-portal.service";
 import { getVendorOutlet, subscribeToVendorSession } from "@/features/vendor/services/vendor-portal.service";
+import { getLabelColorsForCanteen, type CustomLabel } from "@/lib/utils/label-utils";
 
 type MenuForm = {
   name: string;
@@ -20,11 +21,6 @@ type MenuForm = {
   description: string;
   isAvailable: boolean;
   labels: string[];
-};
-
-type CustomLabel = {
-  name: string;
-  color: string;
 };
 
 const LABEL_STORAGE_KEY = "bytehive-vendor-labels";
@@ -133,7 +129,8 @@ function VendorMenuPage() {
     const exists = customLabels.find((l) => l.name.toLowerCase() === newLabelName.trim().toLowerCase());
     if (exists) return;
     
-    const updated = [...customLabels, { name: newLabelName.trim(), color: newLabelColor }];
+    const newLabel = { name: newLabelName.trim(), color: newLabelColor };
+    const updated = [...customLabels, newLabel];
     setCustomLabels(updated);
     saveStoredLabels(outletId, updated);
     setNewLabelName("");

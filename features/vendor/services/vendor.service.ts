@@ -77,3 +77,41 @@ export function loginVendorWithPassword(outletName: string, password: string) {
     outletName,
   };
 }
+
+export async function changeVendorPassword(payload: {
+  outletName: string;
+  oldPassword: string;
+  masterKey: string;
+  newPassword: string;
+}) {
+  const account = readVendorAccounts().find((entry) => entry.outletName === payload.outletName);
+
+  if (!account) {
+    throw new Error("No vendor account found for this outlet.");
+  }
+
+  if (account.password !== payload.oldPassword) {
+    throw new Error("Current password is incorrect.");
+  }
+
+  const result = await verifyVendorMasterKey(payload.outletName, payload.masterKey);
+  if (!result.success) {
+    throw new Error("Invalid master key.");
+  }
+
+  if (payload.oldPassword === payload.newPassword) {
+    throw new Error("New password cannot be the same as current password.");
+  }
+
+  if (payload.newPassword.length < 6) {
+    throw new Error("New password must be at least 6 characters.");
+  }
+
+  const accounts = readVendorAccounts();
+  const updatedAccounts = accounts.map((acc) =>
+    acc.outletName === payload.outletName ? { ...acc, password: payload.newPassword } : acc
+  );
+  saveVendorAccounts(updatedAccounts);
+
+  return { success: true };
+}

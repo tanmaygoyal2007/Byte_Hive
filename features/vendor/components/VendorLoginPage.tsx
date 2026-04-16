@@ -4,6 +4,7 @@ import { Link, useNavigate, useSearchParams } from "@/components/lib/router";
 import Footer from "@/components/components/layout/Footer";
 import Navbar from "@/components/components/layout/Navbar";
 import {
+  changeVendorPassword,
   hasVendorAccount,
   loginVendorWithPassword,
   signupVendorWithPassword,
@@ -12,12 +13,14 @@ import {
 import { setVendorOutlet, VENDOR_OUTLETS } from "@/features/vendor/services/vendor-portal.service";
 
 type VendorAuthMode = "login" | "signup";
+type VendorPasswordChangeMode = "login" | "password-change";
 
 function VendorLoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const outlets = useMemo(() => [...VENDOR_OUTLETS], []);
   const [mode, setMode] = useState<VendorAuthMode>("login");
+  const [passwordChangeMode, setPasswordChangeMode] = useState<VendorPasswordChangeMode>("login");
   const [selectedOutlet, setSelectedOutlet] = useState("");
   const [masterKey, setMasterKey] = useState("");
   const [password, setPassword] = useState("");
@@ -26,8 +29,15 @@ function VendorLoginPage() {
   const [showMasterKey, setShowMasterKey] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [oldPassword, setOldPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [showOldPassword, setShowOldPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
   useEffect(() => {
     const requestedOutlet = searchParams.get("outlet");
@@ -40,11 +50,26 @@ function VendorLoginPage() {
     setMasterKeyVerified(false);
     setMasterKey("");
     setError("");
+    setSuccess("");
     setPassword("");
     setConfirmPassword("");
     setShowMasterKey(false);
     setShowPassword(false);
     setShowConfirmPassword(false);
+  };
+
+  const resetPasswordChangeFlow = () => {
+    setPasswordChangeMode("login");
+    setOldPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setMasterKey("");
+    setShowOldPassword(false);
+    setShowNewPassword(false);
+    setShowConfirmNewPassword(false);
+    setShowMasterKey(false);
+    setError("");
+    setSuccess("");
   };
 
   const resetVerifiedState = () => {
@@ -136,6 +161,36 @@ function VendorLoginPage() {
     }
   };
 
+  const handleChangePassword = async () => {
+    if (!selectedOutlet || !oldPassword || !masterKey || !newPassword) return;
+
+    if (newPassword !== confirmPassword) {
+      setError("New passwords do not match.");
+      return;
+    }
+
+    setIsChangingPassword(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      await changeVendorPassword({
+        outletName: selectedOutlet,
+        oldPassword,
+        masterKey,
+        newPassword,
+      });
+      setSuccess("Password changed successfully.");
+      setTimeout(() => {
+        resetPasswordChangeFlow();
+      }, 1500);
+    } catch (changeError) {
+      setError(changeError instanceof Error ? changeError.message : "Unable to change password.");
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   return (
     <div className="vendor-page vendor-login-page">
       <Navbar />
@@ -163,7 +218,9 @@ function VendorLoginPage() {
                 onClick={() => {
                   setMode("login");
                   setError("");
+                  setSuccess("");
                   resetPasswordSetup();
+                  resetPasswordChangeFlow();
                 }}
               >
                 Login
@@ -174,7 +231,9 @@ function VendorLoginPage() {
                 onClick={() => {
                   setMode("signup");
                   setError("");
+                  setSuccess("");
                   resetPasswordSetup();
+                  resetPasswordChangeFlow();
                 }}
               >
                 Sign Up
@@ -264,29 +323,93 @@ function VendorLoginPage() {
                     </p>
                   )}
 
-                  {renderPasswordField({
-                    id: "vendor-password",
-                    label: "Password",
-                    value: password,
-                    placeholder: mode === "login" ? "Enter password" : "Create password",
-                    visible: showPassword,
-                    onChange: setPassword,
-                    onToggle: () => setShowPassword((current) => !current),
-                  })}
+                  {mode === "login" && passwordChangeMode === "password-change" ? (
+                    <>
+                      {renderPasswordField({
+                        id: "vendor-old-password",
+                        label: "Current Password",
+                        value: oldPassword,
+                        placeholder: "Enter current password",
+                        visible: showOldPassword,
+                        onChange: setOldPassword,
+                        onToggle: () => setShowOldPassword((current) => !current),
+                      })}
 
-                  {mode === "signup" && renderPasswordField({
-                    id: "vendor-confirm-password",
-                    label: "Confirm Password",
-                    value: confirmPassword,
-                    placeholder: "Confirm password",
-                    visible: showConfirmPassword,
-                    onChange: setConfirmPassword,
-                    onToggle: () => setShowConfirmPassword((current) => !current),
-                  })}
+                      <div className="vendor-field">
+                        <label htmlFor="vendor-change-master-key">Master Key</label>
+                        <div className="vendor-password-field">
+                          <div className="vendor-master-key-wrap">
+                            <KeyRound size={18} className="vendor-master-key-icon" />
+                            <input
+                              id="vendor-change-master-key"
+                              type={showMasterKey ? "text" : "password"}
+                              className="vendor-input vendor-input-master-key"
+                              value={masterKey}
+                              onChange={(event) => setMasterKey(event.target.value)}
+                              placeholder="Enter your master key"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            className="vendor-password-toggle"
+                            onClick={() => setShowMasterKey((current) => !current)}
+                            aria-label={showMasterKey ? "Hide master key" : "Show master key"}
+                          >
+                            {showMasterKey ? <EyeOff size={16} /> : <Eye size={16} />}
+                            {showMasterKey ? "Hide" : "Show"}
+                          </button>
+                        </div>
+                        <p className="vendor-form-hint">Master key is provided by ByteHive admin.</p>
+                      </div>
+
+                      {renderPasswordField({
+                        id: "vendor-new-password",
+                        label: "New Password",
+                        value: newPassword,
+                        placeholder: "Enter new password",
+                        visible: showNewPassword,
+                        onChange: setNewPassword,
+                        onToggle: () => setShowNewPassword((current) => !current),
+                      })}
+
+                      {renderPasswordField({
+                        id: "vendor-confirm-new-password",
+                        label: "Confirm New Password",
+                        value: confirmPassword,
+                        placeholder: "Confirm new password",
+                        visible: showConfirmNewPassword,
+                        onChange: setConfirmPassword,
+                        onToggle: () => setShowConfirmNewPassword((current) => !current),
+                      })}
+                    </>
+                  ) : (
+                    <>
+                      {renderPasswordField({
+                        id: "vendor-password",
+                        label: "Password",
+                        value: password,
+                        placeholder: mode === "login" ? "Enter password" : "Create password",
+                        visible: showPassword,
+                        onChange: setPassword,
+                        onToggle: () => setShowPassword((current) => !current),
+                      })}
+
+                      {mode === "signup" && renderPasswordField({
+                        id: "vendor-confirm-password",
+                        label: "Confirm Password",
+                        value: confirmPassword,
+                        placeholder: "Confirm password",
+                        visible: showConfirmPassword,
+                        onChange: setConfirmPassword,
+                        onToggle: () => setShowConfirmPassword((current) => !current),
+                      })}
+                    </>
+                  )}
                 </>
               )}
 
               {error && <p className="vendor-form-hint vendor-form-error">{error}</p>}
+              {success && <p className="vendor-form-hint vendor-form-success">{success}</p>}
 
               <button
                 type="button"
@@ -294,18 +417,49 @@ function VendorLoginPage() {
                 disabled={
                   !selectedOutlet
                   || isSubmitting
-                  || (mode === "login" && !password)
+                  || isChangingPassword
+                  || (mode === "login" && passwordChangeMode !== "password-change" && !password)
                   || (mode === "signup" && !masterKeyVerified && !masterKey)
                   || (mode === "signup" && masterKeyVerified && (!password || !confirmPassword))
+                  || (mode === "login" && passwordChangeMode === "password-change" && (!oldPassword || !masterKey || !newPassword || !confirmPassword))
                 }
-                onClick={handleLogin}
+                onClick={passwordChangeMode === "password-change" ? handleChangePassword : handleLogin}
               >
                 {mode === "login"
-                  ? (isSubmitting ? "Signing In..." : "Login")
+                  ? (passwordChangeMode === "password-change"
+                    ? (isChangingPassword ? "Changing Password..." : "Change Password")
+                    : (isSubmitting ? "Signing In..." : "Login"))
                   : (!masterKeyVerified
                     ? (isSubmitting ? "Verifying..." : "Verify Master Key")
                     : (isSubmitting ? "Creating Account..." : "Create Vendor Account"))}
               </button>
+
+              {mode === "login" && passwordChangeMode === "login" && (
+                <button
+                  type="button"
+                  className="vendor-change-password-link"
+                  onClick={() => {
+                    setPasswordChangeMode("password-change");
+                    setError("");
+                    setSuccess("");
+                  }}
+                >
+                  <KeyRound size={14} />
+                  Change Password
+                </button>
+              )}
+
+              {mode === "login" && passwordChangeMode === "password-change" && (
+                <button
+                  type="button"
+                  className="vendor-change-password-link"
+                  onClick={() => {
+                    resetPasswordChangeFlow();
+                  }}
+                >
+                  Back to Login
+                </button>
+              )}
             </div>
 
             <div className="vendor-help-row">
