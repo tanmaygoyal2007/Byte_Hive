@@ -2,6 +2,24 @@ import { NextRequest, NextResponse } from "next/server";
 import { createOtp, getRequiredOtpDomain, isValidOtpEmail, normalizeOtpEmail } from "@/lib/utils/otp";
 import { sendOtpEmail } from "@/lib/utils/otp-mail";
 
+const OTP_TIMEOUT_MS = 30000;
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout>;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(errorMessage));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    clearTimeout(timeoutId!);
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
@@ -16,8 +34,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Use a valid ${role} email ending with @${getRequiredOtpDomain(role).replace(/^\./, "")}.` }, { status: 400 });
     }
 
-    const otp = await createOtp(email);
-    const delivery = await sendOtpEmail({ to: email, code: otp.code });
+    const otp = await withTimeout(createOtp(email), OTP_TIMEOUT_MS, "Unable to connect to OTP service. Please try again.");
+    const delivery = await withTimeout(sendOtpEmail({ to: email, code: otp.code }), OTP_TIMEOUT_MS, "Unable to send OTP email. Please try again.");
     const resendAfterSeconds = 60;
     const expiresInSeconds = Math.max(1, Math.ceil((otp.expiresAt - Date.now()) / 1000));
 

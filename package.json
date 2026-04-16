@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/clear-console.js",
     "dev:helper": "node --experimental-strip-types scripts/dev.ts",
     "build": "next build",
     "start": "next start",

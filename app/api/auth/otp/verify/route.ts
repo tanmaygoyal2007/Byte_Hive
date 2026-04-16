@@ -1,6 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRequiredOtpDomain, isValidOtpEmail, normalizeOtpEmail, verifyOtp } from "@/lib/utils/otp";
 
+const VERIFY_TIMEOUT_MS = 10000;
+
+async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout>;
+
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(errorMessage));
+    }, timeoutMs);
+  });
+
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    clearTimeout(timeoutId!);
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json().catch(() => ({}));
@@ -16,7 +34,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: `Use a valid ${role} email ending with @${getRequiredOtpDomain(role).replace(/^\./, "")}.` }, { status: 400 });
     }
 
-    await verifyOtp(email, code);
+    await withTimeout(verifyOtp(email, code), VERIFY_TIMEOUT_MS, "OTP verification timed out. Please try again.");
     return NextResponse.json({ ok: true, verified: true });
   } catch (error) {
     return NextResponse.json(

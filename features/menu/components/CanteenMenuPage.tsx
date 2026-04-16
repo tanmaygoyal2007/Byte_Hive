@@ -10,14 +10,40 @@ import MenuSearch from "@/features/menu/components/MenuSearch";
 import MiniCart from "@/features/menu/components/MiniCart";
 import { CANTEENS } from "@/features/canteens/components/canteens";
 import { getMenuItemsForOutlet, subscribeToMenu, type MenuCatalogItem } from "@/features/orders/services/order-portal.service";
+
+const LABEL_STORAGE_KEY = "bytehive-vendor-labels";
+
+type CustomLabel = {
+  name: string;
+  color: string;
+};
+
+function getStoredCanteenLabels(canteenId: string): CustomLabel[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const stored = localStorage.getItem(LABEL_STORAGE_KEY);
+    if (!stored) return [];
+    const all = JSON.parse(stored) as Record<string, CustomLabel[]>;
+    return all[canteenId] || [];
+  } catch { return []; }
+}
+
+function getCategoryColor(canteenId: string, categoryName: string): string | null {
+  const labels = getStoredCanteenLabels(canteenId);
+  const found = labels.find(l => l.name.toLowerCase() === categoryName.toLowerCase());
+  return found?.color || null;
+}
 import { getVendorClosureLabel, getVendorOutletStatus, subscribeToVendorStatus } from "@/features/vendor/services/vendor-portal.service";
 
 function CanteenMenuPage() {
-  const { canteenId } = useParams();
+  const params = useParams<{ id: string }>();
   const [searchParams, setSearchParams] = useSearchParams();
   const isPreviewMode = searchParams.get("preview") === "vendor";
-  const activeCanteenId = typeof canteenId === "string" ? canteenId : CANTEENS[0]?.id;
+  
+  const activeCanteenId = params.id || CANTEENS[0]?.id;
+  
   const [items, setItems] = useState<MenuCatalogItem[]>(() => getMenuItemsForOutlet(activeCanteenId));
+  const [localSearch, setLocalSearch] = useState(searchParams.get("q") ?? "");
   const [isOutletOpen, setIsOutletOpen] = useState(() => {
     const activeCanteen = CANTEENS.find((entry) => entry.id === activeCanteenId) || CANTEENS[0];
     return activeCanteen ? getVendorOutletStatus(activeCanteen.name) : true;
@@ -36,10 +62,20 @@ function CanteenMenuPage() {
   const categories = useMemo(() => {
     const set = new Set<string>();
     items.forEach((item) => set.add(item.category));
-    const list = Array.from(set);
-    if (!list.includes("Unavailable")) list.push("Unavailable");
+    let list = Array.from(set).sort((a, b) => a.localeCompare(b));
+    if (list.includes("Unavailable")) {
+      list = list.filter((c) => c !== "Unavailable");
+      list.push("Unavailable");
+    }
     return list;
   }, [items]);
+
+  const labelColors = useMemo(() => {
+    const map: Record<string, string> = {};
+    const labels = getStoredCanteenLabels(activeCanteenId);
+    labels.forEach(l => { map[l.name.toLowerCase()] = l.color; });
+    return map;
+  }, [activeCanteenId]);
 
   const canteen = useMemo(
     () => CANTEENS.find((entry) => entry.id === activeCanteenId) || CANTEENS[0],
@@ -63,14 +99,13 @@ function CanteenMenuPage() {
     };
   }, [activeCanteenId]);
 
-  const searchQ = searchParams.get("q") ?? "";
   const rawCategory = searchParams.get("category") ?? "All";
   const previewSrc = searchParams.get("src");
   const category = rawCategory === "All" || categories.includes(rawCategory) ? rawCategory : "All";
 
   const updateMenuParams = ({ nextSearch, nextCategory }: { nextSearch?: string; nextCategory?: string }) => {
     const params = new URLSearchParams(searchParams);
-    const searchValue = nextSearch ?? searchQ;
+    const searchValue = nextSearch ?? localSearch;
     const categoryValue = nextCategory ?? category;
 
     if (searchValue.trim()) {
@@ -88,19 +123,34 @@ function CanteenMenuPage() {
     setSearchParams(params, { replace: true });
   };
 
+  const handleSearchChange = (value: string) => {
+    setLocalSearch(value);
+    const params = new URLSearchParams(searchParams);
+    if (value.trim()) {
+      params.set("q", value);
+    } else {
+      params.delete("q");
+    }
+    setSearchParams(params, { replace: true });
+  };
+
   const filteredItems = useMemo(() => {
-    let list = items;
+    let list = [...items];
+    const searchTerm = localSearch;
 
     if (category === "All") {
-      list = list;
+      list.sort((a, b) => {
+        if (a.isAvailable === b.isAvailable) return a.name.localeCompare(b.name);
+        return a.isAvailable ? -1 : 1;
+      });
     } else if (category === "Unavailable") {
       list = list.filter((item) => item.isAvailable === false);
     } else {
       list = list.filter((item) => item.category === category);
     }
 
-    if (searchQ) {
-      const query = searchQ.toLowerCase();
+    if (searchTerm) {
+      const query = searchTerm.toLowerCase();
       list = list.filter(
         (item) =>
           item.name.toLowerCase().includes(query) ||
@@ -109,7 +159,7 @@ function CanteenMenuPage() {
     }
 
     return list;
-  }, [category, items, searchQ]);
+  }, [category, items, localSearch]);
 
   return (
     <div className="menu-page-root">
@@ -142,6 +192,7 @@ function CanteenMenuPage() {
               categories={categories}
               activeCategory={category}
               onSelect={(nextCategory) => updateMenuParams({ nextCategory: nextCategory ?? "All" })}
+              labelColors={labelColors}
             />
           </aside>
 
@@ -167,7 +218,7 @@ function CanteenMenuPage() {
           <aside className="menu-right">
             <div className="menu-right-sticky">
               <div className="menu-right-top">
-                <MenuSearch value={searchQ} onChange={(nextSearch) => updateMenuParams({ nextSearch })} />
+                <MenuSearch value={localSearch} onChange={handleSearchChange} />
               </div>
               <MiniCart previewOnly={isPreviewMode} />
             </div>

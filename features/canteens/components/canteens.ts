@@ -72,7 +72,7 @@ export const CANTEENS: Canteen[] = [
     },
     {
         id: "cafeCoffeeDay",
-        name: "CCD",
+        name: "Cafe Coffee Day",
         block: "Block B",
         rating: 4.0,
         description: "Coffee, tea and quick snacks.",

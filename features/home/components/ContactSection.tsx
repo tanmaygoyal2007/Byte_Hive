@@ -8,7 +8,13 @@ const SERVICE_ID = "service_mtlp8ar";
 const TEMPLATE_ID = "template_v8b1mmf";
 const PUBLIC_KEY = "AZUeKttsLJ66YRG_c";
 const CONTACT_LIMIT_KEY = "bytehive-contact-submissions";
-const MAX_SUBMISSIONS_PER_USER = 5;
+const MAX_SUBMISSIONS_PER_WEEK = 5;
+const WEEK_IN_MS = 7 * 24 * 60 * 60 * 1000;
+
+interface StoredSubmission {
+  count: number;
+  weekStart: number;
+}
 
 function isValidEmailAddress(email: string) {
   const normalized = email.trim().toLowerCase();
@@ -25,26 +31,43 @@ function isValidEmailAddress(email: string) {
   return true;
 }
 
+function getWeekStart(): number {
+  const now = Date.now();
+  const weekStart = now - (now % WEEK_IN_MS);
+  return weekStart;
+}
+
 function readSubmissionCounts() {
-  if (typeof window === "undefined") return {} as Record<string, number>;
+  if (typeof window === "undefined") return {} as Record<string, StoredSubmission>;
 
   try {
     const stored = localStorage.getItem(CONTACT_LIMIT_KEY);
-    return stored ? JSON.parse(stored) as Record<string, number> : {};
+    if (!stored) return {};
+    const data = JSON.parse(stored) as Record<string, StoredSubmission>;
+    const currentWeekStart = getWeekStart();
+    
+    const cleaned: Record<string, StoredSubmission> = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (value.weekStart === currentWeekStart) {
+        cleaned[key] = value;
+      }
+    }
+    return cleaned;
   } catch {
     return {};
   }
 }
 
-function saveSubmissionCount(userKey: string, nextCount: number) {
+function saveSubmissionCount(userKey: string, count: number) {
   if (typeof window === "undefined") return;
 
   const counts = readSubmissionCounts();
+  const currentWeekStart = getWeekStart();
   localStorage.setItem(
     CONTACT_LIMIT_KEY,
     JSON.stringify({
       ...counts,
-      [userKey]: nextCount,
+      [userKey]: { count, weekStart: currentWeekStart },
     })
   );
 }
@@ -52,8 +75,9 @@ function saveSubmissionCount(userKey: string, nextCount: number) {
 const ContactSection: React.FC = () => {
   const { user } = useAuth();
   const userKey = user?.uid ?? user?.email ?? "";
-  const submissionCount = userKey ? readSubmissionCounts()[userKey] ?? 0 : 0;
-  const submissionsLeft = Math.max(0, MAX_SUBMISSIONS_PER_USER - submissionCount);
+  const submissionData = userKey ? readSubmissionCounts()[userKey] : null;
+  const submissionCount = submissionData?.count ?? 0;
+  const submissionsLeft = Math.max(0, MAX_SUBMISSIONS_PER_WEEK - submissionCount);
   const canSubmit = Boolean(user) && submissionsLeft > 0;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -75,7 +99,7 @@ const ContactSection: React.FC = () => {
       return;
     }
 
-    if (submissionCount >= MAX_SUBMISSIONS_PER_USER) {
+    if (submissionCount >= MAX_SUBMISSIONS_PER_WEEK) {
       setStatus("error");
       return;
     }
@@ -89,6 +113,12 @@ const ContactSection: React.FC = () => {
       setStatus("error");
       return;
     }
+
+    if (phone && phone.length !== 10) {
+      setStatus("error");
+      return;
+    }
+
     setIsLoading(true);
     setStatus("idle");
 
@@ -165,8 +195,16 @@ const ContactSection: React.FC = () => {
             <div className="input-group">
               <input
                 id="phone"
+                type="tel"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={10}
+                minLength={10}
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value.replace(/\D/g, "").slice(0, 10);
+                  setPhone(val);
+                }}
                 placeholder=" "
                 disabled={isLoading || !user}
               />
@@ -195,7 +233,7 @@ const ContactSection: React.FC = () => {
                   </button>
                 </>
               ) : (
-                <span>{submissionsLeft} of {MAX_SUBMISSIONS_PER_USER} submissions remaining for your account.</span>
+                <span>{submissionsLeft} of {MAX_SUBMISSIONS_PER_WEEK} submissions remaining for your account.</span>
               )}
             </div>
 
@@ -224,7 +262,7 @@ const ContactSection: React.FC = () => {
                 {!user
                   ? "Please log in before sending a question."
                   : submissionsLeft === 0
-                    ? "You have reached the 5-question limit for this account."
+                    ? "You have reached the weekly limit. Email us at foodexample@gmail.com for further assistance."
                     : "Please fill in all required fields."}
               </p>
             )}

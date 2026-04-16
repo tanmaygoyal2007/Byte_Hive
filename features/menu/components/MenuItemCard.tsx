@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import useCart from "@/features/cart/hooks/useCart";
 import {
   getCurrentUserSession,
@@ -21,6 +21,7 @@ type MenuItem = {
   isVeg?: boolean;
   isAvailable?: boolean;
   description?: string;
+  labels?: string[];
 };
 
 function MenuItemCard({ item, previewOnly = false }: { item: MenuItem; previewOnly?: boolean }) {
@@ -29,6 +30,20 @@ function MenuItemCard({ item, previewOnly = false }: { item: MenuItem; previewOn
   const [isFavorite, setIsFavorite] = useState(false);
   const isItemAvailable = item.isAvailable !== false;
   const imageUrl = resolveMenuImageUrl(item.image);
+
+  const labelColors = useMemo(() => {
+    const map: Record<string, string> = {};
+    if (item.canteenId) {
+      try {
+        const stored = localStorage.getItem("bytehive-vendor-labels");
+        if (stored) {
+          const all = JSON.parse(stored) as Record<string, { name: string; color: string }[]>;
+          (all[item.canteenId] || []).forEach(l => { map[l.name.toLowerCase()] = l.color; });
+        }
+      } catch {}
+    }
+    return map;
+  }, [item.canteenId]);
 
   const fallbackDescription =
     item.description ||
@@ -87,6 +102,29 @@ function MenuItemCard({ item, previewOnly = false }: { item: MenuItem; previewOn
         <div className="menu-item-copy">
           <h4 className="menu-item-title">{item.name}</h4>
           <p className="menu-item-desc">{fallbackDescription}</p>
+          {item.labels && item.labels.length > 0 && (
+            <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+              {item.labels.map((label) => {
+                const color = labelColors[label.toLowerCase()] || "var(--accent)";
+                return (
+                  <span
+                    key={label}
+                    style={{
+                      padding: "5px 12px",
+                      borderRadius: 6,
+                      fontSize: 13,
+                      fontWeight: 600,
+                      background: `${color}20`,
+                      color: color,
+                      display: "inline-block",
+                    }}
+                  >
+                    {label}
+                  </span>
+                );
+              })}
+            </div>
+          )}
         </div>
         <div className="menu-item-controls">
           <div className="menu-item-price">Rs {item.price}</div>
