@@ -47,3 +47,19 @@ export async function verifySignupOtp(email: string, code: string, role: "studen
 
   return readJsonOrThrow<VerifyOtpResponse>(response);
 }
+
+type ChangePasswordResponse = {
+  success: true;
+};
+
+export async function changePassword(email: string, oldPassword: string, newPassword: string) {
+  const response = await fetch("/api/auth/password/change", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ email, oldPassword, newPassword }),
+  });
+
+  return readJsonOrThrow<ChangePasswordResponse>(response);
+}
