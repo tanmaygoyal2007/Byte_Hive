@@ -20,6 +20,10 @@ function getCurrentHash() {
   return typeof window === "undefined" ? "" : window.location.hash;
 }
 
+function getCurrentSearch() {
+  return typeof window === "undefined" ? "" : window.location.search;
+}
+
 function getStateStorageKey(href: string) {
   return `${NAV_STATE_KEY}:${href}`;
 }
@@ -113,20 +117,23 @@ export function useSearchParams() {
 
 export function useLocation() {
   const pathname = usePathname();
-  const searchParams = useNextSearchParams();
   const [hash, setHash] = useState(getCurrentHash());
+  const [search, setSearch] = useState(getCurrentSearch());
 
   useEffect(() => {
-    const syncHash = () => setHash(getCurrentHash());
-    syncHash();
-    window.addEventListener("hashchange", syncHash);
-    return () => window.removeEventListener("hashchange", syncHash);
-  }, [pathname, searchParams]);
+    const syncLocation = () => {
+      setHash(getCurrentHash());
+      setSearch(getCurrentSearch());
+    };
 
-  const search = useMemo(() => {
-    const value = searchParams.toString();
-    return value ? `?${value}` : "";
-  }, [searchParams]);
+    syncLocation();
+    window.addEventListener("hashchange", syncLocation);
+    window.addEventListener("popstate", syncLocation);
+    return () => {
+      window.removeEventListener("hashchange", syncLocation);
+      window.removeEventListener("popstate", syncLocation);
+    };
+  }, [pathname]);
 
   return useMemo(
     () => ({

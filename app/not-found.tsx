@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Compass, Home, UtensilsCrossed } from "lucide-react";
 import Footer from "@/components/components/layout/Footer";
 import NavbarWrapper from "./components/NavbarWrapper";
-import { useLocation } from "@/components/lib/router";
 import "./not-found.css";
 
 export default function NotFound() {
-  const location = useLocation();
-  const isVendorPage = location.pathname.startsWith("/vendor");
+  const pathname = usePathname();
+  const isVendorPage = pathname.startsWith("/vendor");
 
   return (
     <div className="not-found-wrapper">

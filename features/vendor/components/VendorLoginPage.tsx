@@ -1,6 +1,6 @@
-import { Eye, EyeOff, KeyRound, Store } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff, KeyRound, Store } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate, useSearchParams } from "@/components/lib/router";
+import { Link, useNavigate, useSearchParams } from "@/components/lib/router";
 import Footer from "@/components/components/layout/Footer";
 import Navbar from "@/components/components/layout/Navbar";
 import {
@@ -142,6 +142,11 @@ function VendorLoginPage() {
       <main className="vendor-main">
         <div className="vendor-auth-wrap">
           <section className="vendor-auth-card" aria-labelledby="vendor-login-title">
+            <Link to="/" className="vendor-back-link vendor-login-home-link">
+              <ArrowLeft size={18} />
+              Back to Homepage
+            </Link>
+
             <div className="vendor-auth-header">
               <span className="vendor-auth-icon" aria-hidden="true">
                 <Store size={30} />
@@ -281,7 +286,7 @@ function VendorLoginPage() {
                 </>
               )}
 
-              {error && <p className="vendor-form-hint" style={{ color: "#d04747" }}>{error}</p>}
+              {error && <p className="vendor-form-hint vendor-form-error">{error}</p>}
 
               <button
                 type="button"
@@ -305,7 +310,7 @@ function VendorLoginPage() {
 
             <div className="vendor-help-row">
               <p className="vendor-auth-help">
-                Need help? <a className="vendor-link-inline" href="mailto:support@bytehive.com">Contact Support</a>
+                Need help? <a className="vendor-link-inline vendor-link-inline-break" href="mailto:support@bytehive.com">Contact Support</a>
               </p>
             </div>
           </section>

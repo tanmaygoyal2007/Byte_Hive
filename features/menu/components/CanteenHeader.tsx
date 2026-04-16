@@ -1,4 +1,5 @@
 import { Link } from "@/components/lib/router";
+import { ArrowLeft } from "lucide-react";
 
 interface CanteenHeaderProps {
   canteen?: {
@@ -21,7 +22,10 @@ function CanteenHeader({ canteen, isOutletOpen = true, closureLabel = null, hide
     <div className="canteen-header">
       <div className="canteen-header-left">
         {!hideBackLink && (
-          <Link to={backLinkUrl ?? "/canteens"} className="back-link">&lt; Back</Link>
+          <Link to={backLinkUrl ?? "/canteens"} className="back-link">
+            <ArrowLeft size={18} aria-hidden="true" />
+            Back
+          </Link>
         )}
         <h1>{canteen.name}</h1>
         <div className="canteen-sub">{canteen.description} • {canteen.block}</div>

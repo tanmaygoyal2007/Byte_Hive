@@ -38,10 +38,20 @@ export async function POST(request: NextRequest) {
     const delivery = await withTimeout(sendOtpEmail({ to: email, code: otp.code }), OTP_TIMEOUT_MS, "Unable to send OTP email. Please try again.");
     const resendAfterSeconds = 60;
     const expiresInSeconds = Math.max(1, Math.ceil((otp.expiresAt - Date.now()) / 1000));
+    const isDevFallback = !delivery.delivered && process.env.NODE_ENV !== "production";
 
     return NextResponse.json({
       ok: true,
-      message: delivery.delivered ? "OTP sent successfully." : "OTP created successfully.",
+      delivered: delivery.delivered,
+      mirrored: Boolean(delivery.mirrored),
+      message: delivery.delivered
+        ? delivery.mirrored
+          ? "OTP sent to the local dev mailbox."
+          : "OTP sent successfully."
+        : isDevFallback
+          ? `Email delivery is not configured locally. Use this OTP for testing: ${otp.code}`
+          : "OTP created successfully.",
+      debugCode: isDevFallback ? otp.code : null,
       expiresAt: otp.expiresAt,
       expiresInSeconds,
       resendAvailableAt: otp.resendAvailableAt,

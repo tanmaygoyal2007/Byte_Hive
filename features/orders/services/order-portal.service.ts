@@ -103,6 +103,12 @@ const MENU_EVENT = "bytehive-menu-updated";
 const FAVORITES_EVENT = "bytehive-favorites-updated";
 const USER_SESSION_EVENT = "bytehive-user-session-updated";
 const AUTH_PROMPT_EVENT = "bytehive-auth-prompt";
+const ORDERS_API_PATH = "/api/orders";
+const ORDERS_SYNC_INTERVAL_MS = 2500;
+
+let ordersSyncTimer: number | null = null;
+let ordersSyncSubscriberCount = 0;
+let ordersSyncInFlight: Promise<void> | null = null;
 
 const outletMetaById: Record<string, { name: string; location: string; estimatedTime: string; code: string }> = {
   punjabiBites: { name: "Punjabi Bites", location: "Block A, Basement", estimatedTime: "12-15 minutes", code: "PB" },
@@ -392,6 +398,78 @@ function saveOrders(orders: ByteHiveOrder[]) {
   writeJSON(ORDERS_KEY, orders, ORDERS_EVENT);
 }
 
+function replaceOrdersSnapshot(orders: ByteHiveOrder[]) {
+  const normalized = orders.map(normalizeStoredOrder);
+  const current = getOrders();
+
+  if (JSON.stringify(current) === JSON.stringify(normalized)) {
+    return normalized;
+  }
+
+  saveOrders(normalized);
+  return normalized;
+}
+
+async function fetchOrdersSnapshot() {
+  const response = await fetch(ORDERS_API_PATH, {
+    method: "GET",
+    cache: "no-store",
+    headers: {
+      "Cache-Control": "no-cache",
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error("Unable to fetch orders.");
+  }
+
+  return (await response.json()) as ByteHiveOrder[];
+}
+
+async function pushOrdersSnapshot(orders: ByteHiveOrder[]) {
+  const response = await fetch(ORDERS_API_PATH, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ orders }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Unable to save shared orders snapshot.");
+  }
+
+  return (await response.json()) as ByteHiveOrder[];
+}
+
+export async function syncOrdersFromServer(force = false) {
+  if (typeof window === "undefined") return getOrders();
+
+  if (!force && ordersSyncInFlight) {
+    await ordersSyncInFlight;
+    return getOrders();
+  }
+
+  ordersSyncInFlight = (async () => {
+    try {
+      const localOrders = getOrders();
+      let snapshot = await fetchOrdersSnapshot();
+
+      if (snapshot.length === 0 && localOrders.length > 0) {
+        snapshot = await pushOrdersSnapshot(localOrders);
+      }
+
+      replaceOrdersSnapshot(snapshot);
+    } catch (error) {
+      console.error("Unable to sync orders from server:", error);
+    }
+  })();
+
+  await ordersSyncInFlight;
+  ordersSyncInFlight = null;
+  return getOrders();
+}
+
 export function getOrderById(orderId: string) {
   return getOrders().find((order) => order.id === orderId || order.receiptNumber === orderId) ?? null;
 }
@@ -427,85 +505,51 @@ export function getCompletedOrdersForUser(userName: string) {
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
-export function createOrder(payload: {
+export async function createOrder(payload: {
   paymentId?: string;
   outletId: string;
   customerName: string;
   customerRole: UserRole;
   items: ByteHiveOrderItem[];
 }) {
-  const meta = getOutletMetaById(payload.outletId);
-  const subtotal = payload.items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const taxes = Math.round(subtotal * 0.05);
-  const total = subtotal + taxes;
-  const createdAt = new Date();
-  const businessDate = getBusinessDate(createdAt);
-  const sequenceNumber = getDailySequence(payload.outletId, businessDate);
-  const receiptNumber = createReceiptNumber(payload.outletId, businessDate, sequenceNumber);
-  const now = createdAt.toISOString();
-  const basePrepMinutes = parseEstimatedMinutes(meta.estimatedTime);
+  const response = await fetch(ORDERS_API_PATH, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
 
-  const order: ByteHiveOrder = {
-    id: receiptNumber,
-    receiptNumber,
-    sequenceNumber,
-    businessDate,
-    pickupCode: createPickupCode(sequenceNumber),
-    paymentId: payload.paymentId,
-    customerName: payload.customerName,
-    customerRole: payload.customerRole,
-    outletId: payload.outletId,
-    outletName: meta.name,
-    pickupLocation: meta.location,
-    basePrepMinutes,
-    prepMinutes: basePrepMinutes,
-    estimatedTime: deriveEstimatedTime({
-      status: "preparing",
-      prepMinutes: basePrepMinutes,
-      delayState: "on-time",
-    }),
-    delayState: "on-time",
-    delayMessage: null,
-    vendorTimingUpdatedAt: null,
-    status: "preparing",
-    qrToken: getRandomToken(),
-    createdAt: now,
-    updatedAt: now,
-    items: payload.items,
-    subtotal,
-    taxes,
-    total,
-  };
+  if (!response.ok) {
+    throw new Error("Unable to create order.");
+  }
 
-  const nextOrders = [order, ...getOrders()];
-  saveOrders(nextOrders);
+  const order = normalizeStoredOrder((await response.json()) as ByteHiveOrder);
+  replaceOrdersSnapshot([order, ...getOrders().filter((existing) => existing.id !== order.id)]);
+  void syncOrdersFromServer(true);
   return order;
 }
 
-export function updateOrderStatus(orderId: string, status: OrderStatus) {
-  const nextOrders = getOrders().map((order) =>
-    order.id === orderId
-      ? {
-          ...order,
-          prepMinutes: status === "ready" || status === "handoff" || status === "collected" ? 0 : order.prepMinutes,
-          delayState: status === "ready" || status === "handoff" || status === "collected" ? "on-time" : order.delayState,
-          delayMessage: status === "ready" || status === "handoff" || status === "collected" ? null : order.delayMessage,
-          status,
-          estimatedTime: deriveEstimatedTime({
-            status,
-            prepMinutes: status === "ready" || status === "handoff" || status === "collected" ? 0 : order.prepMinutes,
-            delayState: status === "ready" || status === "handoff" || status === "collected" ? "on-time" : order.delayState,
-          }),
-          updatedAt: new Date().toISOString(),
-        }
-      : order
-  );
+export async function updateOrderStatus(orderId: string, status: OrderStatus) {
+  const response = await fetch(`${ORDERS_API_PATH}/${encodeURIComponent(orderId)}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ status }),
+  });
 
-  saveOrders(nextOrders);
-  return nextOrders.find((order) => order.id === orderId) ?? null;
+  if (!response.ok) {
+    throw new Error("Unable to update order status.");
+  }
+
+  const updatedOrder = normalizeStoredOrder((await response.json()) as ByteHiveOrder);
+  replaceOrdersSnapshot(getOrders().map((order) => (order.id === orderId ? updatedOrder : order)));
+  void syncOrdersFromServer(true);
+  return updatedOrder;
 }
 
-export function updateOrderTiming(
+export async function updateOrderTiming(
   orderId: string,
   payload: {
     prepMinutes?: number;
@@ -514,41 +558,49 @@ export function updateOrderTiming(
     resetToBase?: boolean;
   }
 ) {
-  const now = new Date().toISOString();
-
-  const nextOrders = getOrders().map((order) => {
-    if (order.id !== orderId) return order;
-
-    const livePrepMinutes = getLivePrepMinutes(order);
-    const nextPrepMinutes = payload.resetToBase
-      ? order.basePrepMinutes
-      : typeof payload.prepMinutes === "number"
-        ? Math.max(0, Math.round(payload.prepMinutes))
-        : livePrepMinutes;
-    const nextDelayState = payload.delayState ?? order.delayState;
-    const nextDelayMessage = payload.delayMessage === undefined ? order.delayMessage : payload.delayMessage;
-
-    return {
-      ...order,
-      prepMinutes: nextPrepMinutes,
-      delayState: nextDelayState,
-      delayMessage: nextDelayState === "delayed" ? nextDelayMessage ?? "Sorry, your order will be late." : null,
-      vendorTimingUpdatedAt: now,
-      estimatedTime: deriveEstimatedTime({
-        status: order.status,
-        prepMinutes: nextPrepMinutes,
-        delayState: nextDelayState,
-      }),
-      updatedAt: now,
-    };
+  const response = await fetch(`${ORDERS_API_PATH}/${encodeURIComponent(orderId)}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
   });
 
-  saveOrders(nextOrders);
-  return nextOrders.find((order) => order.id === orderId) ?? null;
+  if (!response.ok) {
+    throw new Error("Unable to update order timing.");
+  }
+
+  const updatedOrder = normalizeStoredOrder((await response.json()) as ByteHiveOrder);
+  replaceOrdersSnapshot(getOrders().map((order) => (order.id === orderId ? updatedOrder : order)));
+  void syncOrdersFromServer(true);
+  return updatedOrder;
 }
 
 export function subscribeToOrders(callback: () => void) {
-  return subscribeToKey(ORDERS_EVENT, ORDERS_KEY, callback);
+  const unsubscribe = subscribeToKey(ORDERS_EVENT, ORDERS_KEY, callback);
+
+  if (typeof window !== "undefined") {
+    ordersSyncSubscriberCount += 1;
+    void syncOrdersFromServer();
+
+    if (ordersSyncTimer === null) {
+      ordersSyncTimer = window.setInterval(() => {
+        void syncOrdersFromServer();
+      }, ORDERS_SYNC_INTERVAL_MS);
+    }
+  }
+
+  return () => {
+    unsubscribe();
+
+    if (typeof window !== "undefined") {
+      ordersSyncSubscriberCount = Math.max(0, ordersSyncSubscriberCount - 1);
+      if (ordersSyncSubscriberCount === 0 && ordersSyncTimer !== null) {
+        window.clearInterval(ordersSyncTimer);
+        ordersSyncTimer = null;
+      }
+    }
+  };
 }
 
 export function getQrValueForOrder(orderOrId: ByteHiveOrder | string) {

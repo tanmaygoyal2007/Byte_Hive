@@ -1,5 +1,5 @@
-import { AlertCircle, ArrowLeft, Camera, CheckCircle2, QrCode, ScanLine, XCircle } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { AlertCircle, ArrowLeft, Camera, CameraOff, CheckCircle2, QrCode, ScanLine, XCircle } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@/components/lib/router";
 import Footer from "@/components/components/layout/Footer";
 import Navbar from "@/components/components/layout/Navbar";
@@ -36,6 +36,7 @@ function VendorQrScannerPage() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const scanTimerRef = useRef<number | null>(null);
+  const startAttemptRef = useRef(0);
   const [outletName, setOutletName] = useState("");
   const [scanState, setScanState] = useState<ScanState>("scanning");
   const [verifiedOrder, setVerifiedOrder] = useState<ByteHiveOrder | null>(null);
@@ -43,6 +44,7 @@ function VendorQrScannerPage() {
   const [readyOrders, setReadyOrders] = useState<ByteHiveOrder[]>([]);
   const [scannerNotice, setScannerNotice] = useState("");
   const [cameraState, setCameraState] = useState<"idle" | "starting" | "ready" | "unsupported" | "blocked">("idle");
+  const [cameraEnabled, setCameraEnabled] = useState(true);
 
   useEffect(() => {
     const outlet = getVendorOutlet();
@@ -65,22 +67,16 @@ function VendorQrScannerPage() {
     return subscribeToOrders(syncOrders);
   }, [navigate]);
 
-  useEffect(() => {
-    if (scanState !== "scanning") {
-      stopCamera();
-      return;
-    }
-
-    void startCamera();
-    return () => stopCamera();
-  }, [scanState]);
-
   const latestReadyQr = useMemo(
     () => (readyOrders[0] ? getQrValueForOrder(readyOrders[0]) : ""),
     [readyOrders]
   );
 
-  function stopCamera() {
+  const stopCamera = useCallback((invalidateAttempt = true) => {
+    if (invalidateAttempt) {
+      startAttemptRef.current += 1;
+    }
+
     if (scanTimerRef.current) {
       window.clearInterval(scanTimerRef.current);
       scanTimerRef.current = null;
@@ -92,64 +88,13 @@ function VendorQrScannerPage() {
     }
 
     if (videoRef.current) {
+      videoRef.current.pause();
       videoRef.current.srcObject = null;
+      videoRef.current.load();
     }
-  }
+  }, []);
 
-  async function startCamera() {
-    if (
-      typeof navigator === "undefined" ||
-      !navigator.mediaDevices ||
-      typeof navigator.mediaDevices.getUserMedia !== "function"
-    ) {
-      setCameraState("unsupported");
-      return;
-    }
-
-    setCameraState("starting");
-
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: { ideal: "environment" },
-        },
-        audio: false,
-      });
-
-      streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play().catch(() => undefined);
-      }
-
-      setCameraState("ready");
-
-      const detectorCtor = (window as WindowWithBarcodeDetector).BarcodeDetector;
-      if (!detectorCtor || !videoRef.current) {
-        return;
-      }
-
-      const detector = new detectorCtor({ formats: ["qr_code"] });
-      scanTimerRef.current = window.setInterval(async () => {
-        const video = videoRef.current;
-        if (!video || video.readyState < HTMLMediaElement.HAVE_ENOUGH_DATA) return;
-
-        try {
-          const codes = await detector.detect(video);
-          const rawValue = codes[0]?.rawValue?.trim();
-          if (rawValue) {
-            setScanInput(rawValue);
-            handleVerify(rawValue);
-          }
-        } catch {
-        }
-      }, 1200);
-    } catch {
-      setCameraState("blocked");
-    }
-  }
-
-  const handleVerify = (rawValue = scanInput) => {
+  const handleVerify = useCallback((rawValue = scanInput) => {
     setScannerNotice("");
 
     const parsed = validateQrPayload(rawValue);
@@ -212,12 +157,100 @@ function VendorQrScannerPage() {
 
     setVerifiedOrder(order);
     setScanState("success");
-  };
+  }, [outletName, scanInput]);
 
-  const handleMarkCollectedPrompt = () => {
+  const startCamera = useCallback(async () => {
+    const attemptId = startAttemptRef.current + 1;
+    startAttemptRef.current = attemptId;
+
+    if (
+      typeof navigator === "undefined" ||
+      !navigator.mediaDevices ||
+      typeof navigator.mediaDevices.getUserMedia !== "function"
+    ) {
+      setCameraState("unsupported");
+      return;
+    }
+
+    setCameraState("starting");
+
+    try {
+      stopCamera(false);
+      await new Promise((resolve) => window.setTimeout(resolve, 120));
+
+      if (startAttemptRef.current !== attemptId) {
+        return;
+      }
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: "environment" },
+        },
+        audio: false,
+      });
+
+      if (startAttemptRef.current !== attemptId) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play().catch(() => undefined);
+      }
+
+      if (startAttemptRef.current !== attemptId) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
+
+      setCameraState("ready");
+
+      const detectorCtor = (window as WindowWithBarcodeDetector).BarcodeDetector;
+      if (!detectorCtor || !videoRef.current) {
+        return;
+      }
+
+      const detector = new detectorCtor({ formats: ["qr_code"] });
+      scanTimerRef.current = window.setInterval(async () => {
+        const video = videoRef.current;
+        if (!video || video.readyState < HTMLMediaElement.HAVE_ENOUGH_DATA) return;
+
+        try {
+          const codes = await detector.detect(video);
+          const rawValue = codes[0]?.rawValue?.trim();
+          if (rawValue) {
+            setScanInput(rawValue);
+            handleVerify(rawValue);
+          }
+        } catch {
+        }
+      }, 1200);
+    } catch {
+      if (startAttemptRef.current === attemptId) {
+        setCameraState("blocked");
+      }
+    }
+  }, [handleVerify, stopCamera]);
+
+  useEffect(() => {
+    if (scanState !== "scanning" || !cameraEnabled) {
+      stopCamera();
+      if (scanState === "scanning" && !cameraEnabled) {
+        setCameraState("idle");
+      }
+      return;
+    }
+
+    void startCamera();
+    return () => stopCamera();
+  }, [cameraEnabled, scanState, startCamera, stopCamera]);
+
+  const handleMarkCollectedPrompt = async () => {
     if (!verifiedOrder) return;
 
-    const updatedOrder = updateOrderStatus(verifiedOrder.id, "handoff");
+    const updatedOrder = await updateOrderStatus(verifiedOrder.id, "handoff");
     setScannerNotice(
       updatedOrder
         ? `Pickup confirmed for ${updatedOrder.id}. The student portal has been asked to confirm collection.`
@@ -235,27 +268,77 @@ function VendorQrScannerPage() {
     setScannerNotice("");
   };
 
+  const handleCameraToggle = () => {
+    if (cameraEnabled) {
+      stopCamera();
+      setCameraEnabled(false);
+      setCameraState("idle");
+      return;
+    }
+
+    setCameraEnabled(true);
+    setScanState("scanning");
+  };
+
+  const cameraToggleState =
+    cameraState === "blocked" || cameraState === "unsupported"
+      ? "warning"
+      : cameraEnabled && (cameraState === "ready" || cameraState === "starting")
+        ? "on"
+        : "off";
+
   const renderState = () => {
     if (scanState === "scanning") {
       return (
         <div className="vendor-scanner-shell">
           <div className="vendor-scanner-frame">
-            {cameraState === "ready" ? (
-              <video ref={videoRef} className="vendor-scanner-video" playsInline muted autoPlay />
-            ) : (
-              <div className="vendor-scanner-placeholder">
-                <Camera size={40} />
-                <p>
-                  {cameraState === "starting"
-                    ? "Opening camera..."
-                    : cameraState === "blocked"
-                      ? "Camera access is blocked. Paste the QR payload below."
-                      : "Camera preview will appear here if the browser allows QR scanning."}
-                </p>
+            <div className="vendor-scanner-surface">
+              <video
+                ref={videoRef}
+                className={`vendor-scanner-video ${cameraState === "ready" ? "vendor-scanner-video-visible" : "vendor-scanner-video-hidden"}`}
+                playsInline
+                muted
+                autoPlay
+              />
+              {cameraState !== "ready" && (
+                <div className="vendor-scanner-placeholder">
+                  {cameraEnabled ? <Camera size={40} /> : <CameraOff size={40} />}
+                  <p>
+                    {!cameraEnabled
+                      ? "Camera is off. Turn it on or paste the QR payload below."
+                      : cameraState === "starting"
+                        ? "Opening camera..."
+                        : cameraState === "blocked"
+                          ? "Camera access is blocked. Paste the QR payload below."
+                        : "Camera preview will appear here if the browser allows QR scanning."}
+                  </p>
+                </div>
+              )}
+              <div className="vendor-scanner-focus-overlay" aria-hidden="true">
+                <div className="vendor-scanner-focus-window" />
               </div>
-            )}
-            <div className="vendor-scanner-focus" />
-            <QrCode className="vendor-scanner-frame-icon" size={40} />
+            </div>
+            <button
+              type="button"
+              className={`vendor-scanner-frame-icon vendor-scanner-frame-icon-${cameraToggleState}`}
+              onClick={handleCameraToggle}
+              aria-label={
+                cameraEnabled
+                  ? "Turn camera off"
+                  : cameraState === "blocked"
+                    ? "Camera access blocked in browser"
+                    : "Turn camera on"
+              }
+              title={
+                cameraState === "blocked" || cameraState === "unsupported"
+                  ? "Camera access blocked or unavailable"
+                  : cameraEnabled
+                    ? "Turn camera off"
+                    : "Turn camera on"
+              }
+            >
+              <QrCode size={22} />
+            </button>
           </div>
 
           <div className="vendor-scanner-state">
@@ -264,7 +347,7 @@ function VendorQrScannerPage() {
             <p>Scan the student QR in the camera box or enter the short pickup code, receipt number, or full QR payload below.</p>
           </div>
 
-          <div className="vendor-field" style={{ width: "min(100%, 460px)" }}>
+          <div className="vendor-field vendor-scanner-narrow">
             <label htmlFor="vendor-qr-input">Pickup code, receipt number, or QR payload</label>
             <input
               id="vendor-qr-input"
@@ -275,7 +358,7 @@ function VendorQrScannerPage() {
             />
           </div>
 
-          <div className="vendor-scanner-actions" style={{ width: "min(100%, 460px)" }}>
+          <div className="vendor-scanner-actions vendor-scanner-narrow">
             <button type="button" className="vendor-button" onClick={() => handleVerify()} disabled={!scanInput.trim()}>
               Verify QR
             </button>
@@ -294,7 +377,7 @@ function VendorQrScannerPage() {
           </div>
 
           {!!readyOrders.length && (
-            <div className="vendor-verified-summary" style={{ width: "min(100%, 460px)" }}>
+            <div className="vendor-verified-summary vendor-scanner-narrow">
               <div className="vendor-verified-header">
                 <strong>Ready Orders Queue</strong>
                 <span className="vendor-badge">{readyOrders.length}</span>
