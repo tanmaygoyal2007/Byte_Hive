@@ -14,6 +14,8 @@ import {
   type UserSession,
 } from "@/features/orders/services/order-portal.service";
 import { getVendorClosureLabel, getVendorOutletStatus, subscribeToVendorStatus } from "@/features/vendor/services/vendor-portal.service";
+import { subscribeToAuthState } from "@/features/auth/services/auth.service";
+import type { AuthUser } from "@/features/auth/services/auth.service";
 
 interface CartItem {
   id: string;
@@ -71,8 +73,29 @@ export default function PaymentButton({
   }, []);
 
   useEffect(() => {
-    const syncSession = () => setUserSession(getCurrentUserSession());
-    return subscribeToUserSession(syncSession);
+    const syncSession = () => {
+      const session = getCurrentUserSession();
+      setUserSession(session);
+    };
+    const syncAuth = (authUser: AuthUser | null) => {
+      if (authUser) {
+        setUserSession({
+          authRole: "student",
+          userName: authUser.displayName || authUser.email,
+        });
+      } else {
+        const session = getCurrentUserSession();
+        if (session) {
+          setUserSession(session);
+        } else {
+          setUserSession(null);
+        }
+      }
+    };
+    syncSession();
+    subscribeToUserSession(syncSession);
+    subscribeToAuthState(syncAuth);
+    return () => {};
   }, []);
 
   useEffect(() => {
@@ -108,15 +131,8 @@ export default function PaymentButton({
       return;
     }
 
-    if (!userSession) {
-      setError("Please login or sign up before placing an order.");
+    if (!userSession || userSession.authRole === "guest") {
       requestAuthPrompt({ reason: "checkout", role: "student" });
-      return;
-    }
-
-    if (userSession.authRole === "guest") {
-      setError("Guest mode can save items in cart, but payment requires student or faculty login.");
-      requestAuthPrompt({ reason: "upgrade-guest", role: "student" });
       return;
     }
 

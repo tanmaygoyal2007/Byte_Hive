@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import useCart from "@/features/cart/hooks/useCart";
 import {
   getCurrentUserSession,
@@ -11,6 +11,9 @@ import {
 } from "@/features/orders/services/order-portal.service";
 import { resolveMenuImageUrl } from "@/features/menu/services/menu-image.service";
 import { getLabelColorsForCanteen } from "@/lib/utils/label-utils";
+import { getOutletMetaById, getOutletIdByName } from "@/features/orders/services/order-portal.service";
+import { getVendorOutletStatus, getVendorClosureLabel } from "@/features/vendor/services/vendor-portal.service";
+import { useOutletSwitch } from "@/features/cart/components/OutletSwitchContext";
 
 type MenuItem = {
   id: string;
@@ -26,11 +29,63 @@ type MenuItem = {
 };
 
 function MenuItemCard({ item, previewOnly = false }: { item: MenuItem; previewOnly?: boolean }) {
-  const { addItem } = useCart();
+  const { addItem, state } = useCart();
+  const { showConfirm } = useOutletSwitch();
   const [session, setSession] = useState<UserSession | null>(() => getCurrentUserSession());
   const [isFavorite, setIsFavorite] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
   const isItemAvailable = item.isAvailable !== false;
   const imageUrl = resolveMenuImageUrl(item.image);
+
+  const outletName = item.canteenId ? getOutletMetaById(item.canteenId)?.name : null;
+  const isOutletOpen = item.canteenId ? getVendorOutletStatus(outletName ?? "") : true;
+  const closureLabel = item.canteenId && outletName ? getVendorClosureLabel(outletName) : null;
+
+  const canAdd = isItemAvailable && isOutletOpen;
+
+  useEffect(() => {
+    const syncSession = () => setSession(getCurrentUserSession());
+    return subscribeToUserSession(syncSession);
+  }, []);
+
+  useEffect(() => {
+    const syncFavorite = () => {
+      setIsFavorite(session?.userName ? isFavoriteItemForUser(session.userName, item.id) : false);
+    };
+
+    syncFavorite();
+    return subscribeToFavorites(syncFavorite);
+  }, [item.id, session?.userName]);
+
+  const handleAddClick = () => {
+    setAddError(null);
+
+    if (!isItemAvailable) return;
+
+    if (!isOutletOpen) {
+      setAddError(closureLabel ? `${outletName} is currently closed. ${closureLabel}` : `${outletName} is currently closed and not accepting orders.`);
+      return;
+    }
+
+    const currentCartOutletId = state.items[0]?.canteenId;
+    const newOutletId = item.canteenId;
+    if (currentCartOutletId && newOutletId && currentCartOutletId !== newOutletId && state.items.length > 0) {
+      showConfirm({
+        item: { id: item.id, name: item.name, price: item.price, image: imageUrl, canteenId: item.canteenId },
+        currentOutletName: getOutletMetaById(currentCartOutletId)?.name ?? "another outlet",
+        newOutletName: getOutletMetaById(newOutletId)?.name ?? "this outlet",
+        itemCount: state.items.length,
+      });
+      return;
+    }
+    addItem({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      image: imageUrl,
+      canteenId: item.canteenId,
+    });
+  };
 
   const labelColors = useMemo(() => {
     return getLabelColorsForCanteen(item.canteenId);
@@ -54,18 +109,6 @@ function MenuItemCard({ item, previewOnly = false }: { item: MenuItem; previewOn
     return subscribeToFavorites(syncFavorite);
   }, [item.id, session?.userName]);
 
-  const handleAdd = () => {
-    if (!isItemAvailable) return;
-
-    addItem({
-      id: item.id,
-      name: item.name,
-      price: item.price,
-      image: imageUrl,
-      canteenId: item.canteenId,
-    });
-  };
-
   const handleFavoriteToggle = () => {
     if (!session) {
       requestAuthPrompt({ reason: "upgrade-guest", role: "student" });
@@ -86,7 +129,7 @@ function MenuItemCard({ item, previewOnly = false }: { item: MenuItem; previewOn
   };
 
   return (
-    <div className={`menu-item-card ${isItemAvailable ? "" : "menu-item-unavailable"}`}>
+    <div className={`menu-item-card ${!canAdd ? "menu-item-unavailable" : ""}`}>
       {!isItemAvailable && <div className="menu-item-unavailable-overlay">Unavailable</div>}
       <img className="menu-item-image" src={imageUrl || "/images/CANTEEN1.jpg"} alt={item.name} />
       <div className="menu-item-body">
@@ -125,12 +168,13 @@ function MenuItemCard({ item, previewOnly = false }: { item: MenuItem; previewOn
                   {isFavorite ? "★" : "☆"}
                 </span>
               </button>
-              <button className="menu-item-add" type="button" onClick={handleAdd} disabled={!isItemAvailable}>
-                Add to Cart
+              <button className="menu-item-add" type="button" onClick={handleAddClick} disabled={!canAdd}>
+                {isOutletOpen ? "Add to Cart" : "Closed"}
               </button>
             </div>
           )}
         </div>
+        {addError && <p className="menu-item-error">{addError}</p>}
       </div>
     </div>
   );

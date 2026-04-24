@@ -56,8 +56,17 @@ interface NavbarProps {
   previewOutletId?: string | null;
 }
 
+const getInitialTheme = (): "light" | "dark" => {
+  if (typeof window === "undefined") return "dark";
+  try {
+    const stored = localStorage.getItem("theme");
+    if (stored === "light" || stored === "dark") return stored;
+  } catch {}
+  return "dark";
+};
+
 const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletId = null }) => {
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [theme, setTheme] = useState<"light" | "dark">(getInitialTheme);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isBlockOpen, setIsBlockOpen] = useState(false);
   const [isPortalOpen, setIsPortalOpen] = useState(false);
@@ -357,10 +366,18 @@ const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletI
   const isGuest = guestMode;
   const displayRole: AuthRole = authRole ?? "student";
 
+  const getLogoLink = () => {
+    if (isVendorRoute) {
+      const vendorOutlet = typeof window !== "undefined" ? getVendorOutlet() : "";
+      return vendorOutlet ? "/vendor/dashboard" : "/vendor/login";
+    }
+    return "/";
+  };
+
   return (
     <>
       <nav className="navbar">
-        <Link to={isVendorRoute ? "/vendor/dashboard" : "/"} className="navbar-logo" aria-label="ByteHive home">
+        <Link to={getLogoLink()} className="navbar-logo" aria-label="ByteHive home">
           <span className="logo-box">
             <img src="/images/bytehive-navbar-logo.png" alt="ByteHive logo" className="logo-box-image" />
           </span>
@@ -369,13 +386,13 @@ const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletI
 
         <div className={`navbar-menu ${isMenuOpen ? "navbar-menu-open" : ""}`}>
           {showPrimaryNav && <Link to="/" className="nav-link">Home</Link>}
-          {showPrimaryNav && <Link to="/#popular" className="nav-link">Popular</Link>}
+          {showPrimaryNav && <Link to="/popular" className="nav-link">Popular</Link>}
           {isVendorRoute && <Link to="/vendor/dashboard" className="nav-link">Dashboard</Link>}
           {isVendorRoute && <Link to="/vendor/guidance" className="nav-link">Guidance</Link>}
           {isVendorRoute && vendorOutletId && (
             <Link to={`/canteens/${vendorOutletId}?preview=vendor&src=navbar`} className="nav-link">Preview</Link>
           )}
-          <Link to={isVendorRoute ? "/vendor/about" : "/about"} className="nav-link">About Us</Link>
+          <Link to="/about" className="nav-link">About Us</Link>
 
           {showPrimaryNav && (
             <div className="nav-dropdown" ref={blockDropdownRef}>

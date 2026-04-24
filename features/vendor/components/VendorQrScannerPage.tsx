@@ -49,7 +49,7 @@ function VendorQrScannerPage() {
   useEffect(() => {
     const outlet = getVendorOutlet();
     if (!outlet) {
-      navigate("/vendor/login", { replace: true });
+      navigate("/vendor/unauthorized", { replace: true });
       return;
     }
 
@@ -250,11 +250,11 @@ function VendorQrScannerPage() {
   const handleMarkCollectedPrompt = async () => {
     if (!verifiedOrder) return;
 
-    const updatedOrder = await updateOrderStatus(verifiedOrder.id, "handoff");
+    const updatedOrder = await updateOrderStatus(verifiedOrder.id, "collected");
     setScannerNotice(
       updatedOrder
-        ? `Pickup confirmed for ${updatedOrder.id}. The student portal has been asked to confirm collection.`
-        : `Pickup confirmed for ${verifiedOrder.id}.`
+        ? `Order ${updatedOrder.id} marked as collected and completed.`
+        : `Order ${verifiedOrder.id} marked as collected.`
     );
     setVerifiedOrder(null);
     setScanInput("");
@@ -436,7 +436,7 @@ function VendorQrScannerPage() {
           </div>
 
           <div className="vendor-scanner-actions">
-            <button type="button" className="vendor-button" onClick={handleMarkCollectedPrompt}>Mark as Collected</button>
+            <button type="button" className="vendor-button" onClick={handleMarkCollectedPrompt}>Complete Order</button>
           </div>
         </div>
       );

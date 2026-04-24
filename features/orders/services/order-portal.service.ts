@@ -442,13 +442,18 @@ async function pushOrdersSnapshot(orders: ByteHiveOrder[]) {
   return (await response.json()) as ByteHiveOrder[];
 }
 
+let lastSyncTimestamp = 0;
+const MIN_SYNC_INTERVAL_MS = 1500;
+
 export async function syncOrdersFromServer(force = false) {
   if (typeof window === "undefined") return getOrders();
 
-  if (!force && ordersSyncInFlight) {
-    await ordersSyncInFlight;
+  const now = Date.now();
+  if (!force && (ordersSyncInFlight || now - lastSyncTimestamp < MIN_SYNC_INTERVAL_MS)) {
+    if (ordersSyncInFlight) await ordersSyncInFlight;
     return getOrders();
   }
+  lastSyncTimestamp = now;
 
   ordersSyncInFlight = (async () => {
     try {
@@ -581,8 +586,6 @@ export function subscribeToOrders(callback: () => void) {
 
   if (typeof window !== "undefined") {
     ordersSyncSubscriberCount += 1;
-    void syncOrdersFromServer();
-
     if (ordersSyncTimer === null) {
       ordersSyncTimer = window.setInterval(() => {
         void syncOrdersFromServer();

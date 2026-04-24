@@ -6,6 +6,7 @@ import { CanteenCard } from "@/features/canteens/components/CanteenCard";
 import Footer from "@/components/components/layout/Footer";
 import { CANTEENS } from "@/features/canteens/components/canteens";
 import menuData from "@/features/menu/data/menu.json";
+import "@/features/canteens/components/CanteenCard.css";
 
 interface SearchBarProps {
     value: string

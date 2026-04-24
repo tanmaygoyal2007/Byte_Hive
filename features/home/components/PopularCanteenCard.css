@@ -26,6 +26,22 @@
   overflow: hidden;
   box-shadow: 0 16px 34px rgba(76, 58, 41, 0.16);
   transition: transform 0.3s ease, box-shadow 0.3s ease, filter 0.3s ease;
+  position: relative;
+}
+
+.popular-closed-tag {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  z-index: 5;
 }
 
 .canteen-card:hover .canteen-card-media {

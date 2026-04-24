@@ -1,4 +1,5 @@
 import { postJson } from "@/components/utils/api";
+import { getVendorOutlet } from "@/features/vendor/services/vendor-portal.service";
 
 type VendorAuthResponse = {
   success: boolean;
@@ -12,7 +13,7 @@ type VendorAccountRecord = {
   password: string;
 };
 
-function readVendorAccounts() {
+export function readVendorAccounts() {
   if (typeof window === "undefined") return [] as VendorAccountRecord[];
 
   try {
@@ -38,6 +39,10 @@ export async function verifyVendorMasterKey(outletName: string, masterKey: strin
 
 export function hasVendorAccount(outletName: string) {
   return readVendorAccounts().some((account) => account.outletName === outletName);
+}
+
+export function isVendorLoggedIn() {
+  return typeof window !== "undefined" && !!getVendorOutlet();
 }
 
 export function signupVendorWithPassword(outletName: string, password: string) {

@@ -1,7 +1,7 @@
 import Navbar from "@/components/components/layout/Navbar";
 import Footer from "@/components/components/layout/Footer";
 import PaymentButton from "@/features/cart/components/PaymentButton";
-import { useContext } from "react";
+import { useContext, useState, useEffect } from "react";
 import { Link } from "@/components/lib/router";
 import CartContext from "@/features/cart/store/cart.store";
 import { resolveMenuImageUrl } from "@/features/menu/services/menu-image.service";
@@ -10,6 +10,31 @@ import { getVendorClosureLabel, getVendorOutletStatus } from "@/features/vendor/
 
 function CartPage() {
   const ctx = useContext(CartContext);
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setReady(true);
+  }, []);
+
+  if (!ready) {
+    return (
+      <div className="cart-page">
+        <Navbar />
+        <main className="cart-main">
+          <div className="cart-header">
+            <div className="cart-hero">
+              <div className="cart-hero-copy">
+                <span className="cart-eyebrow">Checkout Desk</span>
+                <h1 className="cart-title">Loading...</h1>
+              </div>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   if (!ctx) return null;
 
   const { state, increment, decrement, removeItem, clear, total } = ctx;

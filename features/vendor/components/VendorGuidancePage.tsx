@@ -1,8 +1,10 @@
 import { ArrowLeft, Bot, Clock3, Eye, MapPin, PackageCheck, Palette, QrCode, Settings, ShieldCheck, Smartphone, Store, UtensilsCrossed, Zap } from "lucide-react";
-import { Link } from "@/components/lib/router";
+import { useEffect } from "react";
+import { Link, useNavigate } from "@/components/lib/router";
 import Footer from "@/components/components/layout/Footer";
 import Navbar from "@/components/components/layout/Navbar";
 import { getVendorLocation, getVendorOutlet } from "@/features/vendor/services/vendor-portal.service";
+import "@/features/vendor/components/VendorPortal.css";
 
 const workflowSteps = [
   {
@@ -119,6 +121,16 @@ const bestPractices = [
 ];
 
 function VendorGuidancePage() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const outlet = getVendorOutlet();
+    if (!outlet) {
+      navigate("/vendor/unauthorized", { replace: true });
+      return;
+    }
+  }, [navigate]);
+
   const outletName = getVendorOutlet() ?? "Vendor Portal";
   const outletLocation = getVendorLocation(outletName);
 

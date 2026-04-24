@@ -1,11 +1,14 @@
 import { MapPin, Star } from "lucide-react";
 import { Link } from "@/components/lib/router";
 import type { Canteen } from "./canteens";
+import { getVendorOutletStatus, getVendorClosureLabel } from "@/features/vendor/services/vendor-portal.service";
 
 export function CanteenCard(props: Canteen) {
     const { id, name, description, rating, block, images, logo } = props;
 
     const image = images && images.length ? images[0] : "/placeholder.svg";
+    const isOpen = getVendorOutletStatus(name);
+    const closureLabel = getVendorClosureLabel(name);
 
     return (
         <Link to={`/canteens/${id}`} className="card-link">
@@ -17,6 +20,9 @@ export function CanteenCard(props: Canteen) {
                         <div className="card-logo-badge">
                             <img src={logo} alt={`${name} logo`} className="card-logo-img" />
                         </div>
+                    )}
+                    {!isOpen && (
+                        <div className="card-closed-tag">Closed</div>
                     )}
                 </div>
 

@@ -1,4 +1,4 @@
-import { createContext, useEffect, useReducer, useRef, useCallback } from "react";
+import { createContext, useEffect, useReducer, useRef, useCallback, useState } from "react";
 import type { ReactNode } from "react";
 import { getCurrentUserSession, subscribeToUserSession } from "@/features/orders/services/order-portal.service";
 
@@ -22,7 +22,8 @@ type Action =
   | { type: "increment"; id: string }
   | { type: "decrement"; id: string }
   | { type: "clear" }
-  | { type: "setSourceCanteen"; canteenId: string };
+  | { type: "setSourceCanteen"; canteenId: string }
+  | { type: "restore"; items: CartItem[]; sourceCanteen?: string };
 
 const CART_STORAGE_KEY = "bytehiveCart";
 
@@ -77,6 +78,8 @@ function reducer(state: State, action: Action): State {
       return { items: [], sourceCanteen: undefined };
     case "setSourceCanteen":
       return { ...state, sourceCanteen: action.canteenId };
+    case "restore":
+      return { items: action.items, sourceCanteen: action.sourceCanteen };
     default:
       return state;
   }
@@ -96,8 +99,22 @@ type CartContextType = {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, undefined, readInitialState);
+  const [state, dispatch] = useReducer(reducer, { items: [], sourceCanteen: undefined });
+  const [hydrated, setHydrated] = useState(false);
   const previousSessionRef = useRef(getCurrentUserSession());
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(CART_STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (parsed?.items?.length > 0) {
+          dispatch({ type: "restore", items: parsed.items, sourceCanteen: parsed.sourceCanteen });
+        }
+      }
+    } catch {}
+    setHydrated(true);
+  }, []);
 
   useEffect(() => {
     const syncCartForSession = () => {

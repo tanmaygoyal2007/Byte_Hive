@@ -34,8 +34,30 @@
 @import "../features/vendor/components/VendorPortal.css";
 
 :root {
+  color-scheme: dark;
+  --font-sans: 'Geist', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --bg-base: #000000;
+  --bg-gradient:
+    linear-gradient(180deg, #090909 0%, #030303 50%, #000000 100%);
+  --text-primary: #f5efe8;
+  --text-muted: #b4a495;
+  --accent: #ff8a3d;
+  --accent-soft: rgba(255, 138, 61, 0.22);
+  --nav-surface: rgba(10, 10, 10, 0.86);
+  --surface-card: rgba(16, 16, 16, 0.92);
+  --surface-muted: rgba(255, 138, 61, 0.1);
+  --dropdown-bg: rgba(12, 12, 12, 0.96);
+  --border-soft: rgba(255, 255, 255, 0.1);
+  --shadow-soft: 0 24px 54px rgba(0, 0, 0, 0.34);
+  --home-surface-primary:
+    radial-gradient(circle at top left, rgba(255, 138, 61, 0.08), transparent 30%),
+    linear-gradient(180deg, #161616 0%, #0d0d0d 52%, #050505 100%);
+  --home-surface-secondary:
+    linear-gradient(180deg, #050505 0%, #000000 100%);
+}
+
+:root[data-theme="light"] {
   color-scheme: light;
-  --font-sans: "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --bg-base: #f6efe7;
   --bg-gradient:
     radial-gradient(circle at top left, rgba(255, 122, 26, 0.08), transparent 28%),
@@ -56,28 +78,6 @@
   --home-surface-secondary:
     radial-gradient(circle at top right, rgba(255, 122, 26, 0.08), transparent 26%),
     linear-gradient(180deg, #efe2d3 0%, #e5d4c2 100%);
-}
-
-:root[data-theme="dark"] {
-  color-scheme: dark;
-  --bg-base: #000000;
-  --bg-gradient:
-    linear-gradient(180deg, #090909 0%, #030303 50%, #000000 100%);
-  --text-primary: #f5efe8;
-  --text-muted: #b4a495;
-  --accent: #ff8a3d;
-  --accent-soft: rgba(255, 138, 61, 0.22);
-  --nav-surface: rgba(10, 10, 10, 0.86);
-  --surface-card: rgba(16, 16, 16, 0.92);
-  --surface-muted: rgba(255, 138, 61, 0.1);
-  --dropdown-bg: rgba(12, 12, 12, 0.96);
-  --border-soft: rgba(255, 255, 255, 0.1);
-  --shadow-soft: 0 24px 54px rgba(0, 0, 0, 0.34);
-  --home-surface-primary:
-    radial-gradient(circle at top left, rgba(255, 138, 61, 0.08), transparent 30%),
-    linear-gradient(180deg, #161616 0%, #0d0d0d 52%, #050505 100%);
-  --home-surface-secondary:
-    linear-gradient(180deg, #050505 0%, #000000 100%);
 }
 
 *,
