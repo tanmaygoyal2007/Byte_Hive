@@ -12,6 +12,7 @@ interface ReceiptCardProps {
   orderId: string;
   qrValue?: string;
   pickupCode?: string;
+  paymentId?: string;
   outletName: string;
   pickupLocation: string;
   estimatedTime: string;
@@ -30,6 +31,7 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
   orderId,
   qrValue,
   pickupCode,
+  paymentId,
   outletName,
   pickupLocation,
   estimatedTime,
@@ -74,6 +76,16 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
               </div>
               <span className="value">{estimatedTime}</span>
             </div>
+
+            {paymentId && (
+              <div className="order-info">
+                <div className="label-row">
+                  <Package size={16} />
+                  <span className="label">Payment ID</span>
+                </div>
+                <span className="value">{paymentId}</span>
+              </div>
+            )}
           </div>
 
           <div className="outlet-section">

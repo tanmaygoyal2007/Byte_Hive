@@ -149,7 +149,7 @@ const ContactSection: React.FC = () => {
   };
 
   return (
-    <section id="about" className="contact-section">
+    <section id="contact-us" className="contact-section">
       <div className="contact-inner">
         <h1 className="contact-title">
           <span>Have a question in your mind?</span>

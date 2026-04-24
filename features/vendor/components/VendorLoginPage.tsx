@@ -7,6 +7,7 @@ import {
   changeVendorPassword,
   hasVendorAccount,
   loginVendorWithPassword,
+  readVendorAccounts,
   signupVendorWithPassword,
   verifyVendorMasterKey,
 } from "@/features/vendor/services/vendor.service";
@@ -18,8 +19,17 @@ type VendorPasswordChangeMode = "login" | "password-change";
 function VendorLoginPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const outlets = useMemo(() => [...VENDOR_OUTLETS], []);
   const [mode, setMode] = useState<VendorAuthMode>("login");
+  const allOutlets = useMemo(() => [...VENDOR_OUTLETS], []);
+  const registeredOutlets = useMemo(() => {
+    return new Set(readVendorAccounts().map(account => account.outletName));
+  }, []);
+  const outlets = useMemo(() => {
+    if (mode === "signup") {
+      return allOutlets.filter(outlet => !registeredOutlets.has(outlet));
+    }
+    return allOutlets;
+  }, [mode, allOutlets, registeredOutlets]);
   const [passwordChangeMode, setPasswordChangeMode] = useState<VendorPasswordChangeMode>("login");
   const [selectedOutlet, setSelectedOutlet] = useState("");
   const [masterKey, setMasterKey] = useState("");
@@ -44,7 +54,7 @@ function VendorLoginPage() {
     if (requestedOutlet && outlets.includes(requestedOutlet as typeof outlets[number])) {
       setSelectedOutlet(requestedOutlet);
     }
-  }, [outlets, searchParams]);
+  }, [outlets, searchParams, mode, registeredOutlets]);
 
   const resetPasswordSetup = () => {
     setMasterKeyVerified(false);

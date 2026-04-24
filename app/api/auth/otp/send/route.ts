@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createOtp, getRequiredOtpDomain, isValidOtpEmail, normalizeOtpEmail } from "@/lib/utils/otp";
 import { sendOtpEmail } from "@/lib/utils/otp-mail";
 
-const OTP_TIMEOUT_MS = 30000;
+const OTP_TIMEOUT_MS = 8000;
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout>;

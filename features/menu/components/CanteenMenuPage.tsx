@@ -12,6 +12,8 @@ import { CANTEENS } from "@/features/canteens/components/canteens";
 import { getMenuItemsForOutlet, subscribeToMenu, type MenuCatalogItem } from "@/features/orders/services/order-portal.service";
 import { getLabelColorsForCanteen } from "@/lib/utils/label-utils";
 import { getVendorClosureLabel, getVendorOutletStatus, subscribeToVendorStatus } from "@/features/vendor/services/vendor-portal.service";
+import { OutletSwitchProvider } from "@/features/cart/components/OutletSwitchContext";
+import GlobalOutletSwitchModal from "@/features/cart/components/GlobalOutletSwitchModal";
 
 function CanteenMenuPage() {
   const params = useParams<{ id: string }>();
@@ -41,8 +43,8 @@ function CanteenMenuPage() {
     const set = new Set<string>();
     items.forEach((item) => set.add(item.category));
     let list = Array.from(set).sort((a, b) => a.localeCompare(b));
-    if (list.includes("Unavailable")) {
-      list = list.filter((c) => c !== "Unavailable");
+    const hasUnavailable = items.some((item) => item.isAvailable === false);
+    if (hasUnavailable && !list.includes("Unavailable")) {
       list.push("Unavailable");
     }
     return list;
@@ -137,7 +139,9 @@ function CanteenMenuPage() {
   }, [category, items, localSearch]);
 
   return (
-    <div className="menu-page-root">
+    <OutletSwitchProvider>
+      <div className="menu-page-root">
+        <GlobalOutletSwitchModal />
       <Navbar isVendorPreview={isPreviewMode} previewOutletId={activeCanteenId} />
       <div className="menu-page-shell">
         <CanteenHeader
@@ -158,7 +162,7 @@ function CanteenMenuPage() {
             <strong>This outlet is temporarily closed for checkout.</strong>
             <p>{closureLabel ?? "You can still browse the menu and add items to cart, but checkout is paused right now."}</p>
           </div>
-        )}
+)}
         <ImageGallery canteen={canteen} />
 
         <div className="menu-page-container">
@@ -195,6 +199,7 @@ function CanteenMenuPage() {
               <div className="menu-right-top">
                 <MenuSearch value={localSearch} onChange={handleSearchChange} />
               </div>
+
               <MiniCart previewOnly={isPreviewMode} />
             </div>
           </aside>
@@ -204,6 +209,7 @@ function CanteenMenuPage() {
         <Footer variant={isPreviewMode ? "vendor" : "default"} />
       </div>
     </div>
+    </OutletSwitchProvider>
   );
 }
 

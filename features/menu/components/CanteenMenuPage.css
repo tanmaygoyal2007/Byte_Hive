@@ -123,19 +123,32 @@
 .menu-page-outlet-alert {
   margin-bottom: 18px;
   padding: 16px 18px;
-  border: 1px solid rgba(255, 122, 26, 0.35);
   border-radius: 16px;
-  background: rgba(255, 122, 26, 0.12);
+  background: #fff3e0;
+  border: 1px solid #ff9800;
 }
 
 .menu-page-outlet-alert strong {
   display: block;
   margin-bottom: 6px;
-  color: #fff4e8;
+  color: #e65100;
 }
 
 .menu-page-outlet-alert p {
   margin: 0;
+  color: #bf360c;
+}
+
+[data-theme="dark"] .menu-page-outlet-alert {
+  background: rgba(255, 122, 26, 0.12);
+  border-color: rgba(255, 122, 26, 0.35);
+}
+
+[data-theme="dark"] .menu-page-outlet-alert strong {
+  color: #fff4e8;
+}
+
+[data-theme="dark"] .menu-page-outlet-alert p {
   color: #ffd9bb;
 }
 

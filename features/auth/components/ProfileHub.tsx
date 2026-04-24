@@ -1,7 +1,7 @@
 import { CheckCircle2, ChevronLeft, Clock3, Heart, LogIn, LogOut, Package, ShoppingBag, Star, Trash2, UserPlus, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { Link } from "@/components/lib/router";
+import { Link, useNavigate } from "@/components/lib/router";
 import useCart from "@/features/cart/hooks/useCart";
 import useSecondClock from "@/components/hooks/useSecondClock";
 import { resolveMenuImageUrl } from "@/features/menu/services/menu-image.service";
@@ -47,6 +47,7 @@ function ProfileHub({
 }: ProfileHubProps) {
   const { state, addItem, increment, decrement, removeItem, total } = useCart();
   const now = useSecondClock();
+  const navigate = useNavigate();
   const [currentView, setCurrentView] = useState<View>("home");
   const [orders, setOrders] = useState<ByteHiveOrder[]>([]);
   const [favorites, setFavorites] = useState<FavoriteMenuItem[]>([]);
@@ -221,14 +222,24 @@ function ProfileHub({
                   <strong>Current Order</strong>
                   <span className="profile-status-badge">{activeOrder.status}</span>
                 </div>
-                <p>{activeOrder.outletName}</p>
-                <small>Order #{activeOrder.id}</small>
+                <div>
+                  <strong>{activeOrder.outletName}</strong>
+                  <br />
+                  <small>Order #{activeOrder.id}</small>
+                </div>
                 {countdown.isActive && (
                   <div className={`profile-home-timer ${countdown.isDelayed ? "profile-home-timer-delayed" : ""}`}>
                     <strong>{countdown.clockLabel}</strong>
                     <span>{countdown.isDelayed ? "Order delayed" : "Preparation countdown"}</span>
                   </div>
                 )}
+                <button
+                  type="button"
+                  className="profile-action-link profile-action-link-small"
+                  onClick={() => navigate(`/receipt?orderId=${activeOrder.id}`)}
+                >
+                  View Receipt
+                </button>
                     </>
                   );
                 })()}
@@ -286,6 +297,7 @@ function ProfileHub({
                 <div className="profile-highlight-row">
                   <div>
                     <strong>{order.outletName}</strong>
+                    <br />
                     <small>Order #{order.id}</small>
                   </div>
                   <span className="profile-status-badge">{order.status}</span>
@@ -338,8 +350,8 @@ function ProfileHub({
 
               <div className="profile-panel-card">
                 <h3>Status Timeline</h3>
+                <div className="profile-timeline-item profile-timeline-complete"><CheckCircle2 size={18} /><span>Accepted</span></div>
                 <div className={`profile-timeline-item ${["preparing", "accepted", "ready", "handoff", "collected"].includes(order.status) ? "profile-timeline-complete" : ""}`}><CheckCircle2 size={18} /><span>Preparing</span></div>
-                <div className={`profile-timeline-item ${["accepted", "ready", "handoff", "collected"].includes(order.status) ? "profile-timeline-complete" : ""}`}><CheckCircle2 size={18} /><span>Accepted</span></div>
                 <div className={`profile-timeline-item ${["ready", "handoff", "collected"].includes(order.status) ? "profile-timeline-complete" : ""}`}><CheckCircle2 size={18} /><span>Ready for Pickup</span></div>
                 <div className={`profile-timeline-item ${["handoff", "collected"].includes(order.status) ? "profile-timeline-complete" : ""}`}><CheckCircle2 size={18} /><span>Counter Verified</span></div>
                 <div className={`profile-timeline-item ${order.status === "collected" ? "profile-timeline-complete" : ""}`}><Clock3 size={18} /><span>Collected</span></div>
@@ -347,7 +359,7 @@ function ProfileHub({
 
               {(order.status === "ready" || order.status === "handoff") && (
                 <div className="profile-qr-card">
-                  <div className="profile-qr-box">
+<div className="profile-qr-box">
                     <QRCodeSVG value={getQrValueForOrder(order)} size={170} />
                   </div>
                   <p>
@@ -358,15 +370,23 @@ function ProfileHub({
                   <p>Pickup code: <strong>{order.pickupCode}</strong></p>
                 </div>
               )}
-                  </>
-                );
-              })()}
-            </div>
-          ))}
-        </>
-      )}
-    </>
-  );
+
+              <button
+                type="button"
+                className="profile-action-link"
+                onClick={() => navigate(`/receipt?orderId=${order.id}`)}
+              >
+                View Receipt
+              </button>
+                   </>
+                 );
+               })()}
+             </div>
+           ))}
+         </>
+       )}
+     </>
+   );
 
   const renderOrderHistoryView = () => (
     <>
@@ -380,6 +400,13 @@ function ProfileHub({
             </div>
             <p>{getOrdersSummaryTimestamp(order.updatedAt)}</p>
             <small>Order #{order.id}</small>
+            <button
+              type="button"
+              className="profile-action-link"
+              onClick={() => navigate(`/receipt?orderId=${order.id}`)}
+            >
+              View Receipt
+            </button>
           </div>
         )) : <div className="profile-panel-card"><p>No completed orders yet. Your collected orders will show here.</p></div>}
       </div>

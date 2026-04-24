@@ -73,7 +73,7 @@ function VendorMenuPage() {
 
   useEffect(() => {
     if (!outletName) {
-      navigate("/vendor/login", { replace: true });
+      navigate("/vendor/unauthorized", { replace: true });
       return;
     }
 

@@ -1,4 +1,4 @@
-import { CheckCircle2, ChevronDown, ChevronUp, Clock3, MapPin, Package, QrCode, Settings, Store } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronUp, Clock3, KeyRound, MapPin, Package, QrCode, Settings, Store, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "@/components/lib/router";
 import Footer from "@/components/components/layout/Footer";
@@ -28,6 +28,7 @@ import {
   subscribeToVendorStatus,
   type VendorOutletStatusInfo,
 } from "@/features/vendor/services/vendor-portal.service";
+import { verifyVendorMasterKey } from "@/features/vendor/services/vendor.service";
 
 function VendorDashboardPage() {
   const navigate = useNavigate();
@@ -40,12 +41,17 @@ function VendorDashboardPage() {
   const [isLoadingOrders, setIsLoadingOrders] = useState(true);
   const [orders, setOrders] = useState<ByteHiveOrder[]>([]);
   const [isMobile, setIsMobile] = useState(false);
+  const [showMenuKeyModal, setShowMenuKeyModal] = useState(false);
+  const [menuMasterKey, setMenuMasterKey] = useState("");
+  const [menuKeyError, setMenuKeyError] = useState("");
+  const [menuKeyVerified, setMenuKeyVerified] = useState(false);
+  const [isVerifyingMenuKey, setIsVerifyingMenuKey] = useState(false);
   const now = useSecondClock();
 
   useEffect(() => {
     const outlet = getVendorOutlet();
     if (!outlet) {
-      navigate("/vendor/login", { replace: true });
+      navigate("/vendor/unauthorized", { replace: true });
       return;
     }
 
@@ -138,8 +144,8 @@ function VendorDashboardPage() {
   };
 
   const handleOrderAction = (orderId: string, currentStatus: ByteHiveOrder["status"]) => {
-    if (currentStatus === "preparing") void updateOrderStatus(orderId, "accepted");
-    if (currentStatus === "accepted") void updateOrderStatus(orderId, "ready");
+    if (currentStatus === "preparing" || currentStatus === "accepted") void updateOrderStatus(orderId, "ready");
+    if (currentStatus === "ready") void updateOrderStatus(orderId, "collected");
   };
 
   const handleAddPrepTime = (order: ByteHiveOrder, minutesToAdd: number) => {
@@ -204,19 +210,43 @@ function VendorDashboardPage() {
     navigate("/vendor/login");
   };
 
+  const handleMenuAccess = async () => {
+    if (menuKeyVerified) {
+      navigate("/vendor/menu");
+      return;
+    }
+
+    if (!menuMasterKey) return;
+
+    setIsVerifyingMenuKey(true);
+    setMenuKeyError("");
+
+    try {
+      const result = await verifyVendorMasterKey(outletName, menuMasterKey);
+      if (result.success) {
+        setMenuKeyVerified(true);
+        navigate("/vendor/menu");
+      } else {
+        setMenuKeyError("Invalid master key.");
+      }
+    } catch (error) {
+      setMenuKeyError(error instanceof Error ? error.message : "Verification failed.");
+    } finally {
+      setIsVerifyingMenuKey(false);
+    }
+  };
+
   const getActionMeta = (status: ByteHiveOrder["status"]) => {
-    if (status === "preparing") return { label: "Accept Order", className: "vendor-order-action vendor-order-action-new", disabled: false };
-    if (status === "accepted") return { label: "Mark as Ready", className: "vendor-order-action vendor-order-action-accepted", disabled: false };
-    if (status === "ready") return { label: "Await QR Verification", className: "vendor-order-action vendor-order-action-ready", disabled: true };
-    if (status === "handoff") return { label: "Await Student Confirmation", className: "vendor-order-action vendor-order-action-ready", disabled: true };
+    if (status === "preparing" || status === "accepted") return { label: "Ready", className: "vendor-order-action vendor-order-action-accepted", disabled: false };
+    if (status === "ready") return { label: "Mark as Collected", className: "vendor-order-action vendor-order-action-ready", disabled: false };
+    if (status === "collected") return { label: "Completed", className: "vendor-order-action vendor-order-action-ready", disabled: true };
     return { label: "Completed", className: "vendor-order-action vendor-order-action-ready", disabled: true };
   };
 
   const getBadgeMeta = (status: ByteHiveOrder["status"]) => {
-    if (status === "preparing") return { className: "vendor-status-badge vendor-status-new", label: "New Order" };
-    if (status === "accepted") return { className: "vendor-status-badge vendor-status-accepted", label: "Accepted" };
+    if (status === "preparing" || status === "accepted") return { className: "vendor-status-badge vendor-status-new", label: "New Order" };
     if (status === "ready") return { className: "vendor-status-badge vendor-status-ready", label: "Ready" };
-    if (status === "handoff") return { className: "vendor-status-badge vendor-status-ready", label: "Handoff Confirming" };
+    if (status === "collected") return { className: "vendor-status-badge vendor-status-collected", label: "Collected" };
     return { className: "vendor-status-badge vendor-status-collected", label: "Collected" };
   };
 
@@ -245,7 +275,7 @@ function VendorDashboardPage() {
     const badge = getBadgeMeta(order.status);
     const etaLabel = getOrderEtaLabel(order);
     const delayCopy = getOrderDelayCopy(order);
-    const canAdjustTiming = order.status !== "ready" && order.status !== "handoff" && order.status !== "collected";
+    const canAdjustTiming = order.status !== "ready" && order.status !== "collected";
     const countdown = getOrderCountdownState(order, now);
 
     return (
@@ -411,7 +441,9 @@ function VendorDashboardPage() {
                     Close Outlet
                   </button>
                 )}
-                <Link to="/vendor/menu" className="vendor-button-secondary"><Settings size={18} />Manage Menu</Link>
+                <button type="button" className="vendor-button-secondary" onClick={() => setShowMenuKeyModal(true)}>
+                  <Settings size={18} />Manage Menu
+                </button>
                 <button type="button" className="vendor-button-ghost" onClick={handleLogout}>Logout</button>
               </div>
             </div>
@@ -497,13 +529,75 @@ function VendorDashboardPage() {
                   : isLoadingOrders
                     ? renderSkeletons()
                     : completedOrders.length
-                      ? <div className="vendor-order-column">{completedOrders.map((order) => renderOrderCard(order))}</div>
+                      ? <div className="vendor-order-column-scroll">{completedOrders.map((order) => renderOrderCard(order))}</div>
                       : renderEmpty("No completed orders", "Completed orders will show here.")}
               </section>
             </div>
           )}
         </div>
       </main>
+
+      {showMenuKeyModal && (
+        <>
+          <div className="vendor-form-backdrop" onClick={() => { setShowMenuKeyModal(false); setMenuMasterKey(""); setMenuKeyError(""); setMenuKeyVerified(false); }} />
+          <div className="vendor-form-wrap">
+            <section className="vendor-form-panel" role="dialog" aria-modal="true" aria-label="Verify Master Key">
+              <div className="vendor-form-header">
+                <div>
+                  <h2>Menu Management Access</h2>
+                  <p className="vendor-muted">Enter the master key to access the Menu Management page.</p>
+                </div>
+                <button
+                  type="button"
+                  className="vendor-icon-button"
+                  onClick={() => { setShowMenuKeyModal(false); setMenuMasterKey(""); setMenuKeyError(""); setMenuKeyVerified(false); }}
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="vendor-form-body">
+                <div className="vendor-field">
+                  <label htmlFor="vendor-menu-master-key">Master Key</label>
+                  <div className="vendor-password-field">
+                    <div className="vendor-master-key-wrap">
+                      <KeyRound size={18} className="vendor-master-key-icon" />
+                      <input
+                        id="vendor-menu-master-key"
+                        type="password"
+                        className="vendor-input vendor-input-master-key"
+                        value={menuMasterKey}
+                        onChange={(event) => { setMenuMasterKey(event.target.value); setMenuKeyError(""); }}
+                        placeholder="Enter master key"
+                      />
+                    </div>
+                  </div>
+                  <p className="vendor-form-hint">Contact admin if you don't have the master key.</p>
+                </div>
+                {menuKeyError && <p className="vendor-form-hint vendor-form-error">{menuKeyError}</p>}
+              </div>
+              <div className="vendor-form-actions">
+                <button
+                  type="button"
+                  className="vendor-button-ghost"
+                  onClick={() => { setShowMenuKeyModal(false); setMenuMasterKey(""); setMenuKeyError(""); setMenuKeyVerified(false); }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="vendor-button"
+                  disabled={!menuMasterKey || isVerifyingMenuKey}
+                  onClick={handleMenuAccess}
+                >
+                  {isVerifyingMenuKey ? "Verifying..." : "Verify & Access"}
+                </button>
+              </div>
+            </section>
+          </div>
+        </>
+      )}
+
       <Footer variant="vendor" />
     </div>
   );

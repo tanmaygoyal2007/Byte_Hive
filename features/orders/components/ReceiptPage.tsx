@@ -118,26 +118,9 @@ const ReceiptPage: React.FC = () => {
       <Navbar />
       <main className="receipt-screen-main">
         <section className="receipt-shell">
-          {isRealPayment && (
-            <div className="receipt-success-banner" role="status" aria-live="polite">
-              <div className="receipt-success-copy">
-                <span className="receipt-success-icon" aria-hidden="true">
-                  <CheckCircle2 size={20} />
-                </span>
-                <div>
-                  <strong>Payment successful</strong>
-                  <p>Payment ID: {orderData.paymentId ?? state?.paymentId}</p>
-                </div>
-              </div>
-              <button type="button" className="receipt-banner-action" onClick={() => navigate("/")}>
-                <House size={16} />
-                Back to Home
-              </button>
-            </div>
-          )}
-
           <ReceiptCard
             {...orderData}
+            paymentId={storedOrder?.paymentId ?? state?.paymentId}
             onDownload={handleDownload}
             onOrderMore={() => navigate("/canteens")}
             onBackHome={() => navigate("/")}

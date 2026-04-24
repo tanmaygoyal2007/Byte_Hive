@@ -14,14 +14,14 @@ const Footer: React.FC<FooterProps> = ({ variant = "default" }) => {
         { label: "Dashboard", to: "/vendor/dashboard" },
         { label: "Guidance", to: "/vendor/guidance" },
         ...(vendorOutletId ? [{ label: "Preview", to: `/canteens/${vendorOutletId}?preview=vendor&src=footer` }] : []),
-        { label: "About Us", to: "/vendor/about" },
+        { label: "About Us", to: "/about" },
       ]
     : [
         { label: "Home", to: "/" },
         { label: "Explore Canteens", to: "/canteens" },
-        { label: "Popular", to: "/#popular" },
+        { label: "Popular", to: "/popular" },
         { label: "About Us", to: "/about" },
-        { label: "Contact / Help", to: "/#about" },
+        { label: "Contact / Help", to: "/contact-us" },
       ];
 
   return (
