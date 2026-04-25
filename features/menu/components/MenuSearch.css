@@ -22,8 +22,7 @@
 
 .menu-search-icon {
 	color: var(--text-muted);
-	font-size: 1.22rem;
-	line-height: 1;
+	flex: 0 0 auto;
 }
 
 .menu-search input {

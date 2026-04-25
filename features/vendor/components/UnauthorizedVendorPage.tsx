@@ -1,6 +1,6 @@
 "use client";
 
-import { ShieldX } from "lucide-react";
+import { ShieldX, Sparkles } from "lucide-react";
 import { Link } from "@/components/lib/router";
 import Footer from "@/components/components/layout/Footer";
 import Navbar from "@/components/components/layout/Navbar";
@@ -9,7 +9,7 @@ import "@/app/not-found.css";
 function UnauthorizedVendorPage() {
   return (
     <div className="not-found-wrapper">
-      <Navbar />
+      <Navbar forceUserMode />
 
       <main className="not-found-container">
         <div className="not-found-content">
@@ -26,10 +26,10 @@ function UnauthorizedVendorPage() {
               <div className="unauthorized-plate-rim"></div>
             </div>
             <div className="unauthorized-sparkles">
-              <span className="sparkle sparkle-1">✦</span>
-              <span className="sparkle sparkle-2">✦</span>
-              <span className="sparkle sparkle-3">✦</span>
-              <span className="sparkle sparkle-4">✦</span>
+              <Sparkles className="sparkle sparkle-1" size={16} aria-hidden="true" />
+              <Sparkles className="sparkle sparkle-2" size={16} aria-hidden="true" />
+              <Sparkles className="sparkle sparkle-3" size={16} aria-hidden="true" />
+              <Sparkles className="sparkle sparkle-4" size={16} aria-hidden="true" />
             </div>
           </div>
 
@@ -73,7 +73,7 @@ function UnauthorizedVendorPage() {
         </div>
       </main>
 
-      <Footer variant="vendor" />
+      <Footer />
     </div>
   );
 }

@@ -135,3 +135,23 @@
     transform: translateY(0) scale(1);
   }
 }
+
+.menu-update-modal {
+  border-color: rgba(255, 138, 61, 0.3);
+}
+
+.menu-update-icon {
+  background: rgba(255, 138, 61, 0.14);
+  color: #ff6a00;
+}
+
+.menu-update-modal .outlet-switch-actions {
+  flex-direction: column;
+}
+
+.menu-update-modal .outlet-switch-confirm {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}

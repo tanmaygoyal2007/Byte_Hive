@@ -1,8 +1,9 @@
 import baseMenuData from "@/features/menu/data/menu.json";
 
 export type UserRole = "student" | "faculty" | "guest";
-export type OrderStatus = "preparing" | "accepted" | "ready" | "handoff" | "collected";
+export type OrderStatus = "scheduled" | "preparing" | "accepted" | "ready" | "handoff" | "collected";
 export type OrderDelayState = "on-time" | "delayed";
+export type OrderFulfillmentType = "instant" | "scheduled";
 
 export interface ByteHiveOrderItem {
   id: string;
@@ -21,6 +22,9 @@ export interface ByteHiveOrder {
   paymentId?: string;
   customerName: string;
   customerRole: UserRole;
+  fulfillmentType: OrderFulfillmentType;
+  scheduledFor?: string | null;
+  vendorNotes?: string | null;
   outletId: string;
   outletName: string;
   pickupLocation: string;
@@ -230,11 +234,28 @@ function formatPrepMinutes(minutes: number) {
   return normalized === 1 ? "1 minute" : `${normalized} minutes`;
 }
 
+export function formatScheduledOrderLabel(isoDate?: string | null) {
+  if (!isoDate) return "Scheduled order";
+
+  const date = new Date(isoDate);
+  if (Number.isNaN(date.getTime())) return "Scheduled order";
+
+  return `Today, ${date.toLocaleString("en-IN", {
+    hour: "numeric",
+    minute: "2-digit",
+  })}`;
+}
+
 function getTimingAnchor(order: Pick<ByteHiveOrder, "vendorTimingUpdatedAt" | "createdAt">) {
   return order.vendorTimingUpdatedAt ?? order.createdAt;
 }
 
 export function getOrderRemainingMs(order: Pick<ByteHiveOrder, "status" | "delayState" | "prepMinutes" | "vendorTimingUpdatedAt" | "createdAt">, now = Date.now()) {
+  if (order.status === "scheduled") {
+    const scheduledFor = (order as ByteHiveOrder).scheduledFor;
+    return scheduledFor ? Math.max(0, new Date(scheduledFor).getTime() - now) : 0;
+  }
+
   if (order.status === "ready" || order.status === "handoff" || order.status === "collected") {
     return 0;
   }
@@ -281,7 +302,12 @@ function deriveEstimatedTime(order: {
   status: OrderStatus;
   prepMinutes: number;
   delayState: OrderDelayState;
+  fulfillmentType?: OrderFulfillmentType;
+  scheduledFor?: string | null;
 }) {
+  if (order.status === "scheduled") {
+    return formatScheduledOrderLabel(order.scheduledFor);
+  }
   if (order.status === "ready") return "Ready for pickup";
   if (order.status === "handoff") return "Counter verification in progress";
   if (order.status === "collected") return "Collected";
@@ -291,7 +317,7 @@ function deriveEstimatedTime(order: {
 }
 
 function normalizeStoredOrder(order: ByteHiveOrder): ByteHiveOrder {
-  const storedOrder = order as ByteHiveOrder & Partial<Pick<ByteHiveOrder, "basePrepMinutes" | "prepMinutes" | "delayState" | "delayMessage" | "vendorTimingUpdatedAt">>;
+  const storedOrder = order as ByteHiveOrder & Partial<Pick<ByteHiveOrder, "basePrepMinutes" | "prepMinutes" | "delayState" | "delayMessage" | "vendorTimingUpdatedAt" | "fulfillmentType" | "scheduledFor" | "vendorNotes">>;
   const businessDate = storedOrder.businessDate ?? getBusinessDate(new Date(storedOrder.createdAt));
   const sequenceNumber =
     typeof storedOrder.sequenceNumber === "number" && storedOrder.sequenceNumber > 0
@@ -307,6 +333,7 @@ function normalizeStoredOrder(order: ByteHiveOrder): ByteHiveOrder {
       ? storedOrder.prepMinutes
       : basePrepMinutes;
   const delayState = storedOrder.delayState === "delayed" ? "delayed" : "on-time";
+  const fulfillmentType = storedOrder.fulfillmentType === "scheduled" ? "scheduled" : "instant";
 
   return {
     ...storedOrder,
@@ -314,6 +341,9 @@ function normalizeStoredOrder(order: ByteHiveOrder): ByteHiveOrder {
     receiptNumber,
     sequenceNumber,
     businessDate,
+    fulfillmentType,
+    scheduledFor: storedOrder.scheduledFor ?? null,
+    vendorNotes: storedOrder.vendorNotes ?? null,
     pickupCode: storedOrder.pickupCode ?? createPickupCode(sequenceNumber),
     qrToken: storedOrder.qrToken ?? `LEGACY-${receiptNumber.replace(/[^A-Za-z0-9]/g, "").slice(-8)}`,
     basePrepMinutes,
@@ -325,6 +355,8 @@ function normalizeStoredOrder(order: ByteHiveOrder): ByteHiveOrder {
       status: storedOrder.status,
       prepMinutes,
       delayState,
+      fulfillmentType,
+      scheduledFor: storedOrder.scheduledFor ?? null,
     }),
   };
 }
@@ -420,7 +452,7 @@ async function fetchOrdersSnapshot() {
   });
 
   if (!response.ok) {
-    throw new Error("Unable to fetch orders.");
+    return null;
   }
 
   return (await response.json()) as ByteHiveOrder[];
@@ -436,7 +468,7 @@ async function pushOrdersSnapshot(orders: ByteHiveOrder[]) {
   });
 
   if (!response.ok) {
-    throw new Error("Unable to save shared orders snapshot.");
+    return null;
   }
 
   return (await response.json()) as ByteHiveOrder[];
@@ -460,8 +492,13 @@ export async function syncOrdersFromServer(force = false) {
       const localOrders = getOrders();
       let snapshot = await fetchOrdersSnapshot();
 
+      if (!snapshot) {
+        return;
+      }
+
       if (snapshot.length === 0 && localOrders.length > 0) {
         snapshot = await pushOrdersSnapshot(localOrders);
+        if (!snapshot) return;
       }
 
       replaceOrdersSnapshot(snapshot);
@@ -516,6 +553,9 @@ export async function createOrder(payload: {
   customerName: string;
   customerRole: UserRole;
   items: ByteHiveOrderItem[];
+  fulfillmentType?: OrderFulfillmentType;
+  scheduledFor?: string | null;
+  vendorNotes?: string | null;
 }) {
   const response = await fetch(ORDERS_API_PATH, {
     method: "POST",
@@ -830,6 +870,9 @@ export function getRelativeTimeLabel(isoDate?: string | null, now = Date.now()) 
 }
 
 export function getOrderEtaLabel(order: ByteHiveOrder) {
+  if (order.status === "scheduled") {
+    return formatScheduledOrderLabel(order.scheduledFor);
+  }
   return order.estimatedTime;
 }
 

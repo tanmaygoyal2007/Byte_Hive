@@ -1,4 +1,5 @@
 import { getOutletIdByName } from "@/features/orders/services/order-portal.service";
+import { getCurrentAuthUser } from "@/features/auth/services/auth.service";
 
 export const VENDOR_OUTLETS = [
   "Taste of Delhi",
@@ -62,6 +63,11 @@ function writeJSON<T>(key: string, value: T, eventName?: string) {
 export function getVendorOutlet() {
   if (typeof window === "undefined") return "";
   return localStorage.getItem(VENDOR_OUTLET_KEY) ?? "";
+}
+
+export function isVendorSessionAuthorized() {
+  if (typeof window === "undefined") return false;
+  return Boolean(getVendorOutlet()) && !getCurrentAuthUser();
 }
 
 export function getVendorOutletId(outlet = getVendorOutlet()) {

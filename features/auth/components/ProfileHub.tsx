@@ -6,6 +6,7 @@ import useCart from "@/features/cart/hooks/useCart";
 import useSecondClock from "@/components/hooks/useSecondClock";
 import { resolveMenuImageUrl } from "@/features/menu/services/menu-image.service";
 import {
+  formatScheduledOrderLabel,
   getFavoriteItemsForUser,
   getOrderCountdownState,
   getOrderDelayCopy,
@@ -33,7 +34,7 @@ type ProfileHubProps = {
   hasActiveOrder?: boolean;
 };
 
-type View = "home" | "active-order" | "order-history" | "favorites" | "cart";
+type View = "home" | "active-order" | "scheduled-orders" | "order-history" | "favorites" | "cart";
 
 function ProfileHub({
   isOpen,
@@ -106,13 +107,22 @@ function ProfileHub({
   }, [isGuest, userName]);
 
   const activeOrders = useMemo(
-    () => orders.filter((order) => order.status !== "collected").sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+    () => orders.filter((order) => order.status !== "collected").sort((a, b) => {
+      if (a.status === "scheduled" && b.status !== "scheduled") return 1;
+      if (a.status !== "scheduled" && b.status === "scheduled") return -1;
+      return b.updatedAt.localeCompare(a.updatedAt);
+    }),
     [orders]
   );
 
   const activeOrder = useMemo(() => {
-    return activeOrders[0] ?? null;
+    return activeOrders.find((order) => order.status !== "scheduled") ?? null;
   }, [activeOrders]);
+
+  const scheduledOrders = useMemo(
+    () => orders.filter((order) => order.status === "scheduled").sort((a, b) => (a.scheduledFor ?? "").localeCompare(b.scheduledFor ?? "")),
+    [orders]
+  );
 
   const orderHistory = useMemo(
     () => orders.filter((order) => order.status === "collected").sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
@@ -258,6 +268,12 @@ function ProfileHub({
               <span className="profile-action-icon"><ShoppingBag size={20} /></span>
               <span><strong>Active Order</strong><small>View current order status</small></span>
             </button>
+            {scheduledOrders.length > 0 && (
+              <button type="button" className="profile-action-card" onClick={() => setCurrentView("scheduled-orders")}>
+                <span className="profile-action-icon"><Clock3 size={20} /></span>
+                <span><strong>Scheduled Orders</strong><small>{scheduledOrders.length} upcoming</small></span>
+              </button>
+            )}
             <button type="button" className="profile-action-card" onClick={() => setCurrentView("order-history")}>
               <span className="profile-action-icon"><Package size={20} /></span>
               <span><strong>Order History</strong><small>View past orders</small></span>
@@ -413,6 +429,51 @@ function ProfileHub({
     </>
   );
 
+  const renderScheduledOrdersView = () => (
+    <>
+      {renderBackButton()}
+      <div className="profile-panel-header">
+        <h3>Scheduled Orders</h3>
+        <p>Your upcoming orders waiting for their scheduled time.</p>
+      </div>
+      {scheduledOrders.length ? scheduledOrders.map((order) => (
+        <div key={order.id} className="profile-panel-card">
+          <div className="profile-highlight-row">
+            <div>
+              <strong>{order.outletName}</strong>
+              <br />
+              <small>Order #{order.id}</small>
+            </div>
+            <span className="profile-status-badge">Scheduled</span>
+          </div>
+          <div className="profile-order-items">
+            {order.items.map((item) => (
+              <div key={`${order.id}-${item.id}`} className="profile-order-item-row">
+                <span>{item.name} x{item.quantity}</span>
+                <strong>Rs {item.price * item.quantity}</strong>
+              </div>
+            ))}
+          </div>
+          <div className="profile-order-item-row profile-order-total">
+            <span>Total</span>
+            <strong>Rs {order.total}</strong>
+          </div>
+          <div className="profile-order-item-row">
+            <span>Scheduled for</span>
+            <strong>{formatScheduledOrderLabel(order.scheduledFor)}</strong>
+          </div>
+          <button
+            type="button"
+            className="profile-action-link"
+            onClick={() => navigate(`/receipt?orderId=${order.id}`)}
+          >
+            View Receipt
+          </button>
+        </div>
+      )) : <div className="profile-panel-card"><p>No scheduled orders.</p></div>}
+    </>
+  );
+
   const renderFavoritesView = () => (
     <>
       {renderBackButton()}
@@ -517,11 +578,13 @@ function ProfileHub({
     ? renderHomeView()
     : currentView === "active-order"
       ? renderActiveOrderView()
-      : currentView === "order-history"
-        ? renderOrderHistoryView()
-        : currentView === "favorites"
-          ? renderFavoritesView()
-          : renderCartView();
+      : currentView === "scheduled-orders"
+        ? renderScheduledOrdersView()
+        : currentView === "order-history"
+          ? renderOrderHistoryView()
+          : currentView === "favorites"
+            ? renderFavoritesView()
+            : renderCartView();
 
   return (
     <div className="profile-hub-backdrop" onClick={handleClose} role="dialog" aria-modal="true" aria-label="User profile hub">

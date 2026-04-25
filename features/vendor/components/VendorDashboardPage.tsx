@@ -23,6 +23,7 @@ import {
   getVendorLocation,
   getVendorOutlet,
   getVendorOutletStatusInfo,
+  isVendorSessionAuthorized,
   setVendorManualClosure,
   setVendorScheduledClosure,
   subscribeToVendorStatus,
@@ -50,7 +51,7 @@ function VendorDashboardPage() {
 
   useEffect(() => {
     const outlet = getVendorOutlet();
-    if (!outlet) {
+    if (!isVendorSessionAuthorized() || !outlet) {
       navigate("/vendor/unauthorized", { replace: true });
       return;
     }
@@ -90,7 +91,7 @@ function VendorDashboardPage() {
     };
   }, [outletName]);
 
-  const activeOrders = useMemo(() => orders.filter((order) => order.status !== "collected"), [orders]);
+  const activeOrders = useMemo(() => orders.filter((order) => order.status !== "collected" && order.status !== "scheduled"), [orders]);
   const completedOrders = useMemo(() => orders.filter((order) => order.status === "collected"), [orders]);
 
   const toggleExpanded = (orderId: string) => {

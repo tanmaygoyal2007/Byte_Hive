@@ -1,11 +1,13 @@
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 import {
+  formatScheduledOrderLabel,
   getLivePrepMinutes,
   getOutletMetaById,
   type ByteHiveOrder,
   type ByteHiveOrderItem,
   type OrderDelayState,
+  type OrderFulfillmentType,
   type OrderStatus,
   type UserRole,
 } from "@/features/orders/services/order-portal.service";
@@ -18,6 +20,9 @@ type CreateOrderPayload = {
   customerName: string;
   customerRole: UserRole;
   items: ByteHiveOrderItem[];
+  fulfillmentType?: OrderFulfillmentType;
+  scheduledFor?: string | null;
+  vendorNotes?: string | null;
 };
 
 type UpdateTimingPayload = {
@@ -84,7 +89,12 @@ function deriveEstimatedTime(order: {
   status: OrderStatus;
   prepMinutes: number;
   delayState: OrderDelayState;
+  fulfillmentType?: OrderFulfillmentType;
+  scheduledFor?: string | null;
 }) {
+  if (order.status === "scheduled") {
+    return formatScheduledOrderLabel(order.scheduledFor);
+  }
   if (order.status === "ready") return "Ready for pickup";
   if (order.status === "handoff") return "Counter verification in progress";
   if (order.status === "collected") return "Collected";
@@ -148,6 +158,8 @@ export async function createStoredOrder(payload: CreateOrderPayload) {
   const receiptNumber = createReceiptNumber(payload.outletId, businessDate, sequenceNumber);
   const now = createdAt.toISOString();
   const basePrepMinutes = parseEstimatedMinutes(outletMeta.estimatedTime);
+  const fulfillmentType = payload.fulfillmentType === "scheduled" ? "scheduled" : "instant";
+  const initialStatus: OrderStatus = fulfillmentType === "scheduled" ? "scheduled" : "preparing";
 
   const order: ByteHiveOrder = {
     id: receiptNumber,
@@ -158,20 +170,25 @@ export async function createStoredOrder(payload: CreateOrderPayload) {
     paymentId: payload.paymentId,
     customerName: payload.customerName,
     customerRole: payload.customerRole,
+    fulfillmentType,
+    scheduledFor: payload.scheduledFor ?? null,
+    vendorNotes: payload.vendorNotes?.trim() || null,
     outletId: payload.outletId,
     outletName: outletMeta.name,
     pickupLocation: outletMeta.location,
     basePrepMinutes,
     prepMinutes: basePrepMinutes,
     estimatedTime: deriveEstimatedTime({
-      status: "preparing",
+      status: initialStatus,
       prepMinutes: basePrepMinutes,
       delayState: "on-time",
+      fulfillmentType,
+      scheduledFor: payload.scheduledFor ?? null,
     }),
     delayState: "on-time",
     delayMessage: null,
     vendorTimingUpdatedAt: null,
-    status: "preparing",
+    status: initialStatus,
     qrToken: getRandomToken(),
     createdAt: now,
     updatedAt: now,
@@ -195,19 +212,24 @@ export async function updateStoredOrderStatus(orderId: string, status: OrderStat
 
     const nextPrepMinutes = status === "ready" || status === "handoff" || status === "collected" ? 0 : order.prepMinutes;
     const nextDelayState = status === "ready" || status === "handoff" || status === "collected" ? "on-time" : order.delayState;
+    const statusChangedAt = new Date().toISOString();
+    const shouldResetTimerAnchor = order.status === "scheduled" && (status === "accepted" || status === "preparing");
 
     updatedOrder = {
       ...order,
       prepMinutes: nextPrepMinutes,
       delayState: nextDelayState,
       delayMessage: status === "ready" || status === "handoff" || status === "collected" ? null : order.delayMessage,
+      vendorTimingUpdatedAt: shouldResetTimerAnchor ? statusChangedAt : order.vendorTimingUpdatedAt,
       status,
       estimatedTime: deriveEstimatedTime({
         status,
         prepMinutes: nextPrepMinutes,
         delayState: nextDelayState,
+        fulfillmentType: order.fulfillmentType,
+        scheduledFor: order.scheduledFor ?? null,
       }),
-      updatedAt: new Date().toISOString(),
+      updatedAt: statusChangedAt,
     };
 
     return updatedOrder;
@@ -246,6 +268,8 @@ export async function updateStoredOrderTiming(orderId: string, payload: UpdateTi
         status: order.status,
         prepMinutes: nextPrepMinutes,
         delayState: nextDelayState,
+        fulfillmentType: order.fulfillmentType,
+        scheduledFor: order.scheduledFor ?? null,
       }),
       updatedAt: now,
     };

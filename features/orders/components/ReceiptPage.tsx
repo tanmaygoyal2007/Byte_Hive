@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { CheckCircle2, House, ReceiptText } from "lucide-react";
+import { ReceiptText } from "lucide-react";
 import { useLocation, useNavigate, useSearchParams } from "@/components/lib/router";
 import Footer from "@/components/components/layout/Footer";
 import Navbar from "@/components/components/layout/Navbar";
@@ -32,6 +32,8 @@ const ReceiptPage: React.FC = () => {
         qrValue: getQrValueForOrder(storedOrder),
         pickupCode: storedOrder.pickupCode,
         paymentId: storedOrder.paymentId,
+        fulfillmentType: storedOrder.fulfillmentType,
+        scheduledFor: storedOrder.scheduledFor,
         outletName: storedOrder.outletName,
         pickupLocation: storedOrder.pickupLocation,
         estimatedTime: storedOrder.estimatedTime,
@@ -50,6 +52,8 @@ const ReceiptPage: React.FC = () => {
         qrValue: resolvedOrderId ? getQrValueForOrder(resolvedOrderId) : `ByteHive-Order-${resolvedOrderId || "BH2025012601"}`,
         pickupCode: undefined,
         paymentId: state?.paymentId,
+        fulfillmentType: "instant" as const,
+        scheduledFor: null,
         outletName: "Punjabi Bites",
         pickupLocation: "Block A - Basement",
         estimatedTime: "15-20 minutes",

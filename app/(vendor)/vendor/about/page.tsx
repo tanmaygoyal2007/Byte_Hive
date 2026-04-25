@@ -2,9 +2,8 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useNavigate } from "@/components/lib/router";
-import { getVendorOutlet } from "@/features/vendor/services/vendor-portal.service";
-import VendorLoginPage from "@/features/vendor/components/VendorLoginPage";
-import AboutPage from "@/features/about/components/AboutPage";
+import { getVendorOutlet, isVendorSessionAuthorized } from "@/features/vendor/services/vendor-portal.service";
+import UnauthorizedVendorPage from "@/features/vendor/components/UnauthorizedVendorPage";
 
 export const dynamic = "force-dynamic";
 
@@ -13,7 +12,7 @@ export default function Page() {
   const [vendorOutlet, setVendorOutlet] = useState<string | null>(null);
 
   useEffect(() => {
-    setVendorOutlet(getVendorOutlet());
+    setVendorOutlet(isVendorSessionAuthorized() ? getVendorOutlet() : "");
   }, []);
 
   useEffect(() => {
@@ -33,7 +32,7 @@ export default function Page() {
 
   return (
     <Suspense fallback={null}>
-      <VendorLoginPage />
+      <UnauthorizedVendorPage />
     </Suspense>
   );
 }

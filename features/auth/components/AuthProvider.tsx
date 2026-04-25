@@ -9,6 +9,7 @@ import {
   subscribeToAuthState,
   type LocalAuthRole,
 } from "@/features/auth/services/auth.service";
+import { clearVendorSession } from "@/features/vendor/services/vendor-portal.service";
 
 type AuthRole = LocalAuthRole;
 
@@ -68,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async signUp({ role, email, password, name }) {
       try {
         await signupWithEmail({ role, email, password, name });
+        clearVendorSession();
         setAuthRole(role);
       } catch (error) {
         throw new Error(formatAuthError(error));
@@ -76,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     async signIn({ role, email, password }) {
       try {
         await loginWithEmail({ role, email, password });
+        clearVendorSession();
         setAuthRole(role);
       } catch (error) {
         throw new Error(formatAuthError(error));

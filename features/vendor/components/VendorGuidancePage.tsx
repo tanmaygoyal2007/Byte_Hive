@@ -3,7 +3,7 @@ import { useEffect } from "react";
 import { Link, useNavigate } from "@/components/lib/router";
 import Footer from "@/components/components/layout/Footer";
 import Navbar from "@/components/components/layout/Navbar";
-import { getVendorLocation, getVendorOutlet } from "@/features/vendor/services/vendor-portal.service";
+import { getVendorLocation, getVendorOutlet, isVendorSessionAuthorized } from "@/features/vendor/services/vendor-portal.service";
 import "@/features/vendor/components/VendorPortal.css";
 
 const workflowSteps = [
@@ -125,7 +125,7 @@ function VendorGuidancePage() {
 
   useEffect(() => {
     const outlet = getVendorOutlet();
-    if (!outlet) {
+    if (!isVendorSessionAuthorized() || !outlet) {
       navigate("/vendor/unauthorized", { replace: true });
       return;
     }
@@ -276,7 +276,7 @@ function VendorGuidancePage() {
               </div>
             </div>
             <div className="vendor-practices-grid">
-              {bestPractices.map((practice, index) => (
+              {bestPractices.map((practice) => (
                 <div key={practice} className="vendor-practice-card">
                   <span className="vendor-practice-check">
                     <PackageCheck size={16} />
