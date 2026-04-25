@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Star } from "lucide-react";
 import useCart from "@/features/cart/hooks/useCart";
 import {
   getCurrentUserSession,
@@ -11,7 +12,7 @@ import {
 } from "@/features/orders/services/order-portal.service";
 import { resolveMenuImageUrl } from "@/features/menu/services/menu-image.service";
 import { getLabelColorsForCanteen } from "@/lib/utils/label-utils";
-import { getOutletMetaById, getOutletIdByName } from "@/features/orders/services/order-portal.service";
+import { getOutletMetaById } from "@/features/orders/services/order-portal.service";
 import { getVendorOutletStatus, getVendorClosureLabel } from "@/features/vendor/services/vendor-portal.service";
 import { useOutletSwitch } from "@/features/cart/components/OutletSwitchContext";
 
@@ -84,6 +85,7 @@ function MenuItemCard({ item, previewOnly = false }: { item: MenuItem; previewOn
       price: item.price,
       image: imageUrl,
       canteenId: item.canteenId,
+      isAvailable: item.isAvailable !== false,
     });
   };
 
@@ -164,9 +166,12 @@ function MenuItemCard({ item, previewOnly = false }: { item: MenuItem; previewOn
                 aria-label={`${isFavorite ? "Remove" : "Save"} ${item.name} as favorite`}
                 onClick={handleFavoriteToggle}
               >
-                <span className={`menu-item-fav-icon${isFavorite ? " menu-item-fav-icon-active" : ""}`}>
-                  {isFavorite ? "★" : "☆"}
-                </span>
+                <Star
+                  className={`menu-item-fav-icon${isFavorite ? " menu-item-fav-icon-active" : ""}`}
+                  aria-hidden="true"
+                  size={18}
+                  fill={isFavorite ? "currentColor" : "none"}
+                />
               </button>
               <button className="menu-item-add" type="button" onClick={handleAddClick} disabled={!canAdd}>
                 {isOutletOpen ? "Add to Cart" : "Closed"}

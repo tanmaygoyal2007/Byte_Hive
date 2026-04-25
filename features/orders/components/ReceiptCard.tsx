@@ -13,6 +13,8 @@ interface ReceiptCardProps {
   qrValue?: string;
   pickupCode?: string;
   paymentId?: string;
+  fulfillmentType?: "instant" | "scheduled";
+  scheduledFor?: string | null;
   outletName: string;
   pickupLocation: string;
   estimatedTime: string;
@@ -32,6 +34,7 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
   qrValue,
   pickupCode,
   paymentId,
+  fulfillmentType = "instant",
   outletName,
   pickupLocation,
   estimatedTime,
@@ -45,6 +48,8 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
   onBackHome,
   downloadStatus = "idle",
 }) => {
+  const isScheduledOrder = fulfillmentType === "scheduled";
+
   return (
     <div className="receipt-page">
       <div className="receipt-container">
@@ -53,9 +58,11 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
             <CheckCircle size={40} strokeWidth={2.5} />
           </div>
 
-          <h1 className="page-title">Order Placed Successfully!</h1>
+          <h1 className="page-title">{isScheduledOrder ? "Order Scheduled Successfully!" : "Order Placed Successfully!"}</h1>
           <p className="page-subtitle">
-            Your order has been received and is being prepared.
+            {isScheduledOrder
+              ? "Your future pickup slot has been reserved and shared with the vendor."
+              : "Your order has been received and is being prepared."}
           </p>
         </div>
 
@@ -72,7 +79,7 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
             <div className="order-info">
               <div className="label-row">
                 <Clock size={16} />
-                <span className="label">Estimated Pickup</span>
+                <span className="label">{isScheduledOrder ? "Scheduled Pickup" : "Estimated Pickup"}</span>
               </div>
               <span className="value">{estimatedTime}</span>
             </div>
@@ -108,7 +115,9 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
             </div>
 
             <p className="qr-text">
-              Show this QR code at the counter to collect your order.
+              {isScheduledOrder
+                ? "Show this QR code at the counter during your scheduled slot."
+                : "Show this QR code at the counter to collect your order."}
             </p>
             {pickupCode && (
               <p className="qr-text">

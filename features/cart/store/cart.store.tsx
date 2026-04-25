@@ -1,6 +1,5 @@
-import { createContext, useEffect, useReducer, useRef, useCallback, useState } from "react";
+import { createContext, useEffect, useReducer, useCallback, useRef } from "react";
 import type { ReactNode } from "react";
-import { getCurrentUserSession, subscribeToUserSession } from "@/features/orders/services/order-portal.service";
 
 type CartItem = {
   id: string;
@@ -8,6 +7,7 @@ type CartItem = {
   price: number;
   image?: string;
   canteenId?: string;
+  isAvailable?: boolean;
   quantity: number;
 };
 
@@ -23,7 +23,8 @@ type Action =
   | { type: "decrement"; id: string }
   | { type: "clear" }
   | { type: "setSourceCanteen"; canteenId: string }
-  | { type: "restore"; items: CartItem[]; sourceCanteen?: string };
+  | { type: "restore"; items: CartItem[]; sourceCanteen?: string }
+  | { type: "replaceItems"; items: CartItem[]; sourceCanteen?: string };
 
 const CART_STORAGE_KEY = "bytehiveCart";
 
@@ -34,6 +35,7 @@ function readInitialState(): State {
     const stored = localStorage.getItem(CART_STORAGE_KEY);
     if (!stored) return { items: [], sourceCanteen: undefined };
     const parsed = JSON.parse(stored);
+    if (!parsed?.items?.length) return { items: [], sourceCanteen: undefined };
     return {
       items: parsed.items || [],
       sourceCanteen: parsed.sourceCanteen,
@@ -80,6 +82,11 @@ function reducer(state: State, action: Action): State {
       return { ...state, sourceCanteen: action.canteenId };
     case "restore":
       return { items: action.items, sourceCanteen: action.sourceCanteen };
+    case "replaceItems":
+      return {
+        items: action.items,
+        sourceCanteen: action.sourceCanteen ?? action.items[0]?.canteenId ?? state.sourceCanteen,
+      };
     default:
       return state;
   }
@@ -94,16 +101,19 @@ type CartContextType = {
   clear: () => void;
   total: () => number;
   setSourceCanteen: (canteenId: string) => void;
+  replaceItems: (items: CartItem[], sourceCanteen?: string) => void;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, { items: [], sourceCanteen: undefined });
-  const [hydrated, setHydrated] = useState(false);
-  const previousSessionRef = useRef(getCurrentUserSession());
+  const [state, dispatch] = useReducer(reducer, undefined, readInitialState);
+  const initialLoadRef = useRef(true);
 
   useEffect(() => {
+    if (!initialLoadRef.current) return;
+    initialLoadRef.current = false;
+
     try {
       const stored = localStorage.getItem(CART_STORAGE_KEY);
       if (stored) {
@@ -113,22 +123,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch {}
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    const syncCartForSession = () => {
-      const previousSession = previousSessionRef.current;
-      const nextSession = getCurrentUserSession();
-
-      if (previousSession && !nextSession) {
-        dispatch({ type: "clear" });
-      }
-
-      previousSessionRef.current = nextSession;
-    };
-
-    return subscribeToUserSession(syncCartForSession);
   }, []);
 
   useEffect(() => {
@@ -146,9 +140,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clear = useCallback(() => dispatch({ type: "clear" }), []);
   const total = useCallback(() => state.items.reduce((sum, item) => sum + item.price * item.quantity, 0), [state.items]);
   const setSourceCanteen = useCallback((canteenId: string) => dispatch({ type: "setSourceCanteen", canteenId }), []);
+  const replaceItems = useCallback((items: CartItem[], sourceCanteen?: string) => {
+    dispatch({ type: "replaceItems", items, sourceCanteen });
+  }, []);
 
   return (
-    <CartContext.Provider value={{ state, addItem, removeItem, increment, decrement, clear, total, setSourceCanteen }}>
+    <CartContext.Provider value={{ state, addItem, removeItem, increment, decrement, clear, total, setSourceCanteen, replaceItems }}>
       {children}
     </CartContext.Provider>
   );

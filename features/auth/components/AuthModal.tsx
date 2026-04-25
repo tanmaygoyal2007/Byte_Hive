@@ -1,4 +1,4 @@
-import { CheckCircle2, Eye, EyeOff, GraduationCap, KeyRound, LogIn, Mail, RotateCw, ShieldCheck, UserPlus, X } from "lucide-react";
+import { Eye, EyeOff, GraduationCap, KeyRound, LogIn, Mail, RotateCw, ShieldCheck, UserPlus, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { changePassword, hasLocalAccount } from "@/features/auth/services/auth.service";
 import { sendSignupOtp, verifySignupOtp } from "@/features/auth/services/otp.service";

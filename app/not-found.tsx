@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Compass, Home, UtensilsCrossed } from "lucide-react";
+import { Compass, Home, Sparkles, UtensilsCrossed } from "lucide-react";
 import Footer from "@/components/components/layout/Footer";
 import NavbarWrapper from "./components/NavbarWrapper";
 import "./not-found.css";
@@ -13,7 +13,7 @@ export default function NotFound() {
 
   return (
     <div className="not-found-wrapper">
-      <NavbarWrapper />
+      <NavbarWrapper forceUserMode />
 
       <main className="not-found-container">
         <div className="not-found-content">
@@ -27,10 +27,10 @@ export default function NotFound() {
               <div className="not-found-plate-rim"></div>
             </div>
             <div className="not-found-sparkles">
-              <span className="sparkle sparkle-1">✦</span>
-              <span className="sparkle sparkle-2">✦</span>
-              <span className="sparkle sparkle-3">✦</span>
-              <span className="sparkle sparkle-4">✦</span>
+              <Sparkles className="sparkle sparkle-1" size={16} aria-hidden="true" />
+              <Sparkles className="sparkle sparkle-2" size={16} aria-hidden="true" />
+              <Sparkles className="sparkle sparkle-3" size={16} aria-hidden="true" />
+              <Sparkles className="sparkle sparkle-4" size={16} aria-hidden="true" />
             </div>
           </div>
 
@@ -86,7 +86,7 @@ export default function NotFound() {
         </div>
       </main>
 
-      <Footer variant={isVendorPage ? "vendor" : "default"} />
+      <Footer variant="default" />
     </div>
   );
 }

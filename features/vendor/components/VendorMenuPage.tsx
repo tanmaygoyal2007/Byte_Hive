@@ -11,8 +11,8 @@ import {
   setMenuItemsAvailability,
   type MenuCatalogItem,
 } from "@/features/orders/services/order-portal.service";
-import { getVendorOutlet, subscribeToVendorSession } from "@/features/vendor/services/vendor-portal.service";
-import { getLabelColorsForCanteen, type CustomLabel } from "@/lib/utils/label-utils";
+import { getVendorOutlet, isVendorSessionAuthorized, subscribeToVendorSession } from "@/features/vendor/services/vendor-portal.service";
+import type { CustomLabel } from "@/lib/utils/label-utils";
 
 type MenuForm = {
   name: string;
@@ -72,7 +72,7 @@ function VendorMenuPage() {
   }, []);
 
   useEffect(() => {
-    if (!outletName) {
+    if (!isVendorSessionAuthorized() || !outletName) {
       navigate("/vendor/unauthorized", { replace: true });
       return;
     }
