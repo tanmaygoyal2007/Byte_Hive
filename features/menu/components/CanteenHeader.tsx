@@ -33,8 +33,11 @@ function CanteenHeader({ canteen, isOutletOpen = true, closureLabel = null, hide
           <span className={`open-badge${isOutletOpen ? "" : " open-badge-closed"}`}>
             {isOutletOpen ? "Open Now" : "Closed"}
           </span>
-          <span className="timings">{canteen.openingHours}</span>
-          {!isOutletOpen && closureLabel && <span className="timings">{closureLabel}</span>}
+          {isOutletOpen ? (
+            <span className="timings">{canteen.openingHours}</span>
+          ) : (
+            closureLabel && <span className="timings">{closureLabel}</span>
+          )}
         </div>
       </div>
 

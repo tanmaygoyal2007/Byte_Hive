@@ -6,17 +6,32 @@ interface Item {
   name: string;
   quantity: number;
   price: number;
+  pickupPoint?: "counter" | "vendor_stall";
+}
+
+interface PickupQrSection {
+  id: "counter" | "vendor_stall";
+  pickupPoint: "counter" | "vendor_stall";
+  title: string;
+  description: string;
+  qrValue?: string;
+  pickupCode?: string;
+  isQrExpired?: boolean;
 }
 
 interface ReceiptCardProps {
   orderId: string;
   qrValue?: string;
   pickupCode?: string;
+  isQrExpired?: boolean;
+  orderPlacedAt?: string;
+  downloadedAt?: string;
   paymentId?: string;
   outletName: string;
   pickupLocation: string;
   estimatedTime: string;
   delayMessage?: string | null;
+  pickupQrSections?: PickupQrSection[];
   items: Item[];
   subtotal: number;
   taxes: number;
@@ -31,11 +46,15 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
   orderId,
   qrValue,
   pickupCode,
+  isQrExpired = false,
+  orderPlacedAt,
+  downloadedAt,
   paymentId,
   outletName,
   pickupLocation,
   estimatedTime,
   delayMessage,
+  pickupQrSections,
   items,
   subtotal,
   taxes,
@@ -45,6 +64,68 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
   onBackHome,
   downloadStatus = "idle",
 }) => {
+  const hasSplitPickup = items.some((item) => item.pickupPoint);
+  const counterItems = items.filter((item) => item.pickupPoint !== "vendor_stall");
+  const vendorStallItems = items.filter((item) => item.pickupPoint === "vendor_stall");
+  const resolvedPickupQrSections =
+    pickupQrSections && pickupQrSections.length > 0
+      ? pickupQrSections
+      : (qrValue || pickupCode || isQrExpired)
+        ? [
+            {
+              id: "counter" as const,
+              pickupPoint: "counter" as const,
+              title: "Collect at Counter",
+              description: isQrExpired
+                ? "This order has already been completed, so its pickup QR is no longer shown."
+                : "Show this QR code at the counter to collect your order.",
+              qrValue,
+              pickupCode,
+              isQrExpired,
+            },
+          ]
+        : [];
+  const pickupQrSectionsByPoint = new Map(
+    resolvedPickupQrSections.map((section) => [section.pickupPoint, section])
+  );
+  const hasVisiblePickupQr = (section?: PickupQrSection) => !!section && !section.isQrExpired && !!section.qrValue;
+
+  const renderItemRows = (rows: Item[]) =>
+    rows.map((item, index) => (
+      <div key={`${item.name}-${index}`} className="item-row">
+        <div className="item-left">
+          <div className="quantity-badge">{item.quantity}x</div>
+          <span className="item-name">{item.name}</span>
+        </div>
+
+        <span className="item-price">Rs {item.price}</span>
+      </div>
+    ));
+
+  const renderPickupQrCard = (section: PickupQrSection, compact = false) => (
+    <div className={`receipt-pickup-qr-card ${compact ? "receipt-pickup-qr-card-compact" : ""}`}>
+      {hasVisiblePickupQr(section) ? (
+        <div className="qr-container">
+          <QRCodeSVG
+            value={section.qrValue!}
+            size={compact ? 146 : 180}
+            level="H"
+          />
+        </div>
+      ) : null}
+
+      <div className="receipt-pickup-qr-copy">
+        <strong>{section.title}</strong>
+        {hasVisiblePickupQr(section) && <p className="qr-text">{section.description}</p>}
+        {hasVisiblePickupQr(section) && section.pickupCode && (
+          <p className="qr-text">
+            Pickup code: <strong>{section.pickupCode}</strong>
+          </p>
+        )}
+      </div>
+    </div>
+  );
+
   return (
     <div className="receipt-page">
       <div className="receipt-container">
@@ -77,6 +158,16 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
               <span className="value">{estimatedTime}</span>
             </div>
 
+            {orderPlacedAt && (
+              <div className="order-info">
+                <div className="label-row">
+                  <Clock size={16} />
+                  <span className="label">Order Date & Time</span>
+                </div>
+                <span className="value">{orderPlacedAt}</span>
+              </div>
+            )}
+
             {paymentId && (
               <div className="order-info">
                 <div className="label-row">
@@ -98,38 +189,40 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
             {delayMessage && <p className="receipt-delay-note">{delayMessage}</p>}
           </div>
 
-          <div className="qr-section">
-            <div className="qr-container">
-              <QRCodeSVG
-                value={qrValue || `ByteHive-Order-${orderId}`}
-                size={180}
-                level="H"
-              />
+          {!hasSplitPickup && resolvedPickupQrSections[0] && hasVisiblePickupQr(resolvedPickupQrSections[0]) && (
+            <div className="qr-section">
+              {renderPickupQrCard(resolvedPickupQrSections[0])}
             </div>
-
-            <p className="qr-text">
-              Show this QR code at the counter to collect your order.
-            </p>
-            {pickupCode && (
-              <p className="qr-text">
-                Pickup code: <strong>{pickupCode}</strong>
-              </p>
-            )}
-          </div>
+          )}
 
           <div className="items-section">
             <h4 className="section-title">Items Ordered</h4>
-
-            {items.map((item, index) => (
-              <div key={`${item.name}-${index}`} className="item-row">
-                <div className="item-left">
-                  <div className="quantity-badge">{item.quantity}x</div>
-                  <span className="item-name">{item.name}</span>
-                </div>
-
-                <span className="item-price">Rs {item.price}</span>
+            {!hasSplitPickup && renderItemRows(items)}
+            {hasSplitPickup && (
+              <div className="receipt-pickup-groups">
+                {counterItems.length > 0 && (
+                  <div className="receipt-pickup-group">
+                    <h5 className="receipt-pickup-heading">Collect at Counter</h5>
+                    {hasVisiblePickupQr(pickupQrSectionsByPoint.get("counter")) &&
+                      renderPickupQrCard(pickupQrSectionsByPoint.get("counter")!, true)}
+                    {renderItemRows(counterItems)}
+                  </div>
+                )}
+                {vendorStallItems.length > 0 && (
+                  <div className="receipt-pickup-group receipt-pickup-group-stall">
+                    <h5 className="receipt-pickup-heading">Collect at Vendor Stall</h5>
+                    {hasVisiblePickupQr(pickupQrSectionsByPoint.get("vendor_stall")) &&
+                      renderPickupQrCard(pickupQrSectionsByPoint.get("vendor_stall")!, true)}
+                    {renderItemRows(vendorStallItems)}
+                    {hasVisiblePickupQr(pickupQrSectionsByPoint.get("vendor_stall")) && (
+                      <p className="receipt-pickup-note">
+                        Stall items are prepared separately. Please walk to the vendor stall area and show this receipt there.
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
-            ))}
+            )}
           </div>
 
           <div className="price-section">
@@ -150,6 +243,13 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
               <span className="total-amount">Rs {total}</span>
             </div>
           </div>
+
+          {downloadedAt && (
+            <div className="receipt-download-meta">
+              <span>Downloaded on</span>
+              <strong>{downloadedAt}</strong>
+            </div>
+          )}
         </div>
 
         <button type="button" className="button-outline receipt-download" onClick={onDownload}>

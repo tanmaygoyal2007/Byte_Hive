@@ -1,8 +1,10 @@
 import baseMenuData from "@/features/menu/data/menu.json";
 
 export type UserRole = "student" | "faculty" | "guest";
-export type OrderStatus = "preparing" | "accepted" | "ready" | "handoff" | "collected";
+export type OrderStatus = "preparing" | "accepted" | "ready" | "partially-collected" | "handoff" | "collected";
 export type OrderDelayState = "on-time" | "delayed";
+export type PickupPoint = "counter" | "vendor_stall";
+export type PickupSegmentStatus = "pending" | "verified";
 
 export interface ByteHiveOrderItem {
   id: string;
@@ -10,6 +12,17 @@ export interface ByteHiveOrderItem {
   quantity: number;
   price: number;
   image?: string;
+  pickupPoint?: PickupPoint;
+}
+
+export interface ByteHivePickupSegment {
+  id: PickupPoint;
+  pickupPoint: PickupPoint;
+  label: string;
+  qrToken: string;
+  pickupCode: string;
+  status: PickupSegmentStatus;
+  verifiedAt?: string | null;
 }
 
 export interface ByteHiveOrder {
@@ -32,6 +45,7 @@ export interface ByteHiveOrder {
   vendorTimingUpdatedAt?: string | null;
   status: OrderStatus;
   qrToken: string;
+  pickupSegments: ByteHivePickupSegment[];
   createdAt: string;
   updatedAt: string;
   items: ByteHiveOrderItem[];
@@ -61,6 +75,7 @@ export interface MenuCatalogItem {
   image?: string;
   isAvailable: boolean;
   labels?: string[];
+  pickupPoint?: PickupPoint;
 }
 
 export interface MenuItemDraftInput {
@@ -71,6 +86,7 @@ export interface MenuItemDraftInput {
   isAvailable?: boolean;
   isVeg?: boolean;
   image?: string;
+  pickupPoint?: PickupPoint;
 }
 
 export interface FavoriteMenuItem {
@@ -91,6 +107,7 @@ export interface ParsedQrPayload {
   orderId: string;
   outletId?: string;
   qrToken?: string;
+  pickupSegmentId?: PickupPoint;
 }
 
 const ORDERS_KEY = "bytehiveOrders";
@@ -105,6 +122,7 @@ const USER_SESSION_EVENT = "bytehive-user-session-updated";
 const AUTH_PROMPT_EVENT = "bytehive-auth-prompt";
 const ORDERS_API_PATH = "/api/orders";
 const ORDERS_SYNC_INTERVAL_MS = 2500;
+const SPLIT_PICKUP_OUTLETS = new Set<string>(["punjabiBites", "southernDelight"]);
 
 let ordersSyncTimer: number | null = null;
 let ordersSyncSubscriberCount = 0;
@@ -213,8 +231,61 @@ function createReceiptNumber(outletId: string, businessDate: string, sequenceNum
   return `${outletCode}-${businessDate}-${String(sequenceNumber).padStart(3, "0")}`;
 }
 
-function createPickupCode(sequenceNumber: number) {
-  return String(sequenceNumber).padStart(4, "0");
+function createPickupCodeSuffix() {
+  return Array.from({ length: 2 }, () => String.fromCharCode(97 + Math.floor(Math.random() * 26))).join("");
+}
+
+function createPickupCode(sequenceNumber: number, suffix = createPickupCodeSuffix()) {
+  return `${String(sequenceNumber).padStart(4, "0")}${suffix}`;
+}
+
+function createDeterministicPickupCode(sequenceNumber: number, seed: string) {
+  const hash = Array.from(seed).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const first = String.fromCharCode(97 + (hash % 26));
+  const second = String.fromCharCode(97 + (Math.floor(hash / 26) % 26));
+  return createPickupCode(sequenceNumber, `${first}${second}`);
+}
+
+function createDeterministicQrToken(seed: string) {
+  const normalized = seed.replace(/[^A-Za-z0-9]/g, "").toUpperCase();
+  return `LEGACY${normalized.padEnd(12, "X").slice(0, 12)}`;
+}
+
+function getPickupSegmentLabel(pickupPoint: PickupPoint) {
+  return pickupPoint === "vendor_stall" ? "Vendor Stall" : "Counter";
+}
+
+function shouldUseSplitPickup(outletId: string, items: ByteHiveOrderItem[]) {
+  return SPLIT_PICKUP_OUTLETS.has(outletId) && items.some((item) => item.pickupPoint === "vendor_stall");
+}
+
+function getNormalizedPickupPoint(item: ByteHiveOrderItem, allowVendorStall: boolean): PickupPoint {
+  return allowVendorStall && item.pickupPoint === "vendor_stall" ? "vendor_stall" : "counter";
+}
+
+function buildPickupSegments(
+  outletId: string,
+  items: ByteHiveOrderItem[],
+  sequenceNumber: number,
+  fallbackPickupCode?: string,
+  fallbackQrToken?: string,
+  orderStatus: OrderStatus = "preparing"
+) {
+  const supportsPickupPoints = shouldUseSplitPickup(outletId, items);
+  const groupedPoints = Array.from(
+    new Set(items.map((item) => getNormalizedPickupPoint(item, supportsPickupPoints)))
+  ) as PickupPoint[];
+  const orderedPoints = groupedPoints.sort((left, right) => (left === "counter" ? -1 : right === "counter" ? 1 : 0));
+
+  return orderedPoints.map((pickupPoint, index) => ({
+    id: pickupPoint,
+    pickupPoint,
+    label: getPickupSegmentLabel(pickupPoint),
+    pickupCode: index === 0 && fallbackPickupCode ? fallbackPickupCode : createPickupCode(sequenceNumber),
+    qrToken: index === 0 && fallbackQrToken ? fallbackQrToken : getRandomToken(),
+    status: orderStatus === "handoff" || orderStatus === "collected" ? ("verified" as const) : ("pending" as const),
+    verifiedAt: orderStatus === "handoff" || orderStatus === "collected" ? new Date().toISOString() : null,
+  }));
 }
 
 function parseEstimatedMinutes(label?: string) {
@@ -235,7 +306,7 @@ function getTimingAnchor(order: Pick<ByteHiveOrder, "vendorTimingUpdatedAt" | "c
 }
 
 export function getOrderRemainingMs(order: Pick<ByteHiveOrder, "status" | "delayState" | "prepMinutes" | "vendorTimingUpdatedAt" | "createdAt">, now = Date.now()) {
-  if (order.status === "ready" || order.status === "handoff" || order.status === "collected") {
+  if (order.status === "ready" || order.status === "partially-collected" || order.status === "handoff" || order.status === "collected") {
     return 0;
   }
 
@@ -283,6 +354,7 @@ function deriveEstimatedTime(order: {
   delayState: OrderDelayState;
 }) {
   if (order.status === "ready") return "Ready for pickup";
+  if (order.status === "partially-collected") return "Partially collected";
   if (order.status === "handoff") return "Counter verification in progress";
   if (order.status === "collected") return "Collected";
 
@@ -308,14 +380,60 @@ function normalizeStoredOrder(order: ByteHiveOrder): ByteHiveOrder {
       : basePrepMinutes;
   const delayState = storedOrder.delayState === "delayed" ? "delayed" : "on-time";
 
+  const normalizedItems = storedOrder.items.map((item) => ({
+    ...item,
+    pickupPoint: shouldUseSplitPickup(storedOrder.outletId, storedOrder.items)
+      ? item.pickupPoint ?? "counter"
+      : item.pickupPoint,
+  }));
+  const fallbackSegments: ByteHivePickupSegment[] = buildPickupSegments(
+    storedOrder.outletId,
+    normalizedItems,
+    sequenceNumber,
+    storedOrder.pickupCode,
+    storedOrder.qrToken,
+    storedOrder.status
+  ).map((segment) => ({
+    ...segment,
+    qrToken:
+      segment.id === "counter"
+        ? storedOrder.qrToken ?? segment.qrToken
+        : createDeterministicQrToken(`${receiptNumber}-${segment.id}`),
+    pickupCode:
+      segment.id === "counter"
+        ? storedOrder.pickupCode ?? segment.pickupCode
+        : createDeterministicPickupCode(sequenceNumber, `${receiptNumber}-${segment.id}`),
+    verifiedAt:
+      segment.status === "verified"
+        ? storedOrder.updatedAt
+        : null,
+  }));
+  const pickupSegments: ByteHivePickupSegment[] =
+    storedOrder.pickupSegments?.length
+      ? storedOrder.pickupSegments.map((segment) => ({
+          ...segment,
+          label: segment.label ?? getPickupSegmentLabel(segment.pickupPoint),
+          pickupCode: segment.pickupCode ?? createPickupCode(sequenceNumber),
+          qrToken: segment.qrToken ?? getRandomToken(),
+          status:
+            segment.status === "verified" || storedOrder.status === "collected"
+              ? ("verified" as const)
+              : ("pending" as const),
+          verifiedAt:
+            segment.status === "verified" || storedOrder.status === "collected"
+              ? segment.verifiedAt ?? storedOrder.updatedAt
+              : null,
+        }))
+      : fallbackSegments;
+
   return {
     ...storedOrder,
     id: receiptNumber,
     receiptNumber,
     sequenceNumber,
     businessDate,
-    pickupCode: storedOrder.pickupCode ?? createPickupCode(sequenceNumber),
-    qrToken: storedOrder.qrToken ?? `LEGACY-${receiptNumber.replace(/[^A-Za-z0-9]/g, "").slice(-8)}`,
+    pickupCode: storedOrder.pickupCode ?? pickupSegments[0]?.pickupCode ?? createPickupCode(sequenceNumber),
+    qrToken: storedOrder.qrToken ?? pickupSegments[0]?.qrToken ?? `LEGACY-${receiptNumber.replace(/[^A-Za-z0-9]/g, "").slice(-8)}`,
     basePrepMinutes,
     prepMinutes,
     delayState,
@@ -326,6 +444,8 @@ function normalizeStoredOrder(order: ByteHiveOrder): ByteHiveOrder {
       prepMinutes,
       delayState,
     }),
+    pickupSegments,
+    items: normalizedItems,
   };
 }
 
@@ -334,6 +454,11 @@ function resolveOrder(orderOrId: ByteHiveOrder | string) {
     return getOrderById(orderOrId);
   }
   return normalizeStoredOrder(orderOrId);
+}
+
+function getPickupSegmentById(order: ByteHiveOrder, pickupSegmentId?: PickupPoint | null) {
+  if (!pickupSegmentId) return order.pickupSegments[0] ?? null;
+  return order.pickupSegments.find((segment) => segment.id === pickupSegmentId) ?? null;
 }
 
 export function getOutletMetaById(outletId: string) {
@@ -479,6 +604,11 @@ export function getOrderById(orderId: string) {
   return getOrders().find((order) => order.id === orderId || order.receiptNumber === orderId) ?? null;
 }
 
+export function getPickupSegmentsForOrder(orderOrId: ByteHiveOrder | string) {
+  const order = resolveOrder(orderOrId);
+  return order?.pickupSegments ?? [];
+}
+
 export function getAllOrders() {
   return getOrders();
 }
@@ -491,7 +621,25 @@ export function getOrderForOutletByPickupCode(outletName: string, pickupCode: st
   const normalized = pickupCode.trim();
   if (!normalized) return null;
 
-  return getOrdersForOutlet(outletName).find((order) => order.pickupCode === normalized) ?? null;
+  return (
+    getOrdersForOutlet(outletName).find((order) =>
+      order.pickupSegments.some((segment) => segment.pickupCode.toLowerCase() === normalized.toLowerCase())
+    ) ?? null
+  );
+}
+
+export function getOrderPickupMatchForOutletByPickupCode(outletName: string, pickupCode: string) {
+  const normalized = pickupCode.trim().toLowerCase();
+  if (!normalized) return null;
+
+  for (const order of getOrdersForOutlet(outletName)) {
+    const segment = order.pickupSegments.find((entry) => entry.pickupCode.toLowerCase() === normalized);
+    if (segment) {
+      return { order, segment };
+    }
+  }
+
+  return null;
 }
 
 export function getOrdersForUser(userName: string) {
@@ -554,6 +702,25 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus) {
   return updatedOrder;
 }
 
+export async function verifyOrderPickupSegment(orderId: string, pickupSegmentId: PickupPoint) {
+  const response = await fetch(`${ORDERS_API_PATH}/${encodeURIComponent(orderId)}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ pickupSegmentId }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Unable to verify pickup.");
+  }
+
+  const updatedOrder = normalizeStoredOrder((await response.json()) as ByteHiveOrder);
+  replaceOrdersSnapshot(getOrders().map((order) => (order.id === orderId ? updatedOrder : order)));
+  void syncOrdersFromServer(true);
+  return updatedOrder;
+}
+
 export async function updateOrderTiming(
   orderId: string,
   payload: {
@@ -607,12 +774,27 @@ export function subscribeToOrders(callback: () => void) {
 }
 
 export function getQrValueForOrder(orderOrId: ByteHiveOrder | string) {
+  return getQrValueForPickupSegment(orderOrId);
+}
+
+export function getQrValueForPickupSegment(orderOrId: ByteHiveOrder | string, pickupSegmentId?: PickupPoint) {
   const order = resolveOrder(orderOrId);
   if (!order) {
     return typeof orderOrId === "string" ? `ByteHive-Order-${orderOrId}` : "";
   }
 
-  return `ByteHive|${order.outletId}|${order.receiptNumber}|${order.qrToken}`;
+  const segment = getPickupSegmentById(order, pickupSegmentId);
+  if (!segment) {
+    return `ByteHive|${order.outletId}|${order.receiptNumber}|${order.qrToken}`;
+  }
+
+  return `ByteHive|${order.outletId}|${order.receiptNumber}|${segment.id}|${segment.qrToken}`;
+}
+
+export function getPickupCodeForOrder(orderOrId: ByteHiveOrder | string, pickupSegmentId?: PickupPoint) {
+  const order = resolveOrder(orderOrId);
+  if (!order) return "";
+  return getPickupSegmentById(order, pickupSegmentId)?.pickupCode ?? order.pickupCode;
 }
 
 export function validateQrPayload(rawValue: string): ParsedQrPayload | null {
@@ -620,7 +802,15 @@ export function validateQrPayload(rawValue: string): ParsedQrPayload | null {
   if (!trimmed) return null;
 
   if (/^ByteHive\|/i.test(trimmed)) {
-    const [, outletId, orderId, qrToken] = trimmed.split("|");
+    const parts = trimmed.split("|");
+    if (parts.length === 5) {
+      const [, outletId, orderId, pickupSegmentId, qrToken] = parts;
+      if (!outletId || !orderId || !pickupSegmentId || !qrToken) return null;
+      if (pickupSegmentId !== "counter" && pickupSegmentId !== "vendor_stall") return null;
+      return { outletId, orderId, pickupSegmentId, qrToken };
+    }
+
+    const [, outletId, orderId, qrToken] = parts;
     if (!outletId || !orderId || !qrToken) return null;
     return { outletId, orderId, qrToken };
   }
@@ -644,11 +834,24 @@ function getStoredFavorites() {
 
 export function getMenuItemsForOutlet(outletId: string) {
   const overrides = getStoredMenuOverrides();
-  if (overrides[outletId]?.length) return overrides[outletId];
-
-  return (baseMenuData as MenuCatalogItem[])
+  const baseItems = (baseMenuData as MenuCatalogItem[])
     .filter((item) => item.canteenId === outletId)
     .map((item) => ({ ...item, description: item.description ?? "Freshly prepared at ByteHive." }));
+
+  if (overrides[outletId]?.length) {
+    const baseById = new Map(baseItems.map((item) => [item.id, item]));
+    return overrides[outletId].map((item) => {
+      const baseItem = baseById.get(item.id);
+      return {
+        ...baseItem,
+        ...item,
+        description: item.description ?? baseItem?.description ?? "Freshly prepared at ByteHive.",
+        pickupPoint: item.pickupPoint ?? baseItem?.pickupPoint,
+      };
+    });
+  }
+
+  return baseItems;
 }
 
 export function getAllMenuItems() {
@@ -730,6 +933,7 @@ export function createMenuItemForOutlet(outletId: string, item: MenuItemDraftInp
     image: item.image,
     isAvailable: item.isAvailable ?? true,
     isVeg: item.isVeg ?? true,
+    pickupPoint: item.pickupPoint,
   };
 
   updateMenuItemsForOutlet(outletId, (items) => [nextItem, ...items]);

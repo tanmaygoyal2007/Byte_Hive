@@ -23,6 +23,7 @@ interface CartItem {
   price: number;
   quantity: number;
   canteenId?: string;
+  pickupPoint?: "counter" | "vendor_stall";
 }
 
 interface PaymentButtonProps {
@@ -187,6 +188,7 @@ export default function PaymentButton({
                 name: item.name,
                 quantity: item.quantity,
                 price: item.price,
+                pickupPoint: item.pickupPoint,
               })),
             });
 

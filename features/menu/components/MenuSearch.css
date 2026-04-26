@@ -63,3 +63,31 @@
 	background: rgba(249, 115, 22, 0.1);
 	transform: scale(1.1);
 }
+
+.menu-search-filter-btn {
+	border: 1px solid var(--border-soft);
+	background: color-mix(in srgb, var(--surface-card) 92%, transparent);
+	color: var(--text-primary);
+	border-radius: 12px;
+	min-height: 36px;
+	padding: 0 12px;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	font: inherit;
+	font-weight: 700;
+	cursor: pointer;
+	transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.menu-search-filter-btn:hover {
+	transform: translateY(-1px);
+	border-color: color-mix(in srgb, var(--accent) 40%, transparent);
+	color: var(--accent);
+}
+
+.menu-search-filter-btn-active {
+	border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+	background: color-mix(in srgb, var(--accent) 12%, transparent);
+	color: var(--accent);
+}

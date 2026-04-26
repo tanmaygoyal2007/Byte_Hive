@@ -1,14 +1,25 @@
+import { useEffect, useState } from "react";
 import { MapPin, Star } from "lucide-react";
 import { Link } from "@/components/lib/router";
 import type { Canteen } from "./canteens";
-import { getVendorOutletStatus, getVendorClosureLabel } from "@/features/vendor/services/vendor-portal.service";
+import { getVendorOutletStatus, getVendorClosureLabel, subscribeToVendorStatus } from "@/features/vendor/services/vendor-portal.service";
 
 export function CanteenCard(props: Canteen) {
     const { id, name, description, rating, block, images, logo } = props;
 
     const image = images && images.length ? images[0] : "/placeholder.svg";
-    const isOpen = getVendorOutletStatus(name);
-    const closureLabel = getVendorClosureLabel(name);
+    const [isOpen, setIsOpen] = useState(() => getVendorOutletStatus(name));
+    const [, setClosureLabel] = useState<string | null>(() => getVendorClosureLabel(name));
+
+    useEffect(() => {
+        const syncVendorStatus = () => {
+            setIsOpen(getVendorOutletStatus(name));
+            setClosureLabel(getVendorClosureLabel(name));
+        };
+
+        syncVendorStatus();
+        return subscribeToVendorStatus(syncVendorStatus);
+    }, [name]);
 
     return (
         <Link to={`/canteens/${id}`} className="card-link">

@@ -12,7 +12,8 @@ import {
   getOrderEtaLabel,
   getOrdersForUser,
   getOrdersSummaryTimestamp,
-  getQrValueForOrder,
+  getPickupSegmentsForOrder,
+  getQrValueForPickupSegment,
   getRelativeTimeLabel,
   removeFavoriteItemForUser,
   subscribeToFavorites,
@@ -351,23 +352,45 @@ function ProfileHub({
               <div className="profile-panel-card">
                 <h3>Status Timeline</h3>
                 <div className="profile-timeline-item profile-timeline-complete"><CheckCircle2 size={18} /><span>Accepted</span></div>
-                <div className={`profile-timeline-item ${["preparing", "accepted", "ready", "handoff", "collected"].includes(order.status) ? "profile-timeline-complete" : ""}`}><CheckCircle2 size={18} /><span>Preparing</span></div>
-                <div className={`profile-timeline-item ${["ready", "handoff", "collected"].includes(order.status) ? "profile-timeline-complete" : ""}`}><CheckCircle2 size={18} /><span>Ready for Pickup</span></div>
-                <div className={`profile-timeline-item ${["handoff", "collected"].includes(order.status) ? "profile-timeline-complete" : ""}`}><CheckCircle2 size={18} /><span>Counter Verified</span></div>
+                <div className={`profile-timeline-item ${["preparing", "accepted", "ready", "partially-collected", "handoff", "collected"].includes(order.status) ? "profile-timeline-complete" : ""}`}><CheckCircle2 size={18} /><span>Preparing</span></div>
+                <div className={`profile-timeline-item ${["ready", "partially-collected", "handoff", "collected"].includes(order.status) ? "profile-timeline-complete" : ""}`}><CheckCircle2 size={18} /><span>Ready for Pickup</span></div>
+                <div className={`profile-timeline-item ${["partially-collected", "handoff", "collected"].includes(order.status) ? "profile-timeline-complete" : ""}`}><CheckCircle2 size={18} /><span>Partially Collected</span></div>
+                <div className={`profile-timeline-item ${["handoff", "collected"].includes(order.status) ? "profile-timeline-complete" : ""}`}><CheckCircle2 size={18} /><span>Pickup Verified</span></div>
                 <div className={`profile-timeline-item ${order.status === "collected" ? "profile-timeline-complete" : ""}`}><Clock3 size={18} /><span>Collected</span></div>
               </div>
 
-              {(order.status === "ready" || order.status === "handoff") && (
+              {(order.status === "ready" || order.status === "partially-collected" || order.status === "handoff") && (
                 <div className="profile-qr-card">
-<div className="profile-qr-box">
-                    <QRCodeSVG value={getQrValueForOrder(order)} size={170} />
-                  </div>
-                  <p>
-                    {order.status === "handoff"
-                      ? "Your QR has been verified at the counter. Confirm pickup once the food is handed over."
-                      : "Show this QR code at the counter to collect your order."}
-                  </p>
-                  <p>Pickup code: <strong>{order.pickupCode}</strong></p>
+                  {(() => {
+                    const pendingSegments = getPickupSegmentsForOrder(order).filter((segment) => segment.status === "pending");
+
+                    if (!pendingSegments.length) {
+                      return (
+                        <>
+                          <p>
+                            {order.status === "handoff"
+                              ? "All pickup points are verified. Confirm pickup once the food is fully handed over."
+                              : "This order has no active pickup QR right now."}
+                          </p>
+                        </>
+                      );
+                    }
+
+                    return pendingSegments.map((segment) => (
+                      <div key={`${order.id}-${segment.id}`} className="profile-qr-segment">
+                        <strong>{segment.label}</strong>
+                        <div className="profile-qr-box">
+                          <QRCodeSVG value={getQrValueForPickupSegment(order, segment.id)} size={170} />
+                        </div>
+                        <p>
+                          {segment.pickupPoint === "vendor_stall"
+                            ? "Show this QR at the vendor stall for the stall items."
+                            : "Show this QR at the counter for the counter items."}
+                        </p>
+                        <p>Pickup code: <strong>{segment.pickupCode}</strong></p>
+                      </div>
+                    ));
+                  })()}
                 </div>
               )}
 

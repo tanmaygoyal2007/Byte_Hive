@@ -11,7 +11,8 @@ import StudentLoginModal from "@/features/auth/components/StudentLoginModal";
 import {
   getActiveOrdersForUser,
   getOrderDelayCopy,
-  getQrValueForOrder,
+  getPickupSegmentsForOrder,
+  getQrValueForPickupSegment,
   setCurrentUserSession,
   subscribeToAuthPrompt,
   subscribeToOrders,
@@ -215,7 +216,10 @@ const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletI
       const readyPromptState = readPromptState(READY_PROMPT_KEY);
       const delayPromptState = readPromptState(DELAY_PROMPT_KEY);
       const latestHandoffOrder = activeOrders.find((order) => order.status === "handoff") ?? null;
-      const latestReadyOrder = activeOrders.find((order) => order.status === "ready") ?? null;
+      const latestReadyOrder =
+        activeOrders.find((order) => order.status === "partially-collected") ??
+        activeOrders.find((order) => order.status === "ready") ??
+        null;
       const latestDelayedOrder = activeOrders.find((order) => order.delayState === "delayed") ?? null;
 
       if (
@@ -514,11 +518,25 @@ const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletI
               Order #{readyOrderPrompt.id} from {readyOrderPrompt.outletName} is ready for pickup at {readyOrderPrompt.pickupLocation}.
             </p>
             <div className="ready-order-qr-shell">
-              <div className="ready-order-qr-box">
-                <QRCodeSVG value={getQrValueForOrder(readyOrderPrompt)} size={180} level="H" />
-              </div>
-              <strong>Pickup code: {readyOrderPrompt.pickupCode}</strong>
-              <small>{getQrValueForOrder(readyOrderPrompt)}</small>
+              {getPickupSegmentsForOrder(readyOrderPrompt)
+                .filter((segment) => segment.status === "pending")
+                .map((segment) => {
+                  const qrValue = getQrValueForPickupSegment(readyOrderPrompt, segment.id);
+                  return (
+                    <div key={`${readyOrderPrompt.id}-${segment.id}`} className="ready-order-qr-segment">
+                      <strong>{segment.label}</strong>
+                      <div className="ready-order-qr-box">
+                        <QRCodeSVG value={qrValue} size={180} level="H" />
+                      </div>
+                      <small>
+                        {segment.pickupPoint === "vendor_stall"
+                          ? "Show this at the vendor stall."
+                          : "Show this at the counter."}
+                      </small>
+                      <strong>Pickup code: {segment.pickupCode}</strong>
+                    </div>
+                  );
+                })}
             </div>
             <div className="ready-order-actions">
               <button type="button" className="ready-order-secondary" onClick={handleReadyPromptDismiss}>Close</button>

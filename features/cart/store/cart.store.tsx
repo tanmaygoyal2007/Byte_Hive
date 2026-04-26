@@ -8,6 +8,7 @@ type CartItem = {
   price: number;
   image?: string;
   canteenId?: string;
+  pickupPoint?: "counter" | "vendor_stall";
   quantity: number;
 };
 

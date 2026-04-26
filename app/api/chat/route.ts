@@ -15,6 +15,7 @@ type MenuItem = {
   isAvailable?: boolean;
   image?: string;
   description?: string;
+  labels?: string[];
 };
 
 type OrderContext = {
@@ -79,6 +80,17 @@ const CANTEEN_LABELS: Record<string, string> = {
   gianis: "Gianis",
 };
 
+const LABEL_ALIASES: Record<string, string[]> = {
+  Spicy: ["spicy", "hot", "masaledar", "masala"],
+  "Contains Dairy": ["contains dairy", "dairy", "milk", "paneer", "cheese", "cream", "butter"],
+  "Served Cold": ["served cold", "cold", "chilled", "iced", "cool"],
+  "Served Hot": ["served hot", "hot", "warm"],
+  Sweet: ["sweet", "dessert", "sugary"],
+  "Egg-based": ["egg", "egg based", "omelette", "omelet"],
+  "High Protein": ["high protein", "protein", "protein rich"],
+  "Light Bite": ["light bite", "light", "snack", "small bite"],
+};
+
 function normalize(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
 }
@@ -108,6 +120,44 @@ function extractRequestedItemPhrase(query: string) {
     .trim();
 
   return normalize(cleaned);
+}
+
+function normalizeLabel(label: string) {
+  return label.toLowerCase().replace(/[^a-z0-9\s]/g, " ").replace(/\s+/g, " ").trim();
+}
+
+function getRequestedLabels(query: string, menu: MenuItem[]) {
+  const normalizedQuery = normalize(query);
+  const menuLabels = Array.from(
+    new Set(menu.flatMap((item) => item.labels ?? []).filter((label): label is string => Boolean(label?.trim())))
+  );
+
+  const matched = new Set<string>();
+
+  for (const [label, aliases] of Object.entries(LABEL_ALIASES)) {
+    const normalizedLabel = normalizeLabel(label);
+    if (
+      normalizedQuery.includes(normalizedLabel) ||
+      aliases.some((alias) => normalizedQuery.includes(normalize(alias)))
+    ) {
+      matched.add(label);
+    }
+  }
+
+  for (const label of menuLabels) {
+    if (normalizedQuery.includes(normalizeLabel(label))) {
+      matched.add(label);
+    }
+  }
+
+  return Array.from(matched);
+}
+
+function itemHasRequestedLabels(item: MenuItem, requestedLabels: string[]) {
+  if (!requestedLabels.length) return true;
+
+  const itemLabels = new Set((item.labels ?? []).map(normalizeLabel));
+  return requestedLabels.every((label) => itemLabels.has(normalizeLabel(label)));
 }
 
 function hasUsablePrice(item: MenuItem) {
@@ -148,6 +198,7 @@ function selectRelevantMenuItems(menu: MenuItem[], userQuery: string) {
   const normalizedQuery = normalize(userQuery);
   const budget = extractBudget(userQuery);
   const queryTerms = normalizedQuery.split(" ").filter((term) => term.length >= 3);
+  const requestedLabels = getRequestedLabels(userQuery, menu);
   const wantsVeg = /\bveg(etarian)?\b/.test(normalizedQuery);
   const wantsNonVeg = /\bnon veg\b|\bnonveg\b|\bchicken\b|\begg\b|\bmeat\b|\bfish\b/.test(normalizedQuery);
   const wantsAvailable = /\bavailable\b|\bopen\b|\bright now\b|\btoday\b/.test(normalizedQuery);
@@ -159,6 +210,9 @@ function selectRelevantMenuItems(menu: MenuItem[], userQuery: string) {
 
   if (matchedCanteens.length > 0) {
     filtered = filtered.filter((item) => matchedCanteens.includes(item.canteenId));
+  }
+  if (requestedLabels.length > 0) {
+    filtered = filtered.filter((item) => itemHasRequestedLabels(item, requestedLabels));
   }
   if (wantsVeg && !wantsNonVeg) {
     filtered = filtered.filter((item) => item.isVeg);
@@ -175,12 +229,14 @@ function selectRelevantMenuItems(menu: MenuItem[], userQuery: string) {
 
   const scored = filtered
     .map((item) => {
-      const haystack = normalize(`${item.name} ${item.category} ${CANTEEN_LABELS[item.canteenId] ?? item.canteenId}`);
+      const labelText = (item.labels ?? []).join(" ");
+      const haystack = normalize(`${item.name} ${item.category} ${CANTEEN_LABELS[item.canteenId] ?? item.canteenId} ${labelText}`);
       let score = 0;
 
       for (const term of queryTerms) {
         if (haystack.includes(term)) score += 3;
       }
+      if (requestedLabels.length > 0 && itemHasRequestedLabels(item, requestedLabels)) score += 6;
       if (wantsVeg && item.isVeg) score += 2;
       if (wantsNonVeg && !item.isVeg) score += 2;
       if (budget !== null && hasUsablePrice(item) && item.price <= budget) score += 2;
@@ -204,9 +260,10 @@ function selectRelevantMenuItems(menu: MenuItem[], userQuery: string) {
     const canteenName = CANTEEN_LABELS[item.canteenId] ?? item.canteenId;
     const availability = item.isAvailable === false ? "Unavailable" : "Available";
     const priceLabel = hasUsablePrice(item) ? `Rs.${item.price}` : "Price unavailable";
+    const labelSummary = item.labels?.length ? ` | Labels: ${item.labels.join(", ")}` : "";
     return `${canteenName} | ${item.category} | ${item.name} | ${priceLabel} | ${
       item.isVeg ? "Veg" : "Non-Veg"
-    } | ${availability}`;
+    } | ${availability}${labelSummary}`;
   });
 }
 
@@ -214,6 +271,7 @@ function scoreMenuItems(menu: MenuItem[], userQuery: string) {
   const normalizedQuery = normalize(userQuery);
   const budget = extractBudget(userQuery);
   const queryTerms = normalizedQuery.split(" ").filter((term) => term.length >= 3);
+  const requestedLabels = getRequestedLabels(userQuery, menu);
   const wantsVeg = /\bveg(etarian)?\b/.test(normalizedQuery);
   const wantsNonVeg = /\bnon veg\b|\bnonveg\b|\bchicken\b|\begg\b|\bmeat\b|\bfish\b/.test(normalizedQuery);
   const matchedCanteens = Object.entries(CANTEEN_LABELS)
@@ -224,6 +282,9 @@ function scoreMenuItems(menu: MenuItem[], userQuery: string) {
 
   if (matchedCanteens.length > 0) {
     filtered = filtered.filter((item) => matchedCanteens.includes(item.canteenId));
+  }
+  if (requestedLabels.length > 0) {
+    filtered = filtered.filter((item) => itemHasRequestedLabels(item, requestedLabels));
   }
   if (wantsVeg && !wantsNonVeg) {
     filtered = filtered.filter((item) => item.isVeg);
@@ -237,8 +298,9 @@ function scoreMenuItems(menu: MenuItem[], userQuery: string) {
 
   return filtered
     .map((item) => {
+      const labelText = (item.labels ?? []).join(" ");
       const haystack = normalize(
-        `${item.name} ${item.category} ${CANTEEN_LABELS[item.canteenId] ?? item.canteenId} ${item.description ?? ""}`
+        `${item.name} ${item.category} ${CANTEEN_LABELS[item.canteenId] ?? item.canteenId} ${item.description ?? ""} ${labelText}`
       );
       let score = 0;
 
@@ -247,6 +309,7 @@ function scoreMenuItems(menu: MenuItem[], userQuery: string) {
       }
       if (normalizedQuery.includes(normalize(item.name))) score += 10;
       if (normalizedQuery.includes(normalize(item.category))) score += 3;
+      if (requestedLabels.length > 0 && itemHasRequestedLabels(item, requestedLabels)) score += 8;
       if (wantsVeg && item.isVeg) score += 2;
       if (wantsNonVeg && !item.isVeg) score += 2;
       if (budget !== null && item.price <= budget) score += 2;
@@ -278,6 +341,39 @@ function buildNearbyMenuSuggestions(menu: MenuItem[], userQuery: string) {
     .filter((entry) => entry.score > 0)
     .slice(0, 3)
     .map(({ item }) => `${item.name} from ${CANTEEN_LABELS[item.canteenId] ?? item.canteenId} for Rs.${item.price}`);
+}
+
+function maybeBuildLabelRecommendation(latestUserMessage: string, orderContext: OrderContext | null): StudentActionResponse | null {
+  const menu = orderContext?.menu ?? [];
+  if (!menu.length) return null;
+
+  const requestedLabels = getRequestedLabels(latestUserMessage, menu);
+  if (!requestedLabels.length) return null;
+
+  const normalizedQuery = normalize(latestUserMessage);
+  const isDiscoveryIntent =
+    /\b(show|tell|suggest|recommend|find|what|which|any|some|give)\b/i.test(latestUserMessage) ||
+    /\bfood\b|\bitem\b|\bdish\b|\bmeal\b/.test(normalizedQuery);
+
+  if (!isDiscoveryIntent) return null;
+
+  const matches = scoreMenuItems(menu, latestUserMessage)
+    .filter(({ item }) => itemHasRequestedLabels(item, requestedLabels))
+    .slice(0, 5)
+    .map(({ item }) => item);
+
+  if (!matches.length) {
+    return {
+      reply: `I couldn't find any available items matching the ${requestedLabels.join(", ")} label${requestedLabels.length > 1 ? "s" : ""} right now.`,
+    };
+  }
+
+  const reply = [
+    `Here are some ${requestedLabels.join(", ").toLowerCase()} options you can try:`,
+    ...matches.map((item) => `- ${item.name} from ${CANTEEN_LABELS[item.canteenId] ?? item.canteenId} for Rs.${item.price}`),
+  ].join("\n");
+
+  return { reply };
 }
 
 function maybeBuildStudentAction(
@@ -418,9 +514,14 @@ export async function POST(req: NextRequest) {
     const orderSummary = buildOrderContextSummary(orderContext);
     const cartSummary = buildCartSummary(orderContext);
     const studentAction = maybeBuildStudentAction(latestUserMessage, orderContext);
+    const labelRecommendation = maybeBuildLabelRecommendation(latestUserMessage, orderContext);
 
     if (studentAction) {
       return NextResponse.json(studentAction);
+    }
+
+    if (labelRecommendation) {
+      return NextResponse.json(labelRecommendation);
     }
 
     const systemPrompt = `You are ByteBot, a friendly AI food assistant for ByteHive campus.
@@ -442,6 +543,7 @@ Rules:
 - Treat any item with price 0 or missing price as price-unavailable, not free
 - Do not recommend price-unavailable items for cheapest, budget, or low-cost requests
 - Respect item availability when asked about what is available right now
+- Use label metadata when the user asks for things like spicy food, served hot items, cold drinks, sweet items, dairy items, high-protein food, light bites, or egg-based dishes
 - If the user asks for vegetarian food, only mention vegetarian items
 - Use the current order context exactly as provided when answering order tracking, pickup, ETA, delay, or collection questions
 - If there is no active order, clearly say that no live order was found instead of guessing

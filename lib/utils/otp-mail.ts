@@ -51,6 +51,12 @@ export async function sendOtpEmail(params: {
       user,
       pass,
     },
+    tls:
+      process.env.NODE_ENV !== "production"
+        ? {
+            rejectUnauthorized: false,
+          }
+        : undefined,
   });
 
   await transporter.sendMail({

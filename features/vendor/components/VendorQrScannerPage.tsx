@@ -1,17 +1,18 @@
-import { AlertCircle, ArrowLeft, Camera, CameraOff, CheckCircle2, QrCode, ScanLine, XCircle } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AlertCircle, ArrowLeft, Camera, CameraOff, CheckCircle2, ChevronDown, ChevronUp, QrCode, ScanLine, XCircle } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "@/components/lib/router";
 import Footer from "@/components/components/layout/Footer";
 import Navbar from "@/components/components/layout/Navbar";
 import {
   getOrderById,
-  getOrderForOutletByPickupCode,
   getOrdersForOutlet,
-  getQrValueForOrder,
+  getOrderPickupMatchForOutletByPickupCode,
+  getQrValueForPickupSegment,
   subscribeToOrders,
-  updateOrderStatus,
+  verifyOrderPickupSegment,
   validateQrPayload,
   type ByteHiveOrder,
+  type ByteHivePickupSegment,
 } from "@/features/orders/services/order-portal.service";
 import { getVendorOutlet, getVendorOutletId } from "@/features/vendor/services/vendor-portal.service";
 
@@ -40,11 +41,13 @@ function VendorQrScannerPage() {
   const [outletName, setOutletName] = useState("");
   const [scanState, setScanState] = useState<ScanState>("scanning");
   const [verifiedOrder, setVerifiedOrder] = useState<ByteHiveOrder | null>(null);
+  const [verifiedSegment, setVerifiedSegment] = useState<ByteHivePickupSegment | null>(null);
   const [scanInput, setScanInput] = useState("");
   const [readyOrders, setReadyOrders] = useState<ByteHiveOrder[]>([]);
   const [scannerNotice, setScannerNotice] = useState("");
   const [cameraState, setCameraState] = useState<"idle" | "starting" | "ready" | "unsupported" | "blocked">("idle");
   const [cameraEnabled, setCameraEnabled] = useState(true);
+  const [showReadyQueue, setShowReadyQueue] = useState(false);
 
   useEffect(() => {
     const outlet = getVendorOutlet();
@@ -55,7 +58,7 @@ function VendorQrScannerPage() {
 
     const syncOrders = () => {
       const outletOrders = getOrdersForOutlet(outlet).sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
-      setReadyOrders(outletOrders.filter((order) => order.status === "ready"));
+      setReadyOrders(outletOrders.filter((order) => order.status === "ready" || order.status === "partially-collected"));
       setVerifiedOrder((current) => {
         if (!current) return current;
         return outletOrders.find((order) => order.id === current.id) ?? null;
@@ -66,11 +69,6 @@ function VendorQrScannerPage() {
     syncOrders();
     return subscribeToOrders(syncOrders);
   }, [navigate]);
-
-  const latestReadyQr = useMemo(
-    () => (readyOrders[0] ? getQrValueForOrder(readyOrders[0]) : ""),
-    [readyOrders]
-  );
 
   const stopCamera = useCallback((invalidateAttempt = true) => {
     if (invalidateAttempt) {
@@ -99,20 +97,28 @@ function VendorQrScannerPage() {
 
     const parsed = validateQrPayload(rawValue);
     const manualCode = rawValue.trim();
-    const pickupCodeOrder = !parsed ? getOrderForOutletByPickupCode(outletName, manualCode) : null;
+    const pickupCodeMatch = !parsed ? getOrderPickupMatchForOutletByPickupCode(outletName, manualCode) : null;
 
-    if (!parsed && !pickupCodeOrder) {
+    if (!parsed && !pickupCodeMatch) {
       setVerifiedOrder(null);
+      setVerifiedSegment(null);
       setScanState("invalid");
       return;
     }
 
-    const order = pickupCodeOrder ?? getOrderById(parsed?.orderId ?? "");
+    const order = pickupCodeMatch?.order ?? getOrderById(parsed?.orderId ?? "");
     if (!order) {
       setVerifiedOrder(null);
+      setVerifiedSegment(null);
       setScanState("invalid");
       return;
     }
+
+    const matchedSegment =
+      pickupCodeMatch?.segment ??
+      (parsed?.pickupSegmentId
+        ? order.pickupSegments.find((segment) => segment.id === parsed.pickupSegmentId)
+        : order.pickupSegments.find((segment) => segment.qrToken === parsed?.qrToken) ?? order.pickupSegments[0] ?? null);
 
     const vendorOutletId = getVendorOutletId(outletName);
     if (
@@ -127,35 +133,48 @@ function VendorQrScannerPage() {
 
     if (order.outletName !== outletName || order.outletId !== vendorOutletId) {
       setVerifiedOrder(order);
+      setVerifiedSegment(matchedSegment ?? null);
       setScanState("wrong-outlet");
       return;
     }
 
-    if (parsed?.qrToken && order.qrToken !== parsed.qrToken) {
+    if (!matchedSegment) {
       setVerifiedOrder(null);
+      setVerifiedSegment(null);
+      setScanState("invalid");
+      return;
+    }
+
+    if (parsed?.qrToken && matchedSegment.qrToken !== parsed.qrToken && order.qrToken !== parsed.qrToken) {
+      setVerifiedOrder(null);
+      setVerifiedSegment(null);
       setScanState("invalid");
       return;
     }
 
     if (order.status === "collected") {
       setVerifiedOrder(order);
+      setVerifiedSegment(matchedSegment);
       setScanState("already-collected");
       return;
     }
 
-    if (order.status === "handoff") {
+    if (matchedSegment.status === "verified" || order.status === "handoff") {
       setVerifiedOrder(order);
+      setVerifiedSegment(matchedSegment);
       setScanState("already-verified");
       return;
     }
 
-    if (order.status !== "ready") {
+    if (order.status !== "ready" && order.status !== "partially-collected") {
       setVerifiedOrder(order);
+      setVerifiedSegment(matchedSegment);
       setScanState("invalid");
       return;
     }
 
     setVerifiedOrder(order);
+    setVerifiedSegment(matchedSegment);
     setScanState("success");
   }, [outletName, scanInput]);
 
@@ -248,21 +267,24 @@ function VendorQrScannerPage() {
   }, [cameraEnabled, scanState, startCamera, stopCamera]);
 
   const handleMarkCollectedPrompt = async () => {
-    if (!verifiedOrder) return;
+    if (!verifiedOrder || !verifiedSegment) return;
 
-    const updatedOrder = await updateOrderStatus(verifiedOrder.id, "collected");
+    const updatedOrder = await verifyOrderPickupSegment(verifiedOrder.id, verifiedSegment.id);
+    const remainingSegments = updatedOrder.pickupSegments.filter((segment) => segment.status === "pending");
     setScannerNotice(
-      updatedOrder
-        ? `Order ${updatedOrder.id} marked as collected and completed.`
-        : `Order ${verifiedOrder.id} marked as collected.`
+      remainingSegments.length > 0
+        ? `${verifiedSegment.label} verified for order ${updatedOrder.id}. ${remainingSegments.length} pickup point left to scan.`
+        : `All pickup points verified for order ${updatedOrder.id}. The student can now confirm collection.`
     );
     setVerifiedOrder(null);
+    setVerifiedSegment(null);
     setScanInput("");
     setScanState("scanning");
   };
 
   const resetScanner = () => {
     setVerifiedOrder(null);
+    setVerifiedSegment(null);
     setScanInput("");
     setScanState("scanning");
     setScannerNotice("");
@@ -354,7 +376,7 @@ function VendorQrScannerPage() {
               className="vendor-input"
               value={scanInput}
               onChange={(event) => setScanInput(event.target.value)}
-              placeholder="0002 or PB-20260403-002"
+              placeholder="0002az or PB-20260403-002"
             />
           </div>
 
@@ -362,44 +384,53 @@ function VendorQrScannerPage() {
             <button type="button" className="vendor-button" onClick={() => handleVerify()} disabled={!scanInput.trim()}>
               Verify QR
             </button>
-            {latestReadyQr && (
-              <button
-                type="button"
-                className="vendor-button-secondary"
-                onClick={() => {
-                  setScanInput(latestReadyQr);
-                  handleVerify(latestReadyQr);
-                }}
-              >
-                Use Latest Ready Order
-              </button>
-            )}
           </div>
 
           {!!readyOrders.length && (
-            <div className="vendor-verified-summary vendor-scanner-narrow">
-              <div className="vendor-verified-header">
-                <strong>Ready Orders Queue</strong>
-                <span className="vendor-badge">{readyOrders.length}</span>
+            <div className="vendor-verified-summary vendor-scanner-narrow vendor-ready-queue-shell">
+              <button
+                type="button"
+                className={`vendor-ready-queue-toggle ${showReadyQueue ? "vendor-ready-queue-toggle-open" : ""}`}
+                onClick={() => setShowReadyQueue((value) => !value)}
+                aria-expanded={showReadyQueue}
+              >
+                <div className="vendor-verified-header">
+                  <strong>Ready Orders Queue</strong>
+                  <span className="vendor-badge">{readyOrders.length}</span>
+                </div>
+                {showReadyQueue ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+              </button>
+              <div className={`vendor-ready-queue-body ${showReadyQueue ? "vendor-ready-queue-body-open" : ""}`}>
+                <p className="vendor-form-hint vendor-ready-queue-hint">
+                  Open the queue only when you need a quick look at pending ready pickups.
+                </p>
+                <ul className="vendor-order-items">
+                  {readyOrders.slice(0, 6).map((order) => {
+                    const pendingSegments = order.pickupSegments.filter((segment) => segment.status === "pending");
+                    return (
+                      <li key={order.id}>
+                        <span>
+                          {order.customerName} | #{order.id} | Codes{" "}
+                          {pendingSegments.map((segment) => segment.pickupCode).join(", ")}
+                        </span>
+                        <button
+                          type="button"
+                          className="vendor-button-ghost"
+                          onClick={() => {
+                            const nextPendingSegment = pendingSegments[0];
+                            if (!nextPendingSegment) return;
+                            const qrValue = getQrValueForPickupSegment(order, nextPendingSegment.id);
+                            setScanInput(qrValue);
+                            handleVerify(qrValue);
+                          }}
+                        >
+                          Verify
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
               </div>
-              <ul className="vendor-order-items">
-                {readyOrders.slice(0, 4).map((order) => (
-                  <li key={order.id}>
-                    <span>{order.customerName} | #{order.id} | Code {order.pickupCode}</span>
-                    <button
-                      type="button"
-                      className="vendor-button-ghost"
-                      onClick={() => {
-                        const qrValue = getQrValueForOrder(order);
-                        setScanInput(qrValue);
-                        handleVerify(qrValue);
-                      }}
-                    >
-                      Verify
-                    </button>
-                  </li>
-                ))}
-              </ul>
             </div>
           )}
         </div>
@@ -411,21 +442,29 @@ function VendorQrScannerPage() {
         <div className="vendor-scanner-shell">
           <div className="vendor-scanner-state">
             <span className="vendor-scan-state-icon"><CheckCircle2 size={28} /></span>
-            <h2>Order Verified</h2>
-            <p>The outlet and QR token match. Review the order, then send the student pickup confirmation.</p>
+            <h2>{verifiedSegment?.label ?? "Pickup"} Verified</h2>
+            <p>
+              The outlet and QR token match for the {verifiedSegment?.pickupPoint === "vendor_stall" ? "vendor stall" : "counter"} pickup point.
+              Review the order, then confirm this scan.
+            </p>
           </div>
 
           <div className="vendor-verified-summary">
             <div className="vendor-verified-header">
               <strong>Order #{verifiedOrder.id}</strong>
-              <span className="vendor-status-badge vendor-status-ready">Ready</span>
+              <span className="vendor-status-badge vendor-status-ready">
+                {verifiedOrder.status === "partially-collected" ? "Partially Collected" : "Ready"}
+              </span>
             </div>
             <div className="vendor-verified-summary-row"><span className="vendor-muted">Customer</span><strong>{verifiedOrder.customerName}</strong></div>
             <div className="vendor-verified-summary-row"><span className="vendor-muted">Outlet</span><strong>{verifiedOrder.outletName}</strong></div>
             <div className="vendor-verified-summary-row"><span className="vendor-muted">Receipt Number</span><strong>{verifiedOrder.receiptNumber}</strong></div>
-            <div className="vendor-verified-summary-row"><span className="vendor-muted">Pickup Code</span><strong>{verifiedOrder.pickupCode}</strong></div>
+            <div className="vendor-verified-summary-row"><span className="vendor-muted">Pickup Point</span><strong>{verifiedSegment?.label ?? "Counter"}</strong></div>
+            <div className="vendor-verified-summary-row"><span className="vendor-muted">Pickup Code</span><strong>{verifiedSegment?.pickupCode ?? verifiedOrder.pickupCode}</strong></div>
             <ul className="vendor-order-items">
-              {verifiedOrder.items.map((item) => (
+              {verifiedOrder.items
+                .filter((item) => (verifiedSegment?.pickupPoint ?? "counter") === (item.pickupPoint ?? "counter"))
+                .map((item) => (
                 <li key={`${verifiedOrder.id}-${item.id}`}>
                   <span>{item.quantity}x {item.name}</span>
                   <span>Rs {item.price * item.quantity}</span>
@@ -436,7 +475,9 @@ function VendorQrScannerPage() {
           </div>
 
           <div className="vendor-scanner-actions">
-            <button type="button" className="vendor-button" onClick={handleMarkCollectedPrompt}>Complete Order</button>
+            <button type="button" className="vendor-button" onClick={handleMarkCollectedPrompt}>
+              Confirm {verifiedSegment?.label ?? "Pickup"} Scan
+            </button>
           </div>
         </div>
       );
@@ -457,8 +498,11 @@ function VendorQrScannerPage() {
       },
       "already-verified": {
         icon: <AlertCircle size={28} />,
-        title: "Awaiting Student Confirmation",
-        copy: "This QR has already been verified at the counter. The student still needs to confirm that the order was picked up.",
+        title: "Pickup Already Verified",
+        copy:
+          verifiedOrder?.status === "handoff"
+            ? "All required pickup points are already verified. The student still needs to confirm that the full order was collected."
+            : `The ${verifiedSegment?.pickupPoint === "vendor_stall" ? "vendor stall" : "counter"} QR has already been scanned for this order.`,
       },
       "wrong-outlet": {
         icon: <AlertCircle size={28} />,

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import useCart from "@/features/cart/hooks/useCart";
 import {
   getCurrentUserSession,
@@ -10,9 +10,9 @@ import {
   type UserSession,
 } from "@/features/orders/services/order-portal.service";
 import { resolveMenuImageUrl } from "@/features/menu/services/menu-image.service";
-import { getLabelColorsForCanteen } from "@/lib/utils/label-utils";
+import { getDisplayLabelsForItem } from "@/lib/utils/label-utils";
 import { getOutletMetaById, getOutletIdByName } from "@/features/orders/services/order-portal.service";
-import { getVendorOutletStatus, getVendorClosureLabel } from "@/features/vendor/services/vendor-portal.service";
+import { getVendorOutletStatus, getVendorClosureLabel, subscribeToVendorStatus } from "@/features/vendor/services/vendor-portal.service";
 import { useOutletSwitch } from "@/features/cart/components/OutletSwitchContext";
 
 type MenuItem = {
@@ -26,6 +26,7 @@ type MenuItem = {
   isAvailable?: boolean;
   description?: string;
   labels?: string[];
+  pickupPoint?: "counter" | "vendor_stall";
 };
 
 function MenuItemCard({ item, previewOnly = false }: { item: MenuItem; previewOnly?: boolean }) {
@@ -38,8 +39,8 @@ function MenuItemCard({ item, previewOnly = false }: { item: MenuItem; previewOn
   const imageUrl = resolveMenuImageUrl(item.image);
 
   const outletName = item.canteenId ? getOutletMetaById(item.canteenId)?.name : null;
-  const isOutletOpen = item.canteenId ? getVendorOutletStatus(outletName ?? "") : true;
-  const closureLabel = item.canteenId && outletName ? getVendorClosureLabel(outletName) : null;
+  const [isOutletOpen, setIsOutletOpen] = useState(() => (item.canteenId ? getVendorOutletStatus(outletName ?? "") : true));
+  const [closureLabel, setClosureLabel] = useState<string | null>(() => (item.canteenId && outletName ? getVendorClosureLabel(outletName) : null));
 
   const canAdd = isItemAvailable && isOutletOpen;
 
@@ -57,6 +58,22 @@ function MenuItemCard({ item, previewOnly = false }: { item: MenuItem; previewOn
     return subscribeToFavorites(syncFavorite);
   }, [item.id, session?.userName]);
 
+  useEffect(() => {
+    const syncVendorStatus = () => {
+      if (!item.canteenId || !outletName) {
+        setIsOutletOpen(true);
+        setClosureLabel(null);
+        return;
+      }
+
+      setIsOutletOpen(getVendorOutletStatus(outletName));
+      setClosureLabel(getVendorClosureLabel(outletName));
+    };
+
+    syncVendorStatus();
+    return subscribeToVendorStatus(syncVendorStatus);
+  }, [item.canteenId, outletName]);
+
   const handleAddClick = () => {
     setAddError(null);
 
@@ -71,7 +88,7 @@ function MenuItemCard({ item, previewOnly = false }: { item: MenuItem; previewOn
     const newOutletId = item.canteenId;
     if (currentCartOutletId && newOutletId && currentCartOutletId !== newOutletId && state.items.length > 0) {
       showConfirm({
-        item: { id: item.id, name: item.name, price: item.price, image: imageUrl, canteenId: item.canteenId },
+        item: { id: item.id, name: item.name, price: item.price, image: imageUrl, canteenId: item.canteenId, pickupPoint: item.pickupPoint },
         currentOutletName: getOutletMetaById(currentCartOutletId)?.name ?? "another outlet",
         newOutletName: getOutletMetaById(newOutletId)?.name ?? "this outlet",
         itemCount: state.items.length,
@@ -84,30 +101,13 @@ function MenuItemCard({ item, previewOnly = false }: { item: MenuItem; previewOn
       price: item.price,
       image: imageUrl,
       canteenId: item.canteenId,
+      pickupPoint: item.pickupPoint,
     });
   };
-
-  const labelColors = useMemo(() => {
-    return getLabelColorsForCanteen(item.canteenId);
-  }, [item.canteenId]);
 
   const fallbackDescription =
     item.description ||
     `${item.isVeg ? "Fresh vegetarian" : "Freshly prepared"} ${item.category?.toLowerCase() ?? "special"} item.`;
-
-  useEffect(() => {
-    const syncSession = () => setSession(getCurrentUserSession());
-    return subscribeToUserSession(syncSession);
-  }, []);
-
-  useEffect(() => {
-    const syncFavorite = () => {
-      setIsFavorite(session?.userName ? isFavoriteItemForUser(session.userName, item.id) : false);
-    };
-
-    syncFavorite();
-    return subscribeToFavorites(syncFavorite);
-  }, [item.id, session?.userName]);
 
   const handleFavoriteToggle = () => {
     if (!session) {
@@ -128,26 +128,41 @@ function MenuItemCard({ item, previewOnly = false }: { item: MenuItem; previewOn
     });
   };
 
+  const displayLabels = getDisplayLabelsForItem(item, item.canteenId);
+  const showVendorStallBadge =
+    item.pickupPoint === "vendor_stall" &&
+    (item.canteenId === "punjabiBites" || item.canteenId === "southernDelights");
+
   return (
     <div className={`menu-item-card ${!canAdd ? "menu-item-unavailable" : ""}`}>
       {!isItemAvailable && <div className="menu-item-unavailable-overlay">Unavailable</div>}
-      <img className="menu-item-image" src={imageUrl || "/images/CANTEEN1.jpg"} alt={item.name} />
+      <div className="menu-item-image-wrap">
+        <img className="menu-item-image" src={imageUrl || "/images/CANTEEN1.jpg"} alt={item.name} />
+        {item.isVeg !== undefined && (
+          <span className={`menu-item-food-type ${item.isVeg ? "veg" : "non-veg"}`} aria-label={item.isVeg ? "Vegetarian" : "Non-vegetarian"}>
+            {item.isVeg ? "●" : "■"}
+          </span>
+        )}
+      </div>
       <div className="menu-item-body">
         <div className="menu-item-copy">
-          <h4 className="menu-item-title">{item.name}</h4>
+          <div className="menu-item-title-row">
+            <h4 className="menu-item-title">{item.name}</h4>
+            {showVendorStallBadge && <span className="menu-item-stall-pill">Pick up at Vendor Stall</span>}
+          </div>
           <p className="menu-item-desc">{fallbackDescription}</p>
-          {item.labels && item.labels.length > 0 && (
+          {displayLabels.length > 0 && (
             <div className="menu-item-labels">
-              {item.labels.map((label) => {
-                const color = labelColors[label.toLowerCase()] || "var(--accent)";
+              {displayLabels.map((label) => {
                 return (
                   <span
-                    key={label}
+                    key={label.id}
                     className="menu-item-label"
-                    style={{ "--label-color": color } as React.CSSProperties}
+                    title={label.description}
+                    style={{ "--label-color": label.color } as CSSProperties}
                   >
                     <span className="menu-item-label-dot" />
-                    {label}
+                    {label.name}
                   </span>
                 );
               })}

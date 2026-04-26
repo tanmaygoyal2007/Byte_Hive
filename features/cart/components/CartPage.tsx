@@ -6,11 +6,13 @@ import { Link } from "@/components/lib/router";
 import CartContext from "@/features/cart/store/cart.store";
 import { resolveMenuImageUrl } from "@/features/menu/services/menu-image.service";
 import { getOutletMetaById } from "@/features/orders/services/order-portal.service";
-import { getVendorClosureLabel, getVendorOutletStatus } from "@/features/vendor/services/vendor-portal.service";
+import { getVendorClosureLabel, getVendorOutletStatus, subscribeToVendorStatus } from "@/features/vendor/services/vendor-portal.service";
 
 function CartPage() {
   const ctx = useContext(CartContext);
   const [ready, setReady] = useState(false);
+  const [isOutletOpen, setIsOutletOpen] = useState(true);
+  const [closureLabel, setClosureLabel] = useState<string | null>(null);
 
   useEffect(() => {
     setReady(true);
@@ -43,8 +45,22 @@ function CartPage() {
   const subtotal = total();
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const outletMeta = items[0]?.canteenId ? getOutletMetaById(items[0].canteenId) : null;
-  const isOutletOpen = outletMeta ? getVendorOutletStatus(outletMeta.name) : true;
-  const closureLabel = outletMeta ? getVendorClosureLabel(outletMeta.name) : null;
+
+  useEffect(() => {
+    const syncVendorStatus = () => {
+      if (!outletMeta) {
+        setIsOutletOpen(true);
+        setClosureLabel(null);
+        return;
+      }
+
+      setIsOutletOpen(getVendorOutletStatus(outletMeta.name));
+      setClosureLabel(getVendorClosureLabel(outletMeta.name));
+    };
+
+    syncVendorStatus();
+    return subscribeToVendorStatus(syncVendorStatus);
+  }, [outletMeta?.name]);
 
   return (
     <div className="cart-page">
