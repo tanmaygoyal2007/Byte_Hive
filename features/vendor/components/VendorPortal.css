@@ -936,6 +936,87 @@
   overflow: hidden;
 }
 
+.vendor-schedule-hero {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 12%, var(--surface-card)) 0%, color-mix(in srgb, var(--surface-card) 92%, transparent) 100%);
+}
+
+.vendor-schedule-hero-meta {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.vendor-schedule-card {
+  display: grid;
+  gap: 14px;
+}
+
+.vendor-schedule-card-muted {
+  opacity: 0.9;
+}
+
+.vendor-schedule-card-ready {
+  border: 2px solid color-mix(in srgb, var(--success) 60%, transparent);
+  animation: scheduleCardPulse 2s ease-in-out infinite;
+}
+
+@keyframes scheduleCardPulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--success) 30%, transparent); }
+  50% { box-shadow: 0 0 12px 4px color-mix(in srgb, var(--success) 20%, transparent); }
+}
+
+.vendor-schedule-ready-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--success) 20%, transparent);
+  color: var(--success);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.vendor-button-success {
+  background: color-mix(in srgb, var(--success) 85%, transparent) !important;
+  color: #fff !important;
+}
+
+.vendor-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vendor-waiting-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 16px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface-elevated) 80%, transparent);
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+.vendor-schedule-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  color: var(--text-muted);
+}
+
+.vendor-schedule-empty {
+  display: grid;
+  place-items: center;
+  gap: 10px;
+  text-align: center;
+  min-height: 180px;
+}
+
 .vendor-order-header {
   margin-bottom: 10px;
 }
@@ -2666,6 +2747,34 @@
   
   .vendor-guidance-meta strong {
     font-size: 1.2rem;
+  }
+
+  .vendor-schedule-card {
+    padding: 0.9rem;
+  }
+
+  .vendor-order-card {
+    padding: 0.85rem;
+  }
+
+  .vendor-order-header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .vendor-order-items {
+    font-size: 0.85rem;
+  }
+
+  .vendor-order-footer {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+
+  .vendor-waiting-label {
+    justify-content: center;
+    font-size: 0.8rem;
   }
 }
 

@@ -16,6 +16,7 @@ import {
 import { getVendorClosureLabel, getVendorOutletStatus, subscribeToVendorStatus } from "@/features/vendor/services/vendor-portal.service";
 import { subscribeToAuthState } from "@/features/auth/services/auth.service";
 import type { AuthUser } from "@/features/auth/services/auth.service";
+import useCart from "@/features/cart/hooks/useCart";
 
 interface CartItem {
   id: string;
@@ -66,8 +67,7 @@ export default function PaymentButton({
   onPaymentFailure,
 }: PaymentButtonProps) {
   const navigate = useNavigate();
-  void scheduledTime;
-  void scheduledNote;
+  const cart = useCart();
   const [status, setStatus] = useState<"idle" | "loading" | "processing" | "success" | "failed">("idle");
   const [error, setError] = useState<string | null>(null);
   const [scriptReady, setScriptReady] = useState(false);
@@ -206,9 +206,20 @@ export default function PaymentButton({
                 price: item.price,
                 pickupPoint: item.pickupPoint,
               })),
+              ...(scheduledTime && (() => {
+                const [hours, minutes] = scheduledTime.split(":").map(Number);
+                const scheduledDate = new Date();
+                scheduledDate.setHours(hours, minutes, 0, 0);
+                return {
+                  fulfillmentType: "scheduled" as const,
+                  scheduledFor: scheduledDate.toISOString(),
+                  vendorNotes: scheduledNote?.trim() || null,
+                };
+              })()),
             });
 
             setStatus("success");
+            cart.clear();
             onPaymentSuccess?.(result.paymentId, savedOrder.id);
 
             navigate(`/receipt?orderId=${encodeURIComponent(savedOrder.id)}`, {
@@ -243,11 +254,16 @@ export default function PaymentButton({
 
   const isLoading = status === "loading" || status === "processing";
   const requiresAuth = !userSession || userSession.authRole === "guest";
-  const ctaLabel = !isOutletOpen
+  const isScheduled = !!scheduledTime;
+  const ctaLabel = isExternallyBlocked
+    ? blockedMessage ?? "Checkout blocked"
+    : !isOutletOpen
     ? "Checkout Temporarily Closed"
     : requiresAuth
       ? "Login or Sign Up for Payment"
-      : `Pay Rs ${total.toFixed(2)} Securely`;
+      : isScheduled
+        ? `Reserve Order for Rs ${total.toFixed(2)}`
+        : `Pay Rs ${total.toFixed(2)} Securely`;
 
   return (
     <div className="payment-button-wrapper">
@@ -259,9 +275,9 @@ export default function PaymentButton({
       )}
 
       <button
-        className={`payment-btn payment-btn--${!isOutletOpen && !isLoading ? "blocked" : status}`}
+        className={`payment-btn payment-btn--${(!isOutletOpen || isExternallyBlocked) && !isLoading ? "blocked" : status}`}
         onClick={handlePayment}
-        disabled={isLoading || items.length === 0}
+        disabled={isLoading || items.length === 0 || isExternallyBlocked}
       >
         {status === "loading" && <><span className="payment-spinner" /> Creating order...</>}
         {status === "processing" && <><span className="payment-spinner" /> Processing...</>}

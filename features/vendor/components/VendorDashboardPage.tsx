@@ -24,6 +24,7 @@ import {
   getVendorLocation,
   getVendorOutlet,
   getVendorOutletStatusInfo,
+  isVendorSessionAuthorized,
   setVendorManualClosure,
   setVendorScheduledClosure,
   subscribeToVendorStatus,
@@ -75,7 +76,7 @@ function VendorDashboardPage() {
 
   useEffect(() => {
     const outlet = getVendorOutlet();
-    if (!outlet) {
+    if (!isVendorSessionAuthorized() || !outlet) {
       navigate("/vendor/unauthorized", { replace: true });
       return;
     }
@@ -117,7 +118,7 @@ function VendorDashboardPage() {
   }, [outletName]);
 
   const activeOrders = useMemo(
-    () => orders.filter((order) => order.status !== "handoff" && order.status !== "collected"),
+    () => orders.filter((order) => order.status !== "scheduled" && order.status !== "handoff" && order.status !== "collected"),
     [orders]
   );
   const completedOrders = useMemo(

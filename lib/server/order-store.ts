@@ -1,12 +1,14 @@
-import { mkdir, readFile, writeFile } from "fs/promises";
+import { mkdir, open, readFile, rm, writeFile } from "fs/promises";
 import path from "path";
 import {
+  formatScheduledOrderLabel,
   getLivePrepMinutes,
   getOutletMetaById,
   type ByteHiveOrder,
   type ByteHiveOrderItem,
   type ByteHivePickupSegment,
   type OrderDelayState,
+  type OrderFulfillmentType,
   type OrderStatus,
   type PickupPoint,
   type UserRole,
@@ -20,6 +22,9 @@ type CreateOrderPayload = {
   customerName: string;
   customerRole: UserRole;
   items: ByteHiveOrderItem[];
+  fulfillmentType?: OrderFulfillmentType;
+  scheduledFor?: string | null;
+  vendorNotes?: string | null;
 };
 
 type UpdateTimingPayload = {
@@ -32,6 +37,7 @@ type UpdateTimingPayload = {
 const DATA_DIR = path.join(process.cwd(), "data", "runtime");
 const ORDERS_FILE = path.join(DATA_DIR, "orders.json");
 const COUNTERS_FILE = path.join(DATA_DIR, "order-counters.json");
+const ORDERS_LOCK_FILE = path.join(DATA_DIR, "orders.lock");
 const SPLIT_PICKUP_OUTLETS = new Set<string>(["punjabiBites", "southernDelight"]);
 
 async function ensureDataDir() {
@@ -52,6 +58,38 @@ async function readJsonFile<T>(filePath: string, fallback: T): Promise<T> {
 async function writeJsonFile<T>(filePath: string, value: T) {
   await ensureDataDir();
   await writeFile(filePath, JSON.stringify(value, null, 2), "utf8");
+}
+
+async function sleep(ms: number) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function withLock<T>(lockFilePath: string, callback: () => Promise<T>, attempt = 0): Promise<T> {
+  await ensureDataDir();
+
+  try {
+    const handle = await open(lockFilePath, "wx");
+
+    try {
+      return await callback();
+    } finally {
+      await handle.close();
+      await rm(lockFilePath, { force: true });
+    }
+  } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "EEXIST" &&
+      attempt < 30
+    ) {
+      await sleep(100);
+      return withLock(lockFilePath, callback, attempt + 1);
+    }
+
+    throw error;
+  }
 }
 
 function getBusinessDate(date = new Date()) {
@@ -87,7 +125,12 @@ function deriveEstimatedTime(order: {
   status: OrderStatus;
   prepMinutes: number;
   delayState: OrderDelayState;
+  fulfillmentType?: OrderFulfillmentType;
+  scheduledFor?: string | null;
 }) {
+  if (order.status === "scheduled") {
+    return formatScheduledOrderLabel(order.scheduledFor);
+  }
   if (order.status === "ready") return "Ready for pickup";
   if (order.status === "partially-collected") return "Partially collected";
   if (order.status === "handoff") return "Counter verification in progress";
@@ -239,59 +282,68 @@ export async function replaceStoredOrders(orders: ByteHiveOrder[]) {
 }
 
 export async function createStoredOrder(payload: CreateOrderPayload) {
-  const outletMeta = getOutletMetaById(payload.outletId);
-  const normalizedItems = payload.items.map((item) => ({
-    ...item,
-    pickupPoint: shouldUseSplitPickup(payload.outletId, payload.items) ? item.pickupPoint ?? "counter" : item.pickupPoint,
-  }));
-  const subtotal = normalizedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const taxes = Math.round(subtotal * 0.05);
-  const total = subtotal + taxes;
-  const createdAt = new Date();
-  const businessDate = getBusinessDate(createdAt);
-  const sequenceNumber = await getNextSequenceNumber(payload.outletId, businessDate);
-  const receiptNumber = createReceiptNumber(payload.outletId, businessDate, sequenceNumber);
-  const now = createdAt.toISOString();
-  const basePrepMinutes = parseEstimatedMinutes(outletMeta.estimatedTime);
-  const pickupSegments = buildPickupSegments(payload.outletId, normalizedItems, sequenceNumber);
-  const primarySegment = getPrimarySegment(pickupSegments);
+  return withLock(ORDERS_LOCK_FILE, async () => {
+    const outletMeta = getOutletMetaById(payload.outletId);
+    const normalizedItems = payload.items.map((item) => ({
+      ...item,
+      pickupPoint: shouldUseSplitPickup(payload.outletId, payload.items) ? item.pickupPoint ?? "counter" : item.pickupPoint,
+    }));
+    const subtotal = normalizedItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
+    const taxes = Math.round(subtotal * 0.05);
+    const total = subtotal + taxes;
+    const createdAt = new Date();
+    const businessDate = getBusinessDate(createdAt);
+    const sequenceNumber = await getNextSequenceNumber(payload.outletId, businessDate);
+    const receiptNumber = createReceiptNumber(payload.outletId, businessDate, sequenceNumber);
+    const now = createdAt.toISOString();
+    const basePrepMinutes = parseEstimatedMinutes(outletMeta.estimatedTime);
+    const pickupSegments = buildPickupSegments(payload.outletId, normalizedItems, sequenceNumber);
+    const primarySegment = getPrimarySegment(pickupSegments);
+    const fulfillmentType = payload.fulfillmentType === "scheduled" ? "scheduled" : "instant";
+    const initialStatus: OrderStatus = fulfillmentType === "scheduled" ? "scheduled" : "preparing";
 
-  const order: ByteHiveOrder = {
-    id: receiptNumber,
-    receiptNumber,
-    sequenceNumber,
-    businessDate,
-    pickupCode: primarySegment?.pickupCode ?? createPickupCode(sequenceNumber),
-    paymentId: payload.paymentId,
-    customerName: payload.customerName,
-    customerRole: payload.customerRole,
-    outletId: payload.outletId,
-    outletName: outletMeta.name,
-    pickupLocation: outletMeta.location,
-    basePrepMinutes,
-    prepMinutes: basePrepMinutes,
-    estimatedTime: deriveEstimatedTime({
-      status: "preparing",
+    const order: ByteHiveOrder = {
+      id: receiptNumber,
+      receiptNumber,
+      sequenceNumber,
+      businessDate,
+      pickupCode: primarySegment?.pickupCode ?? createPickupCode(sequenceNumber),
+      paymentId: payload.paymentId,
+      customerName: payload.customerName,
+      customerRole: payload.customerRole,
+      fulfillmentType,
+      scheduledFor: payload.scheduledFor ?? null,
+      vendorNotes: payload.vendorNotes?.trim() || null,
+      outletId: payload.outletId,
+      outletName: outletMeta.name,
+      pickupLocation: outletMeta.location,
+      basePrepMinutes,
       prepMinutes: basePrepMinutes,
+      estimatedTime: deriveEstimatedTime({
+        status: initialStatus,
+        prepMinutes: basePrepMinutes,
+        delayState: "on-time",
+        fulfillmentType,
+        scheduledFor: payload.scheduledFor ?? null,
+      }),
       delayState: "on-time",
-    }),
-    delayState: "on-time",
-    delayMessage: null,
-    vendorTimingUpdatedAt: null,
-    status: "preparing",
-    qrToken: primarySegment?.qrToken ?? getRandomToken(),
-    pickupSegments,
-    createdAt: now,
-    updatedAt: now,
-    items: normalizedItems,
-    subtotal,
-    taxes,
-    total,
-  };
+      delayMessage: null,
+      vendorTimingUpdatedAt: null,
+      status: initialStatus,
+      qrToken: primarySegment?.qrToken ?? getRandomToken(),
+      pickupSegments,
+      createdAt: now,
+      updatedAt: now,
+      items: normalizedItems,
+      subtotal,
+      taxes,
+      total,
+    };
 
-  const orders = await getStoredOrders();
-  await writeJsonFile(ORDERS_FILE, [order, ...orders]);
-  return order;
+    const orders = await getStoredOrders();
+    await writeJsonFile(ORDERS_FILE, [order, ...orders]);
+    return order;
+  });
 }
 
 export async function updateStoredOrderStatus(orderId: string, status: OrderStatus) {
@@ -303,6 +355,8 @@ export async function updateStoredOrderStatus(orderId: string, status: OrderStat
 
     const nextPrepMinutes = status === "ready" || status === "handoff" || status === "collected" ? 0 : order.prepMinutes;
     const nextDelayState = status === "ready" || status === "handoff" || status === "collected" ? "on-time" : order.delayState;
+    const statusChangedAt = new Date().toISOString();
+    const shouldResetTimerAnchor = order.status === "scheduled" && (status === "accepted" || status === "preparing");
 
     const nextPickupSegments =
       status === "collected"
@@ -318,14 +372,17 @@ export async function updateStoredOrderStatus(orderId: string, status: OrderStat
       prepMinutes: nextPrepMinutes,
       delayState: nextDelayState,
       delayMessage: status === "ready" || status === "handoff" || status === "collected" ? null : order.delayMessage,
+      vendorTimingUpdatedAt: shouldResetTimerAnchor ? statusChangedAt : order.vendorTimingUpdatedAt,
       status,
       pickupSegments: nextPickupSegments,
       estimatedTime: deriveEstimatedTime({
         status,
         prepMinutes: nextPrepMinutes,
         delayState: nextDelayState,
+        fulfillmentType: order.fulfillmentType,
+        scheduledFor: order.scheduledFor ?? null,
       }),
-      updatedAt: new Date().toISOString(),
+      updatedAt: statusChangedAt,
     };
 
     return updatedOrder;
@@ -411,6 +468,8 @@ export async function updateStoredOrderTiming(orderId: string, payload: UpdateTi
         status: order.status,
         prepMinutes: nextPrepMinutes,
         delayState: nextDelayState,
+        fulfillmentType: order.fulfillmentType,
+        scheduledFor: order.scheduledFor ?? null,
       }),
       updatedAt: now,
     };

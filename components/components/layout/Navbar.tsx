@@ -55,6 +55,7 @@ function savePromptState(key: string, state: Record<string, string>) {
 interface NavbarProps {
   isVendorPreview?: boolean;
   previewOutletId?: string | null;
+  forceUserMode?: boolean;
 }
 
 const getInitialTheme = (): "light" | "dark" => {
@@ -66,7 +67,7 @@ const getInitialTheme = (): "light" | "dark" => {
   return "dark";
 };
 
-const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletId = null }) => {
+const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletId = null, forceUserMode = false }) => {
   const [theme, setTheme] = useState<"light" | "dark">(getInitialTheme);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isBlockOpen, setIsBlockOpen] = useState(false);
@@ -78,18 +79,20 @@ const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletI
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [hasActiveOrder, setHasActiveOrder] = useState(false);
   const [isMobileView, setIsMobileView] = useState(false);
-  const [vendorOutlet, setVendorOutlet] = useState(() => (typeof window !== "undefined" ? getVendorOutlet() : ""));
+  const [vendorOutlet, setVendorOutlet] = useState("");
   const [readyOrderPrompt, setReadyOrderPrompt] = useState<ByteHiveOrder | null>(null);
   const [handoffPrompt, setHandoffPrompt] = useState<ByteHiveOrder | null>(null);
   const [delayedOrderPrompt, setDelayedOrderPrompt] = useState<ByteHiveOrder | null>(null);
   const { user, authRole, signIn, signUp, logout } = useAuth();
 
   const location = useLocation();
+  const [isMounted, setIsMounted] = useState(false);
+  useEffect(() => setIsMounted(true), []);
   const blockDropdownRef = useRef<HTMLDivElement>(null);
   const portalDropdownRef = useRef<HTMLDivElement>(null);
   const profileDropdownRef = useRef<HTMLButtonElement>(null);
   const userName = guestMode ? "Guest User" : user?.displayName || user?.email?.split("@")[0] || "Student Name";
-  const isVendorRoute = location.pathname.startsWith("/vendor") || isVendorPreview;
+  const isVendorRoute = isMounted && (location.pathname.startsWith("/vendor") || isVendorPreview) && !forceUserMode;
   const showPrimaryNav = !isVendorRoute;
   const isAuthenticated = guestMode || !!user;
   const showUserProfileControls = !isVendorRoute && isAuthenticated;
@@ -104,7 +107,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletI
     []
   );
 
-  const vendorOutletId = previewOutletId ?? (vendorOutlet ? getVendorOutletId(vendorOutlet) : undefined);
+  const vendorOutletId = previewOutletId ?? (typeof window !== "undefined" ? getVendorOutletId(vendorOutlet) : undefined);
 
   const renderDropdownIcon = (item: { label: string; to: string }) => {
     if (item.label === "Dominos") {
@@ -133,7 +136,6 @@ const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletI
       }
     } catch {
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -372,7 +374,6 @@ const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletI
 
   const getLogoLink = () => {
     if (isVendorRoute) {
-      const vendorOutlet = typeof window !== "undefined" ? getVendorOutlet() : "";
       return vendorOutlet ? "/vendor/dashboard" : "/vendor/login";
     }
     return "/";
@@ -392,6 +393,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletI
           {showPrimaryNav && <Link to="/" className="nav-link">Home</Link>}
           {showPrimaryNav && <Link to="/popular" className="nav-link">Popular</Link>}
           {isVendorRoute && <Link to="/vendor/dashboard" className="nav-link">Dashboard</Link>}
+          {isVendorRoute && <Link to="/vendor/schedule" className="nav-link">Pre-Schedule</Link>}
           {isVendorRoute && <Link to="/vendor/guidance" className="nav-link">Guidance</Link>}
           {isVendorRoute && vendorOutletId && (
             <Link to={`/canteens/${vendorOutletId}?preview=vendor&src=navbar`} className="nav-link">Preview</Link>

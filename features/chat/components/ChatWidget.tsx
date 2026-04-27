@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, ClipboardList, MessageCircle, Package, RotateCcw, Send, SlidersHorizontal, X } from "lucide-react";
+import { Bot, ChevronDown, ClipboardList, MessageCircle, Package, RotateCcw, Send, SlidersHorizontal, X } from "lucide-react";
 import { useChat, type ChatAction } from "@/features/chat/hooks/useChat";
 import SiriBorder from "@/components/components/ui/SiriBorder";
 
@@ -165,7 +165,7 @@ export default function ChatWidget({ mode = "student", orderContext, executeActi
       <div className={`bh-panel ${isOpen ? "bh-panel-open" : ""}`}>
         <div className="bh-header">
           <div className="bh-header-left">
-            <div className="bh-avatar">🤖</div>
+            <div className="bh-avatar"><Bot size={20} aria-hidden="true" /></div>
             <div className="bh-header-info">
               <div className="bh-bot-name">{headerTitle}</div>
               <div className="bh-bot-status">
@@ -184,14 +184,14 @@ export default function ChatWidget({ mode = "student", orderContext, executeActi
         <div className="bh-messages">
           {messages.map((message, index) => (
             <div key={index} className={`bh-msg-row ${message.role === "user" ? "bh-user-row" : "bh-bot-row"}`}>
-              {message.role === "assistant" && <div className="bh-msg-avatar">🤖</div>}
+              {message.role === "assistant" && <div className="bh-msg-avatar"><Bot size={15} aria-hidden="true" /></div>}
               <div className={`bh-bubble ${message.role === "user" ? "bh-user-bubble" : "bh-bot-bubble"}`}>{message.content}</div>
             </div>
           ))}
 
           {isLoading && (
             <div className="bh-msg-row bh-bot-row">
-              <div className="bh-msg-avatar">🤖</div>
+              <div className="bh-msg-avatar"><Bot size={15} aria-hidden="true" /></div>
               <div className="bh-bubble bh-bot-bubble bh-typing">
                 <span />
                 <span />

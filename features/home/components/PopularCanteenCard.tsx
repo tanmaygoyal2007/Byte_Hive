@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "@/components/lib/router";
 import { getVendorOutletStatus, subscribeToVendorStatus } from "@/features/vendor/services/vendor-portal.service";
+import { ArrowRight } from "lucide-react";
 
 interface Props {
 	id: string;
@@ -32,7 +33,7 @@ const PopularCanteenCard: React.FC<Props> = ({ id, name, image, description }) =
 			</div>
 			<h3>{name}</h3>
 			{description && <p className="desc">{description}</p>}
-			<button className="view-btn" onClick={goToMenu}>View Menu <span aria-hidden="true">→</span></button>
+			<button className="view-btn" onClick={goToMenu}>View Menu <ArrowRight aria-hidden="true" size={16} /></button>
 		</article>
 	)
 

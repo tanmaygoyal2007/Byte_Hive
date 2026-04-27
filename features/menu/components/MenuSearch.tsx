@@ -1,6 +1,5 @@
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import "@/features/menu/components/MenuSearch.css";
-
 function MenuSearch({
   value,
   onChange,

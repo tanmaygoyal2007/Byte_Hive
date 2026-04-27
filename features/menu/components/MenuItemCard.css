@@ -214,6 +214,7 @@
 
 .menu-item-fav-icon {
     transition: transform 0.18s ease, color 0.18s ease;
+    stroke-width: 1.9;
 }
 
 .menu-item-fav:hover .menu-item-fav-icon {

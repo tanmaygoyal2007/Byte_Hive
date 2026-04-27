@@ -749,3 +749,28 @@
     gap: 12px;
   }
 }
+
+@media (max-width: 480px) {
+  .profile-hub-shell-desktop {
+    max-width: 100%;
+    border-radius: 24px 24px 0 0;
+  }
+
+  .profile-highlight-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .profile-panel-header {
+    padding: 1rem;
+  }
+
+  .profile-panel-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .profile-panel-card {
+    padding: 0.9rem;
+  }
+}

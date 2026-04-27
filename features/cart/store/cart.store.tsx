@@ -1,6 +1,5 @@
-import { createContext, useEffect, useReducer, useRef, useCallback, useState } from "react";
+import { createContext, useEffect, useReducer, useCallback, useRef } from "react";
 import type { ReactNode } from "react";
-import { getCurrentUserSession, subscribeToUserSession } from "@/features/orders/services/order-portal.service";
 
 type CartItem = {
   id: string;
@@ -37,6 +36,7 @@ function readInitialState(): State {
     const stored = localStorage.getItem(CART_STORAGE_KEY);
     if (!stored) return { items: [], sourceCanteen: undefined };
     const parsed = JSON.parse(stored);
+    if (!parsed?.items?.length) return { items: [], sourceCanteen: undefined };
     return {
       items: parsed.items || [],
       sourceCanteen: parsed.sourceCanteen,
@@ -84,7 +84,10 @@ function reducer(state: State, action: Action): State {
     case "restore":
       return { items: action.items, sourceCanteen: action.sourceCanteen };
     case "replaceItems":
-      return { items: action.items, sourceCanteen: action.sourceCanteen ?? state.sourceCanteen };
+      return {
+        items: action.items,
+        sourceCanteen: action.sourceCanteen ?? action.items[0]?.canteenId ?? state.sourceCanteen,
+      };
     default:
       return state;
   }
@@ -105,11 +108,13 @@ type CartContextType = {
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(reducer, { items: [], sourceCanteen: undefined });
-  const [hydrated, setHydrated] = useState(false);
-  const previousSessionRef = useRef(getCurrentUserSession());
+  const [state, dispatch] = useReducer(reducer, undefined, readInitialState);
+  const initialLoadRef = useRef(true);
 
   useEffect(() => {
+    if (!initialLoadRef.current) return;
+    initialLoadRef.current = false;
+
     try {
       const stored = localStorage.getItem(CART_STORAGE_KEY);
       if (stored) {
@@ -119,22 +124,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
       }
     } catch {}
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    const syncCartForSession = () => {
-      const previousSession = previousSessionRef.current;
-      const nextSession = getCurrentUserSession();
-
-      if (previousSession && !nextSession) {
-        dispatch({ type: "clear" });
-      }
-
-      previousSessionRef.current = nextSession;
-    };
-
-    return subscribeToUserSession(syncCartForSession);
   }, []);
 
   useEffect(() => {

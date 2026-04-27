@@ -1,5 +1,5 @@
 import { Link } from "@/components/lib/router";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Star } from "lucide-react";
 
 interface CanteenHeaderProps {
   canteen?: {
@@ -42,7 +42,10 @@ function CanteenHeader({ canteen, isOutletOpen = true, closureLabel = null, hide
       </div>
 
       <div className="canteen-header-right">
-        <div className="rating">★ {canteen.rating}</div>
+        <div className="rating">
+          <Star size={15} aria-hidden="true" fill="currentColor" />
+          {canteen.rating}
+        </div>
         <div className="phone">+91 98765 43210</div>
       </div>
     </div>

@@ -116,6 +116,10 @@ function toLocalUser(record: LocalAuthUserRecord | null) {
   } satisfies AuthUser;
 }
 
+export function getCurrentAuthUser() {
+  return toLocalUser(readLocalSession());
+}
+
 export function getStoredAuthRole(uid: string) {
   if (typeof window !== "undefined") {
     const storageKey = `bytehive-auth-role-${uid}`;

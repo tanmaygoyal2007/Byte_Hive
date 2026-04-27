@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "@/components/lib/router";
+import { ShoppingCart, Trash2 } from "lucide-react";
 import { getOutletMetaById } from "@/features/orders/services/order-portal.service";
 import { resolveMenuImageUrl } from "@/features/menu/services/menu-image.service";
 import { getVendorClosureLabel, getVendorOutletStatus, subscribeToVendorStatus } from "@/features/vendor/services/vendor-portal.service";
@@ -44,7 +45,10 @@ function MiniCart({ previewOnly = false }: { previewOnly?: boolean }) {
 
   return (
     <div className="mini-cart">
-      <h4>🛒 Your Cart</h4>
+      <h4>
+        <ShoppingCart size={17} aria-hidden="true" />
+        <span>Your Cart</span>
+      </h4>
 
       <div className="mini-cart-body">
         {isEmpty ? (
@@ -70,7 +74,7 @@ function MiniCart({ previewOnly = false }: { previewOnly?: boolean }) {
                 </div>
 
                 <button type="button" className="mini-item-remove" aria-label={`Remove ${item.name}`} onClick={() => removeItem(item.id)}>
-                  🗑
+                  <Trash2 size={16} aria-hidden="true" />
                 </button>
               </div>
             ))}

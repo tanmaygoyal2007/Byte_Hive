@@ -27,6 +27,8 @@ interface ReceiptCardProps {
   orderPlacedAt?: string;
   downloadedAt?: string;
   paymentId?: string;
+  fulfillmentType?: "instant" | "scheduled";
+  scheduledFor?: string | null;
   outletName: string;
   pickupLocation: string;
   estimatedTime: string;
@@ -50,6 +52,7 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
   orderPlacedAt,
   downloadedAt,
   paymentId,
+  fulfillmentType = "instant",
   outletName,
   pickupLocation,
   estimatedTime,
@@ -125,6 +128,7 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
       </div>
     </div>
   );
+  const isScheduledOrder = fulfillmentType === "scheduled";
 
   return (
     <div className="receipt-page">
@@ -134,9 +138,11 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
             <CheckCircle size={40} strokeWidth={2.5} />
           </div>
 
-          <h1 className="page-title">Order Placed Successfully!</h1>
+          <h1 className="page-title">{isScheduledOrder ? "Order Scheduled Successfully!" : "Order Placed Successfully!"}</h1>
           <p className="page-subtitle">
-            Your order has been received and is being prepared.
+            {isScheduledOrder
+              ? "Your future pickup slot has been reserved and shared with the vendor."
+              : "Your order has been received and is being prepared."}
           </p>
         </div>
 
@@ -153,7 +159,7 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
             <div className="order-info">
               <div className="label-row">
                 <Clock size={16} />
-                <span className="label">Estimated Pickup</span>
+                <span className="label">{isScheduledOrder ? "Scheduled Pickup" : "Estimated Pickup"}</span>
               </div>
               <span className="value">{estimatedTime}</span>
             </div>
@@ -191,7 +197,12 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
 
           {!hasSplitPickup && resolvedPickupQrSections[0] && hasVisiblePickupQr(resolvedPickupQrSections[0]) && (
             <div className="qr-section">
-              {renderPickupQrCard(resolvedPickupQrSections[0])}
+              {renderPickupQrCard({
+                ...resolvedPickupQrSections[0],
+                description: isScheduledOrder
+                  ? "Show this QR code at the counter during your scheduled slot."
+                  : resolvedPickupQrSections[0].description,
+              })}
             </div>
           )}
 

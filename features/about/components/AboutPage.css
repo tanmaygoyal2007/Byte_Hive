@@ -441,7 +441,7 @@
 .about-purpose-copy-wrap {
   max-width: 860px;
   margin: 0 auto;
-  padding: 28px 28px 0;
+  padding: 28px 28px 28px;
   border: 1px solid var(--border-soft);
   border-radius: 28px;
   background: color-mix(in srgb, var(--surface-card) 94%, transparent);

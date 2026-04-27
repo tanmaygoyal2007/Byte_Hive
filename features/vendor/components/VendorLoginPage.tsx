@@ -11,7 +11,8 @@ import {
   signupVendorWithPassword,
   verifyVendorMasterKey,
 } from "@/features/vendor/services/vendor.service";
-import { setVendorOutlet, VENDOR_OUTLETS } from "@/features/vendor/services/vendor-portal.service";
+import { isVendorSessionAuthorized, setVendorOutlet, VENDOR_OUTLETS } from "@/features/vendor/services/vendor-portal.service";
+import { getCurrentAuthUser } from "@/features/auth/services/auth.service";
 
 type VendorAuthMode = "login" | "signup";
 type VendorPasswordChangeMode = "login" | "password-change";
@@ -48,6 +49,12 @@ function VendorLoginPage() {
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  useEffect(() => {
+    if (getCurrentAuthUser() && !isVendorSessionAuthorized()) {
+      navigate("/vendor/unauthorized", { replace: true });
+    }
+  }, [navigate]);
 
   useEffect(() => {
     const requestedOutlet = searchParams.get("outlet");

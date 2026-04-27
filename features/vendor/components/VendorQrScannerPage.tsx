@@ -14,7 +14,7 @@ import {
   type ByteHiveOrder,
   type ByteHivePickupSegment,
 } from "@/features/orders/services/order-portal.service";
-import { getVendorOutlet, getVendorOutletId } from "@/features/vendor/services/vendor-portal.service";
+import { getVendorOutlet, getVendorOutletId, isVendorSessionAuthorized } from "@/features/vendor/services/vendor-portal.service";
 
 type BarcodeDetectorCtor = new (options?: { formats?: string[] }) => {
   detect: (input: ImageBitmapSource) => Promise<Array<{ rawValue?: string }>>;
@@ -51,7 +51,7 @@ function VendorQrScannerPage() {
 
   useEffect(() => {
     const outlet = getVendorOutlet();
-    if (!outlet) {
+    if (!isVendorSessionAuthorized() || !outlet) {
       navigate("/vendor/unauthorized", { replace: true });
       return;
     }

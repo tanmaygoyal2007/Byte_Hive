@@ -11,7 +11,7 @@ import {
   setMenuItemsAvailability,
   type MenuCatalogItem,
 } from "@/features/orders/services/order-portal.service";
-import { getVendorOutlet, subscribeToVendorSession } from "@/features/vendor/services/vendor-portal.service";
+import { getVendorOutlet, isVendorSessionAuthorized, subscribeToVendorSession } from "@/features/vendor/services/vendor-portal.service";
 import {
   getAllFoodLabelsForCanteen,
   getDisplayLabelsForItem,
@@ -67,7 +67,7 @@ function VendorMenuPage() {
   }, []);
 
   useEffect(() => {
-    if (!outletName) {
+    if (!isVendorSessionAuthorized() || !outletName) {
       navigate("/vendor/unauthorized", { replace: true });
       return;
     }

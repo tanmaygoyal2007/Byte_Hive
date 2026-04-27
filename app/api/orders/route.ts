@@ -2,12 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { createStoredOrder, getStoredOrders, replaceStoredOrders } from "@/lib/server/order-store";
 
 export async function GET() {
-  const orders = await getStoredOrders();
-  return NextResponse.json(orders, {
-    headers: {
-      "Cache-Control": "no-store",
-    },
-  });
+  try {
+    const orders = await getStoredOrders();
+    return NextResponse.json(orders, {
+      headers: {
+        "Cache-Control": "no-store",
+      },
+    });
+  } catch (error) {
+    console.error("GET /api/orders error:", error);
+    return NextResponse.json([], { status: 200 });
+  }
 }
 
 export async function POST(request: NextRequest) {
@@ -20,7 +25,8 @@ export async function POST(request: NextRequest) {
 
     const order = await createStoredOrder(payload);
     return NextResponse.json(order, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error("POST /api/orders error:", error);
     return NextResponse.json({ error: "Unable to create order." }, { status: 500 });
   }
 }
@@ -34,7 +40,8 @@ export async function PUT(request: NextRequest) {
 
     const orders = await replaceStoredOrders(payload.orders);
     return NextResponse.json(orders);
-  } catch {
+  } catch (error) {
+    console.error("PUT /api/orders error:", error);
     return NextResponse.json({ error: "Unable to save orders snapshot." }, { status: 500 });
   }
 }
