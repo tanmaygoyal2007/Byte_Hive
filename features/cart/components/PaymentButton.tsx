@@ -24,12 +24,17 @@ interface CartItem {
   quantity: number;
   canteenId?: string;
   pickupPoint?: "counter" | "vendor_stall";
+  isAvailable?: boolean;
 }
 
 interface PaymentButtonProps {
   items: CartItem[];
   total: number;
   canteenId: string;
+  scheduledTime?: string | null;
+  scheduledNote?: string;
+  isExternallyBlocked?: boolean;
+  blockedMessage?: string;
   onPaymentStart?: () => void;
   onPaymentSuccess?: (paymentId: string, orderId: string) => void;
   onPaymentFailure?: (error: string) => void;
@@ -52,11 +57,17 @@ export default function PaymentButton({
   items,
   total,
   canteenId,
+  scheduledTime,
+  scheduledNote,
+  isExternallyBlocked = false,
+  blockedMessage,
   onPaymentStart,
   onPaymentSuccess,
   onPaymentFailure,
 }: PaymentButtonProps) {
   const navigate = useNavigate();
+  void scheduledTime;
+  void scheduledNote;
   const [status, setStatus] = useState<"idle" | "loading" | "processing" | "success" | "failed">("idle");
   const [error, setError] = useState<string | null>(null);
   const [scriptReady, setScriptReady] = useState(false);
@@ -129,6 +140,11 @@ export default function PaymentButton({
 
     if (items.length === 0) {
       setError("Your cart is empty.");
+      return;
+    }
+
+    if (isExternallyBlocked) {
+      setError(blockedMessage ?? "Checkout is temporarily unavailable.");
       return;
     }
 

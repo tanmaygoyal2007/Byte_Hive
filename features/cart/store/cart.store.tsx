@@ -9,6 +9,7 @@ type CartItem = {
   image?: string;
   canteenId?: string;
   pickupPoint?: "counter" | "vendor_stall";
+  isAvailable?: boolean;
   quantity: number;
 };
 
@@ -24,7 +25,8 @@ type Action =
   | { type: "decrement"; id: string }
   | { type: "clear" }
   | { type: "setSourceCanteen"; canteenId: string }
-  | { type: "restore"; items: CartItem[]; sourceCanteen?: string };
+  | { type: "restore"; items: CartItem[]; sourceCanteen?: string }
+  | { type: "replaceItems"; items: CartItem[]; sourceCanteen?: string };
 
 const CART_STORAGE_KEY = "bytehiveCart";
 
@@ -81,6 +83,8 @@ function reducer(state: State, action: Action): State {
       return { ...state, sourceCanteen: action.canteenId };
     case "restore":
       return { items: action.items, sourceCanteen: action.sourceCanteen };
+    case "replaceItems":
+      return { items: action.items, sourceCanteen: action.sourceCanteen ?? state.sourceCanteen };
     default:
       return state;
   }
@@ -95,6 +99,7 @@ type CartContextType = {
   clear: () => void;
   total: () => number;
   setSourceCanteen: (canteenId: string) => void;
+  replaceItems: (items: CartItem[], sourceCanteen?: string) => void;
 };
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -147,9 +152,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clear = useCallback(() => dispatch({ type: "clear" }), []);
   const total = useCallback(() => state.items.reduce((sum, item) => sum + item.price * item.quantity, 0), [state.items]);
   const setSourceCanteen = useCallback((canteenId: string) => dispatch({ type: "setSourceCanteen", canteenId }), []);
+  const replaceItems = useCallback((items: CartItem[], sourceCanteen?: string) => dispatch({ type: "replaceItems", items, sourceCanteen }), []);
 
   return (
-    <CartContext.Provider value={{ state, addItem, removeItem, increment, decrement, clear, total, setSourceCanteen }}>
+    <CartContext.Provider value={{ state, addItem, removeItem, increment, decrement, clear, total, setSourceCanteen, replaceItems }}>
       {children}
     </CartContext.Provider>
   );
