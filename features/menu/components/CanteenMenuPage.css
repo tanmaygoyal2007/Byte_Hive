@@ -86,6 +86,87 @@
   width: 100%;
 }
 
+.menu-filter-panel {
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--surface-card) 94%, transparent);
+  box-shadow: var(--shadow-soft);
+}
+
+.menu-filter-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.menu-filter-panel-header strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
+.menu-filter-panel-header p {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.menu-filter-close,
+.menu-filter-reset {
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--surface-card) 92%, transparent);
+  color: var(--text-primary);
+  cursor: pointer;
+  font: inherit;
+}
+
+.menu-filter-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.menu-filter-chip-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.menu-filter-chip {
+  border: 1px solid color-mix(in srgb, var(--label-color, var(--accent)) 45%, var(--border-soft));
+  background: color-mix(in srgb, var(--label-color, var(--accent)) 10%, transparent);
+  color: var(--text-primary);
+  padding: 8px 12px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  transition: transform 0.2s ease, border-color 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+}
+
+.menu-filter-chip:hover,
+.menu-filter-chip-active {
+  transform: translateY(-1px);
+  border-color: var(--label-color, var(--accent));
+  background: color-mix(in srgb, var(--label-color, var(--accent)) 18%, transparent);
+  color: var(--label-color, var(--accent));
+}
+
+.menu-filter-reset {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-weight: 700;
+}
+
 .menu-empty-state {
   padding: 36px 28px;
   border-radius: 28px;
@@ -151,6 +232,7 @@
 [data-theme="dark"] .menu-page-outlet-alert p {
   color: #ffd9bb;
 }
+
 
 @media (max-width: 900px) {
   .menu-page-shell {

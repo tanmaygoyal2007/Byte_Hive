@@ -3,21 +3,24 @@ import Footer from "@/components/components/layout/Footer";
 import PaymentButton from "@/features/cart/components/PaymentButton";
 import "@/features/cart/components/CartPage.css";
 import "@/features/cart/components/OutletSwitchConfirm.css";
-import { useContext, useState, useEffect } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Link } from "@/components/lib/router";
 import CartContext from "@/features/cart/store/cart.store";
 import { resolveMenuImageUrl } from "@/features/menu/services/menu-image.service";
-import { AlertTriangle, CalendarClock, Clock3, ChevronDown, ChevronUp } from "lucide-react";
-import { getMenuItemsForOutlet, getOutletMetaById, subscribeToMenu, type MenuCatalogItem } from "@/features/orders/services/order-portal.service";
-import { getVendorClosureLabel, getVendorOutletStatus } from "@/features/vendor/services/vendor-portal.service";
+import { AlertTriangle, CalendarClock, ChevronDown, ChevronUp, Clock3 } from "lucide-react";
+import {
+  getMenuItemsForOutlet,
+  getOutletMetaById,
+  subscribeToMenu,
+  type MenuCatalogItem,
+} from "@/features/orders/services/order-portal.service";
+import {
+  getVendorClosureLabel,
+  getVendorOutletStatus,
+  subscribeToVendorStatus,
+} from "@/features/vendor/services/vendor-portal.service";
 
-type MenuUpdateNotice = {
-  signature: string;
-  lines: string[];
-  itemChanges: Record<string, string[]>;
-};
-
-const EMPTY_CART_ITEMS: Array<{
+type CartDisplayItem = {
   id: string;
   name: string;
   price: number;
@@ -25,7 +28,15 @@ const EMPTY_CART_ITEMS: Array<{
   canteenId?: string;
   quantity: number;
   isAvailable?: boolean;
-}> = [];
+};
+
+type MenuUpdateNotice = {
+  signature: string;
+  lines: string[];
+  itemChanges: Record<string, string[]>;
+};
+
+const EMPTY_CART_ITEMS: CartDisplayItem[] = [];
 
 function getDefaultScheduleValue() {
   const next = new Date(Date.now() + 90 * 60_000);
@@ -41,15 +52,7 @@ function formatTimeDisplay(timeValue: string) {
   return date.toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" });
 }
 
-function buildCartMenuUpdate(items: Array<{
-  id: string;
-  name: string;
-  price: number;
-  image?: string;
-  canteenId?: string;
-  quantity: number;
-  isAvailable?: boolean;
-}>, latestMenuItems: MenuCatalogItem[]) {
+function buildCartMenuUpdate(items: CartDisplayItem[], latestMenuItems: MenuCatalogItem[]) {
   const latestById = new Map(latestMenuItems.map((item) => [item.id, item]));
   const lines: string[] = [];
   const itemChanges: Record<string, string[]> = {};
@@ -148,14 +151,7 @@ function mergeMenuUpdateNotices(current: MenuUpdateNotice | null, incoming: Menu
   };
 }
 
-function buildVendorUpdateSections(
-  items: Array<{
-    id: string;
-    name: string;
-    isAvailable?: boolean;
-  }>,
-  summary: MenuUpdateNotice | null
-) {
+function buildVendorUpdateSections(items: Array<{ id: string; name: string; isAvailable?: boolean }>, summary: MenuUpdateNotice | null) {
   if (!summary) return [];
 
   return items
@@ -171,6 +167,8 @@ function buildVendorUpdateSections(
 function CartPage() {
   const ctx = useContext(CartContext);
   const [ready, setReady] = useState(false);
+  const [isOutletOpen, setIsOutletOpen] = useState(true);
+  const [closureLabel, setClosureLabel] = useState<string | null>(null);
   const [scheduleAt, setScheduleAt] = useState(getDefaultScheduleValue);
   const [scheduleNote, setScheduleNote] = useState("");
   const [showSchedulePanel, setShowSchedulePanel] = useState(false);
@@ -189,13 +187,27 @@ function CartPage() {
   const subtotal = ctx?.total() ?? 0;
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const outletMeta = items[0]?.canteenId ? getOutletMetaById(items[0].canteenId) : null;
-  const isOutletOpen = outletMeta ? getVendorOutletStatus(outletMeta.name) : true;
-  const closureLabel = outletMeta ? getVendorClosureLabel(outletMeta.name) : null;
   const hasUnavailableItems = items.some((item) => item.isAvailable === false);
   const vendorUpdateSections = buildVendorUpdateSections(items, menuUpdateSummary);
 
   useEffect(() => {
-    if (!items.length) {
+    const syncVendorStatus = () => {
+      if (!outletMeta) {
+        setIsOutletOpen(true);
+        setClosureLabel(null);
+        return;
+      }
+
+      setIsOutletOpen(getVendorOutletStatus(outletMeta.name));
+      setClosureLabel(getVendorClosureLabel(outletMeta.name));
+    };
+
+    syncVendorStatus();
+    return subscribeToVendorStatus(syncVendorStatus);
+  }, [outletMeta?.name]);
+
+  useEffect(() => {
+    if (!ctx || !items.length) {
       setMenuUpdateNotice(null);
       setMenuUpdateSummary(null);
       setShowVendorUpdateDetails(false);
@@ -218,7 +230,7 @@ function CartPage() {
       const currentSerialized = JSON.stringify(items);
 
       if (nextSerialized !== currentSerialized) {
-        ctx?.replaceItems(update.nextItems, sourceCanteen);
+        ctx.replaceItems(update.nextItems, sourceCanteen);
       }
 
       if (acknowledgedMenuSignature !== update.notice.signature) {
@@ -370,73 +382,73 @@ function CartPage() {
               <div className="cart-items" role="list" aria-label="Cart items">
                 {[...items].sort((a, b) => a.name.localeCompare(b.name)).map((item, index) => {
                   return (
-                  <article
-                    key={item.id}
-                    className="cart-item"
-                    role="listitem"
-                    style={{ animationDelay: `${index * 70}ms` }}
-                  >
-                    {item.image ? (
-                      <img
-                        src={resolveMenuImageUrl(item.image)}
-                        alt={item.name}
-                        className="cart-item-img"
-                      />
-                    ) : (
-                      <div className="cart-item-img cart-item-img--placeholder" aria-hidden="true">
-                        {item.name.slice(0, 2).toUpperCase()}
-                      </div>
-                    )}
+                    <article
+                      key={item.id}
+                      className="cart-item"
+                      role="listitem"
+                      style={{ animationDelay: `${index * 70}ms` }}
+                    >
+                      {item.image ? (
+                        <img
+                          src={resolveMenuImageUrl(item.image)}
+                          alt={item.name}
+                          className="cart-item-img"
+                        />
+                      ) : (
+                        <div className="cart-item-img cart-item-img--placeholder" aria-hidden="true">
+                          {item.name.slice(0, 2).toUpperCase()}
+                        </div>
+                      )}
 
-                    <div className="cart-item-info">
-                      <div className="cart-item-copy">
-                        <h3 className="cart-item-name">{item.name}</h3>
-                        <p className="cart-item-meta">
-                          {outletMeta?.name ?? "Campus outlet"} • ₹{item.price.toFixed(2)} each
-                        </p>
-                        {item.isAvailable === false && (
-                          <p className="cart-item-alert">Currently unavailable. Remove this item to continue.</p>
-                        )}
-                      </div>
-
-                      <div className="cart-item-footer">
-                        <div className="cart-item-controls">
-                          <button
-                            type="button"
-                            className="qty-btn"
-                            onClick={() => decrement(item.id)}
-                            aria-label={`Decrease quantity for ${item.name}`}
-                          >
-                            −
-                          </button>
-                          <span className="qty-value">{item.quantity}</span>
-                          <button
-                            type="button"
-                            className="qty-btn"
-                            onClick={() => increment(item.id)}
-                            aria-label={`Increase quantity for ${item.name}`}
-                            disabled={item.isAvailable === false}
-                          >
-                            +
-                          </button>
+                      <div className="cart-item-info">
+                        <div className="cart-item-copy">
+                          <h3 className="cart-item-name">{item.name}</h3>
+                          <p className="cart-item-meta">
+                            {outletMeta?.name ?? "Campus outlet"} • ₹{item.price.toFixed(2)} each
+                          </p>
+                          {item.isAvailable === false && (
+                            <p className="cart-item-alert">Currently unavailable. Remove this item to continue.</p>
+                          )}
                         </div>
 
-                        <button
-                          type="button"
-                          className="cart-item-remove"
-                          onClick={() => removeItem(item.id)}
-                          aria-label={`Remove ${item.name}`}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
+                        <div className="cart-item-footer">
+                          <div className="cart-item-controls">
+                            <button
+                              type="button"
+                              className="qty-btn"
+                              onClick={() => decrement(item.id)}
+                              aria-label={`Decrease quantity for ${item.name}`}
+                            >
+                              −
+                            </button>
+                            <span className="qty-value">{item.quantity}</span>
+                            <button
+                              type="button"
+                              className="qty-btn"
+                              onClick={() => increment(item.id)}
+                              aria-label={`Increase quantity for ${item.name}`}
+                              disabled={item.isAvailable === false}
+                            >
+                              +
+                            </button>
+                          </div>
 
-                    <div className="cart-item-subtotal">
-                      <span className="cart-item-subtotal-label">Item total</span>
-                      <strong>₹{(item.price * item.quantity).toFixed(2)}</strong>
-                    </div>
-                  </article>
+                          <button
+                            type="button"
+                            className="cart-item-remove"
+                            onClick={() => removeItem(item.id)}
+                            aria-label={`Remove ${item.name}`}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="cart-item-subtotal">
+                        <span className="cart-item-subtotal-label">Item total</span>
+                        <strong>₹{(item.price * item.quantity).toFixed(2)}</strong>
+                      </div>
+                    </article>
                   );
                 })}
               </div>
@@ -503,72 +515,72 @@ function CartPage() {
               </button>
 
               {showSchedulePanel && (
-              <div className="schedule-panel">
-                <div className="schedule-panel-head">
-                  <div>
-                    <h3>Reserve an order time</h3>
+                <div className="schedule-panel">
+                  <div className="schedule-panel-head">
+                    <div>
+                      <h3>Reserve an order time</h3>
+                    </div>
+                    <CalendarClock size={20} aria-hidden="true" />
                   </div>
-                  <CalendarClock size={20} aria-hidden="true" />
-                </div>
-                <p className="schedule-panel-copy">
-                  Choose a future time and we will send the order to the vendor schedule board. Your payment will be collected now.
-                </p>
+                  <p className="schedule-panel-copy">
+                    Choose a future time and we will send the order to the vendor schedule board. Your payment will be collected now.
+                  </p>
 
-                <label className="schedule-label" htmlFor="schedule-at">
-                  Order time
-                </label>
-                <div className="schedule-input-wrap">
-                  <Clock3 size={18} aria-hidden="true" />
-                  <input
-                    id="schedule-at"
-                    className="schedule-input"
-                    type="time"
-                    value={scheduleAt}
-                    onChange={(event) => setScheduleAt(event.target.value)}
+                  <label className="schedule-label" htmlFor="schedule-at">
+                    Order time
+                  </label>
+                  <div className="schedule-input-wrap">
+                    <Clock3 size={18} aria-hidden="true" />
+                    <input
+                      id="schedule-at"
+                      className="schedule-input"
+                      type="time"
+                      value={scheduleAt}
+                      onChange={(event) => setScheduleAt(event.target.value)}
+                    />
+                  </div>
+
+                  <label className="schedule-label" htmlFor="schedule-note">
+                    Note for vendor
+                  </label>
+                  <textarea
+                    id="schedule-note"
+                    className="schedule-textarea"
+                    value={scheduleNote}
+                    onChange={(event) => setScheduleNote(event.target.value)}
+                    placeholder="Optional: less spicy, pack separately, pickup after class..."
+                    rows={3}
                   />
-                </div>
 
-                <label className="schedule-label" htmlFor="schedule-note">
-                  Note for vendor
-                </label>
-                <textarea
-                  id="schedule-note"
-                  className="schedule-textarea"
-                  value={scheduleNote}
-                  onChange={(event) => setScheduleNote(event.target.value)}
-                  placeholder="Optional: less spicy, pack separately, pickup after class..."
-                  rows={3}
-                />
+                  <div className="schedule-preview">
+                    <strong>Today, {formatTimeDisplay(scheduleAt)}</strong>
+                    <span>Payment will be collected now.</span>
+                  </div>
 
-                <div className="schedule-preview">
-                  <strong>Today, {formatTimeDisplay(scheduleAt)}</strong>
-                  <span>Payment will be collected now.</span>
-                </div>
-
-                {!scheduleConfirmed ? (
-                  <button
-                    type="button"
-                    className="summary-secondary-btn schedule-confirm-btn"
-                    onClick={() => setScheduleConfirmed(true)}
-                  >
-                    Confirm Schedule
-                  </button>
-                ) : (
-                  <div className="schedule-confirmed-actions">
-                    <span className="schedule-confirmed-label">
-                      <CalendarClock size={16} />
-                      Scheduled for {formatTimeDisplay(scheduleAt)}
-                    </span>
+                  {!scheduleConfirmed ? (
                     <button
                       type="button"
-                      className="schedule-remove-btn"
-                      onClick={() => setScheduleConfirmed(false)}
+                      className="summary-secondary-btn schedule-confirm-btn"
+                      onClick={() => setScheduleConfirmed(true)}
                     >
-                      Remove
+                      Confirm Schedule
                     </button>
-                  </div>
-                )}
-              </div>
+                  ) : (
+                    <div className="schedule-confirmed-actions">
+                      <span className="schedule-confirmed-label">
+                        <CalendarClock size={16} />
+                        Scheduled for {formatTimeDisplay(scheduleAt)}
+                      </span>
+                      <button
+                        type="button"
+                        className="schedule-remove-btn"
+                        onClick={() => setScheduleConfirmed(false)}
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
 
               <PaymentButton
@@ -580,9 +592,7 @@ function CartPage() {
                 isExternallyBlocked={hasUnavailableItems}
                 blockedMessage="Remove unavailable items to continue"
                 onPaymentStart={() => console.log("Payment started")}
-                onPaymentSuccess={(paymentId, orderId) =>
-                  console.log("Paid:", paymentId, orderId)
-                }
+                onPaymentSuccess={(paymentId, orderId) => console.log("Paid:", paymentId, orderId)}
                 onPaymentFailure={(err) => console.error("Payment failed:", err)}
               />
 

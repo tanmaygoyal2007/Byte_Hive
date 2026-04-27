@@ -4,6 +4,8 @@ export interface MenuItem {
   price: number;
   category: string;
   isVeg: boolean;
+  labels?: string[];
+  pickupPoint?: "counter" | "vendor_stall";
   isSpicy?: boolean;
   prepTime: number;
   outlet: string;

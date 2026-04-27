@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { useParams, useSearchParams } from "@/components/lib/router";
+import { X } from "lucide-react";
 import Footer from "@/components/components/layout/Footer";
 import Navbar from "@/components/components/layout/Navbar";
 import CategorySidebar from "@/features/menu/components/CategorySidebar";
@@ -10,8 +11,8 @@ import MenuSearch from "@/features/menu/components/MenuSearch";
 import MiniCart from "@/features/menu/components/MiniCart";
 import { CANTEENS } from "@/features/canteens/components/canteens";
 import { getMenuItemsForOutlet, subscribeToMenu, type MenuCatalogItem } from "@/features/orders/services/order-portal.service";
-import { getLabelColorsForCanteen } from "@/lib/utils/label-utils";
-import { getVendorClosureLabel, getVendorOutletStatus, subscribeToVendorStatus } from "@/features/vendor/services/vendor-portal.service";
+import { getDisplayLabelsForItem, getLabelColorsForCanteen, itemMatchesAllSelectedLabels } from "@/lib/utils/label-utils";
+import { getVendorClosureLabel, getVendorClosureNotice, getVendorOutletStatus, subscribeToVendorStatus } from "@/features/vendor/services/vendor-portal.service";
 import { OutletSwitchProvider } from "@/features/cart/components/OutletSwitchContext";
 import GlobalOutletSwitchModal from "@/features/cart/components/GlobalOutletSwitchModal";
 
@@ -24,6 +25,7 @@ function CanteenMenuPage() {
   
   const [items, setItems] = useState<MenuCatalogItem[]>(() => getMenuItemsForOutlet(activeCanteenId));
   const [localSearch, setLocalSearch] = useState(searchParams.get("q") ?? "");
+  const [showLabelFilters, setShowLabelFilters] = useState(false);
   const [isOutletOpen, setIsOutletOpen] = useState(() => {
     const activeCanteen = CANTEENS.find((entry) => entry.id === activeCanteenId) || CANTEENS[0];
     return activeCanteen ? getVendorOutletStatus(activeCanteen.name) : true;
@@ -31,6 +33,10 @@ function CanteenMenuPage() {
   const [closureLabel, setClosureLabel] = useState<string | null>(() => {
     const activeCanteen = CANTEENS.find((entry) => entry.id === activeCanteenId) || CANTEENS[0];
     return activeCanteen ? getVendorClosureLabel(activeCanteen.name) : null;
+  });
+  const [closureNotice, setClosureNotice] = useState<string | null>(() => {
+    const activeCanteen = CANTEENS.find((entry) => entry.id === activeCanteenId) || CANTEENS[0];
+    return activeCanteen ? getVendorClosureNotice(activeCanteen.name) : null;
   });
 
   useEffect(() => {
@@ -64,6 +70,7 @@ function CanteenMenuPage() {
       const activeCanteen = CANTEENS.find((entry) => entry.id === activeCanteenId) || CANTEENS[0];
       setIsOutletOpen(activeCanteen ? getVendorOutletStatus(activeCanteen.name) : true);
       setClosureLabel(activeCanteen ? getVendorClosureLabel(activeCanteen.name) : null);
+      setClosureNotice(activeCanteen ? getVendorClosureNotice(activeCanteen.name) : null);
     };
 
     syncStatus();
@@ -77,8 +84,16 @@ function CanteenMenuPage() {
   }, [activeCanteenId]);
 
   const rawCategory = searchParams.get("category") ?? "All";
+  const selectedLabelFilters = (searchParams.get("labels") ?? "").split(",").map((value) => value.trim()).filter(Boolean);
   const previewSrc = searchParams.get("src");
   const category = rawCategory === "All" || categories.includes(rawCategory) ? rawCategory : "All";
+  const availableLabelOptions = useMemo(
+    () =>
+      items
+        .flatMap((item) => getDisplayLabelsForItem(item, activeCanteenId))
+        .filter((label, index, labels) => labels.findIndex((entry) => entry.name === label.name) === index),
+    [activeCanteenId, items]
+  );
 
   const updateMenuParams = ({ nextSearch, nextCategory }: { nextSearch?: string; nextCategory?: string }) => {
     const params = new URLSearchParams(searchParams);
@@ -111,6 +126,30 @@ function CanteenMenuPage() {
     setSearchParams(params, { replace: true });
   };
 
+  const handleToggleLabelFilter = (labelName: string) => {
+    const params = new URLSearchParams(searchParams);
+    const current = new Set(selectedLabelFilters);
+    if (current.has(labelName)) {
+      current.delete(labelName);
+    } else {
+      current.add(labelName);
+    }
+
+    if (current.size > 0) {
+      params.set("labels", Array.from(current).join(","));
+    } else {
+      params.delete("labels");
+    }
+
+    setSearchParams(params, { replace: true });
+  };
+
+  const clearLabelFilters = () => {
+    const params = new URLSearchParams(searchParams);
+    params.delete("labels");
+    setSearchParams(params, { replace: true });
+  };
+
   const filteredItems = useMemo(() => {
     let list = [...items];
     const searchTerm = localSearch;
@@ -135,8 +174,12 @@ function CanteenMenuPage() {
       );
     }
 
+    if (selectedLabelFilters.length > 0) {
+      list = list.filter((item) => itemMatchesAllSelectedLabels(item, selectedLabelFilters, activeCanteenId));
+    }
+
     return list;
-  }, [category, items, localSearch]);
+  }, [activeCanteenId, category, items, localSearch, selectedLabelFilters]);
 
   return (
     <OutletSwitchProvider>
@@ -160,7 +203,7 @@ function CanteenMenuPage() {
         {!isOutletOpen && (
           <div className="menu-page-outlet-alert">
             <strong>This outlet is temporarily closed for checkout.</strong>
-            <p>{closureLabel ?? "You can still browse the menu and add items to cart, but checkout is paused right now."}</p>
+            <p>{closureNotice ?? "You can still browse the menu and add items to cart, but checkout is paused right now."}</p>
           </div>
 )}
         <ImageGallery canteen={canteen} />
@@ -197,8 +240,49 @@ function CanteenMenuPage() {
           <aside className="menu-right">
             <div className="menu-right-sticky">
               <div className="menu-right-top">
-                <MenuSearch value={localSearch} onChange={handleSearchChange} />
+                <MenuSearch
+                  value={localSearch}
+                  onChange={handleSearchChange}
+                  onToggleFilters={() => setShowLabelFilters((value) => !value)}
+                  hasActiveFilters={selectedLabelFilters.length > 0}
+                />
               </div>
+
+              {showLabelFilters && (
+                <section className="menu-filter-panel">
+                  <div className="menu-filter-panel-header">
+                    <div>
+                      <strong>Filter by labels</strong>
+                      <p>Refine this outlet by food traits without changing the text search.</p>
+                    </div>
+                    <button type="button" className="menu-filter-close" onClick={() => setShowLabelFilters(false)} aria-label="Close filters">
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <div className="menu-filter-chip-grid">
+                    {availableLabelOptions.map((label) => {
+                      const isActive = selectedLabelFilters.includes(label.name);
+                      return (
+                        <button
+                          key={label.id}
+                          type="button"
+                          className={`menu-filter-chip ${isActive ? "menu-filter-chip-active" : ""}`}
+                          style={{ "--label-color": label.color } as CSSProperties}
+                          onClick={() => handleToggleLabelFilter(label.name)}
+                        >
+                          <span className="menu-item-label-dot" />
+                          <span>{label.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selectedLabelFilters.length > 0 && (
+                    <button type="button" className="menu-filter-reset" onClick={clearLabelFilters}>
+                      Clear label filters
+                    </button>
+                  )}
+                </section>
+              )}
 
               <MiniCart previewOnly={isPreviewMode} />
             </div>

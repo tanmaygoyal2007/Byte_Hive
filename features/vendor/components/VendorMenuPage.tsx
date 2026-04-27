@@ -1,5 +1,5 @@
-import { ChevronLeft, Edit3, Eye, Plus, Search, Trash2, X, Palette } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ChevronLeft, Edit3, Eye, Plus, Search, Sparkles, Tags, Trash2, X } from "lucide-react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 import { Link, useNavigate } from "@/components/lib/router";
 import Footer from "@/components/components/layout/Footer";
 import Navbar from "@/components/components/layout/Navbar";
@@ -12,7 +12,14 @@ import {
   type MenuCatalogItem,
 } from "@/features/orders/services/order-portal.service";
 import { getVendorOutlet, isVendorSessionAuthorized, subscribeToVendorSession } from "@/features/vendor/services/vendor-portal.service";
-import type { CustomLabel } from "@/lib/utils/label-utils";
+import {
+  getAllFoodLabelsForCanteen,
+  getDisplayLabelsForItem,
+  getStoredCustomLabelsForCanteen,
+  getSystemFoodLabels,
+  saveStoredCustomLabelsForCanteen,
+  type CustomLabel,
+} from "@/lib/utils/label-utils";
 
 type MenuForm = {
   name: string;
@@ -20,36 +27,18 @@ type MenuForm = {
   price: string;
   description: string;
   isAvailable: boolean;
+  isVeg: boolean;
   labels: string[];
 };
 
-const LABEL_STORAGE_KEY = "bytehive-vendor-labels";
+type PendingMenuSave = {
+  item: MenuCatalogItem;
+  changes: Array<{ label: string; from: string; to: string }>;
+};
 
 const suggestedCategories = ["Breakfast", "Main Course", "Beverages", "Snacks", "Desserts"];
 const defaultColors = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899"];
-const emptyForm: MenuForm = { name: "", category: "", price: "", description: "", isAvailable: true, labels: [] };
-
-function getStoredLabels(outletId: string): CustomLabel[] {
-  if (typeof window === "undefined") return [];
-  try {
-    const stored = localStorage.getItem(LABEL_STORAGE_KEY);
-    if (!stored) return [];
-    const all = JSON.parse(stored) as Record<string, CustomLabel[]>;
-    return all[outletId] || [];
-  } catch {
-    return [];
-  }
-}
-
-function saveStoredLabels(outletId: string, labels: CustomLabel[]) {
-  if (typeof window === "undefined") return;
-  try {
-    const stored = localStorage.getItem(LABEL_STORAGE_KEY);
-    const all = stored ? JSON.parse(stored) : {};
-    all[outletId] = labels;
-    localStorage.setItem(LABEL_STORAGE_KEY, JSON.stringify(all));
-  } catch {}
-}
+const emptyForm: MenuForm = { name: "", category: "", price: "", description: "", isAvailable: true, isVeg: true, labels: [] };
 
 function VendorMenuPage() {
   const navigate = useNavigate();
@@ -58,12 +47,18 @@ function VendorMenuPage() {
   const [menuItems, setMenuItems] = useState<MenuCatalogItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [showLabelEditor, setShowLabelEditor] = useState(false);
+  const [labelOnlyMode, setLabelOnlyMode] = useState(false);
+  const [showSaveReview, setShowSaveReview] = useState(false);
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [formData, setFormData] = useState<MenuForm>(emptyForm);
+  const [draftLabelSelection, setDraftLabelSelection] = useState<string[]>([]);
+  const [pendingSave, setPendingSave] = useState<PendingMenuSave | null>(null);
   const [isMobile, setIsMobile] = useState(false);
   const [showLabelManager, setShowLabelManager] = useState(false);
-  const [customLabels, setCustomLabels] = useState<CustomLabel[]>(() => getStoredLabels(outletId || ""));
+  const [customLabels, setCustomLabels] = useState<CustomLabel[]>(() => getStoredCustomLabelsForCanteen(outletId || ""));
   const [newLabelName, setNewLabelName] = useState("");
+  const [newLabelDescription, setNewLabelDescription] = useState("");
   const [newLabelColor, setNewLabelColor] = useState(defaultColors[0]);
 
   useEffect(() => {
@@ -91,14 +86,26 @@ function VendorMenuPage() {
     return () => window.removeEventListener("resize", syncViewport);
   }, []);
 
+  useEffect(() => {
+    setCustomLabels(getStoredCustomLabelsForCanteen(outletId || ""));
+  }, [outletId]);
+
   const filteredItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
     if (!query) return menuItems;
 
     return menuItems.filter((item) =>
-      [item.name, item.category, item.description ?? ""].some((value) => value.toLowerCase().includes(query))
+      [
+        item.name,
+        item.category,
+        item.description ?? "",
+        ...getDisplayLabelsForItem(item, outletId).map((label) => label.name),
+      ].some((value) => value.toLowerCase().includes(query))
     );
   }, [menuItems, searchQuery]);
+
+  const systemLabels = useMemo(() => getSystemFoodLabels(), []);
+  const allLabelOptions = useMemo(() => getAllFoodLabelsForCanteen(outletId), [outletId, customLabels]);
 
   const categoryOptions = useMemo(() => {
     const categories = new Set<string>(suggestedCategories);
@@ -126,36 +133,49 @@ function VendorMenuPage() {
 
   const handleAddLabel = () => {
     if (!newLabelName.trim() || !outletId) return;
-    const exists = customLabels.find((l) => l.name.toLowerCase() === newLabelName.trim().toLowerCase());
+    const normalizedName = newLabelName.trim().toLowerCase();
+    const exists = allLabelOptions.find((label) => label.name.toLowerCase() === normalizedName);
     if (exists) return;
-    
-    const newLabel = { name: newLabelName.trim(), color: newLabelColor };
+
+    const newLabel = { name: newLabelName.trim(), color: newLabelColor, description: newLabelDescription.trim() || "Custom food label." };
     const updated = [...customLabels, newLabel];
     setCustomLabels(updated);
-    saveStoredLabels(outletId, updated);
+    saveStoredCustomLabelsForCanteen(outletId, updated);
     setNewLabelName("");
+    setNewLabelDescription("");
   };
 
   const handleDeleteLabel = (name: string) => {
     if (!outletId) return;
     const updated = customLabels.filter((l) => l.name !== name);
     setCustomLabels(updated);
-    saveStoredLabels(outletId, updated);
+    saveStoredCustomLabelsForCanteen(outletId, updated);
   };
 
   const closeForm = () => {
     setShowForm(false);
+    setShowLabelEditor(false);
+    setLabelOnlyMode(false);
+    setShowSaveReview(false);
     setEditingItem(null);
     setFormData(emptyForm);
+    setDraftLabelSelection([]);
+    setPendingSave(null);
   };
 
-  const handleAddNew = () => {
+  const handleAddNew = (openLabels = false) => {
     setEditingItem(null);
     setFormData(emptyForm);
+    setDraftLabelSelection([]);
+    setShowLabelEditor(openLabels);
+    setLabelOnlyMode(false);
+    setShowSaveReview(false);
+    setPendingSave(null);
     setShowForm(true);
   };
 
-  const handleEdit = (item: MenuCatalogItem) => {
+  const handleEdit = (item: MenuCatalogItem, openLabels = false) => {
+    const existingLabels = getDisplayLabelsForItem(item, outletId).map((label) => label.name);
     setEditingItem(item.id);
     setFormData({
       name: item.name,
@@ -163,8 +183,14 @@ function VendorMenuPage() {
       price: String(item.price),
       description: item.description ?? "",
       isAvailable: item.isAvailable,
-      labels: item.labels || [],
+      isVeg: item.isVeg ?? true,
+      labels: existingLabels,
     });
+    setDraftLabelSelection(existingLabels);
+    setShowLabelEditor(openLabels);
+    setLabelOnlyMode(openLabels);
+    setShowSaveReview(false);
+    setPendingSave(null);
     setShowForm(true);
   };
 
@@ -178,6 +204,36 @@ function VendorMenuPage() {
     const current = menuItems.find((m) => m.id === id);
     const nextItems = setMenuItemsAvailability(outletId, [id], !(current?.isAvailable !== false));
     setMenuItems(nextItems);
+  };
+
+  const commitPendingSave = () => {
+    if (!pendingSave) return;
+
+    if (editingItem) {
+      persistMenu(menuItems.map((item) => (item.id === editingItem ? pendingSave.item : item)));
+    } else {
+      persistMenu([pendingSave.item, ...menuItems]);
+    }
+
+    closeForm();
+  };
+
+  const commitLabelOnlyUpdate = () => {
+    if (!editingItem) {
+      closeForm();
+      return;
+    }
+
+    const currentItem = menuItems.find((item) => item.id === editingItem);
+    if (!currentItem) {
+      closeForm();
+      return;
+    }
+
+    persistMenu(
+      menuItems.map((item) => (item.id === editingItem ? { ...currentItem, labels: draftLabelSelection } : item))
+    );
+    closeForm();
   };
 
   const handleSubmit = () => {
@@ -196,17 +252,73 @@ function VendorMenuPage() {
       description: formData.description.trim(),
       image: menuItems.find((item) => item.id === editingItem)?.image,
       isAvailable: formData.isAvailable,
-      isVeg: menuItems.find((item) => item.id === editingItem)?.isVeg,
-      labels: formData.labels,
+      isVeg: formData.isVeg,
+      labels: draftLabelSelection,
     };
 
-    if (editingItem) {
-      persistMenu(menuItems.map((item) => (item.id === editingItem ? nextItem : item)));
+    const previousItem = menuItems.find((item) => item.id === editingItem);
+    const changeSummary: Array<{ label: string; from: string; to: string }> = [];
+
+    if (!previousItem) {
+      changeSummary.push({ label: "Item", from: "New item", to: name });
+      changeSummary.push({ label: "Category", from: "Not set", to: category });
+      changeSummary.push({ label: "Price", from: "Not set", to: `Rs ${price}` });
+      if (nextItem.description) {
+        changeSummary.push({ label: "Description", from: "Not set", to: nextItem.description });
+      }
+      changeSummary.push({ label: "Availability", from: "Not set", to: nextItem.isAvailable ? "Available" : "Unavailable" });
+      changeSummary.push({ label: "Food Type", from: "Not set", to: nextItem.isVeg ? "Veg" : "Non-veg" });
+      changeSummary.push({
+        label: "Labels",
+        from: "No labels",
+        to: nextItem.labels?.length ? nextItem.labels.join(", ") : "No labels",
+      });
     } else {
-      persistMenu([nextItem, ...menuItems]);
+      if (previousItem.name !== nextItem.name) {
+        changeSummary.push({ label: "Name", from: previousItem.name, to: nextItem.name });
+      }
+      if (previousItem.category !== nextItem.category) {
+        changeSummary.push({ label: "Category", from: previousItem.category, to: nextItem.category });
+      }
+      if (previousItem.price !== nextItem.price) {
+        changeSummary.push({ label: "Price", from: `Rs ${previousItem.price}`, to: `Rs ${nextItem.price}` });
+      }
+      if ((previousItem.description ?? "") !== nextItem.description) {
+        changeSummary.push({
+          label: "Description",
+          from: previousItem.description?.trim() || "Empty",
+          to: nextItem.description || "Empty",
+        });
+      }
+      if ((previousItem.isAvailable !== false) !== nextItem.isAvailable) {
+        changeSummary.push({
+          label: "Availability",
+          from: previousItem.isAvailable ? "Available" : "Unavailable",
+          to: nextItem.isAvailable ? "Available" : "Unavailable",
+        });
+      }
+      if ((previousItem.isVeg ?? true) !== nextItem.isVeg) {
+        changeSummary.push({
+          label: "Food Type",
+          from: (previousItem.isVeg ?? true) ? "Veg" : "Non-veg",
+          to: nextItem.isVeg ? "Veg" : "Non-veg",
+        });
+      }
+
+      const previousLabels = (previousItem.labels ?? []).join(", ") || "No labels";
+      const nextLabels = (nextItem.labels ?? []).join(", ") || "No labels";
+      if (previousLabels !== nextLabels) {
+        changeSummary.push({ label: "Labels", from: previousLabels, to: nextLabels });
+      }
     }
 
-    closeForm();
+    if (changeSummary.length === 0) {
+      closeForm();
+      return;
+    }
+
+    setPendingSave({ item: nextItem, changes: changeSummary });
+    setShowSaveReview(true);
   };
 
   const handlePreview = () => {
@@ -234,9 +346,9 @@ function VendorMenuPage() {
                   <Eye size={18} /> Preview Menu
                 </button>
                 <button type="button" className="vendor-button-secondary" onClick={() => setShowLabelManager(true)}>
-                  <Palette size={18} /> Manage Labels
+                  <Sparkles size={18} /> Manage Food Labels
                 </button>
-                <button type="button" className="vendor-button" onClick={handleAddNew}>
+                <button type="button" className="vendor-button" onClick={() => handleAddNew()}>
                   <Plus size={18} /> Add Item
                 </button>
               </div>
@@ -276,6 +388,14 @@ function VendorMenuPage() {
                     <div>
                       <h3>{item.name}</h3>
                       <p className="vendor-muted">{item.description}</p>
+                      <div className="vendor-menu-card-labels">
+                        {getDisplayLabelsForItem(item, outletId).map((label) => (
+                          <span key={`${item.id}-${label.id}`} className="vendor-label-badge" style={{ "--vendor-label-color": label.color } as CSSProperties} title={label.description}>
+                            <span className="vendor-label-badge-dot" />
+                            {label.name}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                     <span className="vendor-category-tag">{item.category}</span>
                   </div>
@@ -294,6 +414,9 @@ function VendorMenuPage() {
                   <div className="vendor-menu-card-actions">
                     <button type="button" className="vendor-button-secondary" onClick={() => handleEdit(item)}>
                       <Edit3 size={16} /> Edit
+                    </button>
+                    <button type="button" className="vendor-button-secondary" onClick={() => handleEdit(item, true)}>
+                      <Tags size={16} /> Labels
                     </button>
                     <button type="button" className="vendor-button-ghost" onClick={() => handleDelete(item.id)}>
                       <Trash2 size={16} /> Delete
@@ -328,6 +451,14 @@ function VendorMenuPage() {
                         <p className="vendor-muted vendor-item-description">
                           {item.description}
                         </p>
+                        <div className="vendor-menu-card-labels vendor-menu-card-labels-compact">
+                          {getDisplayLabelsForItem(item, outletId).map((label) => (
+                            <span key={`${item.id}-${label.id}`} className="vendor-label-badge" style={{ "--vendor-label-color": label.color } as CSSProperties} title={label.description}>
+                              <span className="vendor-label-badge-dot" />
+                              {label.name}
+                            </span>
+                          ))}
+                        </div>
                       </td>
                       <td>
                         <span className="vendor-category-tag">{item.category}</span>
@@ -357,6 +488,14 @@ function VendorMenuPage() {
                           <button
                             type="button"
                             className="vendor-icon-button"
+                            onClick={() => handleEdit(item, true)}
+                            aria-label={`Edit labels for ${item.name}`}
+                          >
+                            <Tags size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            className="vendor-icon-button"
                             onClick={() => handleDelete(item.id)}
                             aria-label={`Delete ${item.name}`}
                           >
@@ -382,122 +521,248 @@ function VendorMenuPage() {
       {showForm && (
         <>
           <div className="vendor-form-backdrop" onClick={closeForm} />
-          <div className="vendor-form-wrap">
-            <section
-              className="vendor-form-panel"
-              role="dialog"
-              aria-modal="true"
-              aria-label={editingItem ? "Edit menu item" : "Add menu item"}
+          <div className={`vendor-form-wrap ${showSaveReview ? "vendor-form-wrap-under-review" : ""}`}>
+            <div
+              className={`vendor-edit-shell ${showLabelEditor ? "vendor-edit-shell-labels-open" : ""} ${
+                labelOnlyMode ? "vendor-edit-shell-labels-only" : ""
+              }`}
             >
-              <div className="vendor-form-header">
-                <div>
-                  <h2>{editingItem ? "Edit Menu Item" : "Add New Menu Item"}</h2>
-                  <p className="vendor-muted">Update details, pricing, and availability in one place.</p>
-                </div>
-                <button type="button" className="vendor-icon-button" onClick={closeForm} aria-label="Close form">
-                  <X size={18} />
-                </button>
-              </div>
-              <div className="vendor-form-body">
-                <div className="vendor-field">
-                  <label htmlFor="vendor-item-name">Item Name</label>
-                  <input
-                    id="vendor-item-name"
-                    className="vendor-input"
-                    value={formData.name}
-                    onChange={(event) => setFormData({ ...formData, name: event.target.value })}
-                  />
-                </div>
-                <div className="vendor-form-row">
-                  <div className="vendor-field">
-                    <label htmlFor="vendor-item-category">Category / Label</label>
-                    <input
-                      id="vendor-item-category"
-                      className="vendor-input"
-                      list="vendor-category-options"
-                      value={formData.category}
-                      onChange={(event) => setFormData({ ...formData, category: event.target.value })}
-                      placeholder="Type or pick a category"
-                    />
-                    <datalist id="vendor-category-options">
-                      {categoryOptions.map((category) => (
-                        <option key={category} value={category} />
-                      ))}
-                    </datalist>
+              <aside className={`vendor-label-sidecar ${showLabelEditor ? "vendor-label-sidecar-open" : ""}`}>
+                <div className="vendor-label-sidecar-header">
+                  <div>
+                    <strong>{labelOnlyMode ? "Edit food labels" : "Food labels"}</strong>
+                    <p>
+                      {labelOnlyMode
+                        ? "This mode only changes labels. Name, price, description, and availability stay untouched."
+                        : "Pick labels for this item and confirm them separately."}
+                    </p>
                   </div>
-                  <div className="vendor-field">
-                    <label htmlFor="vendor-item-price">Price (Rs)</label>
-                    <input
-                      id="vendor-item-price"
-                      type="number"
-                      min="0"
-                      className="vendor-input"
-                      value={formData.price}
-                      onChange={(event) => setFormData({ ...formData, price: event.target.value })}
-                    />
+                  <button type="button" className="vendor-icon-button" onClick={() => setShowLabelEditor(false)} aria-label="Close label editor">
+                    <X size={16} />
+                  </button>
+                </div>
+                <div className="vendor-label-sidecar-body">
+                  <div className="vendor-label-current">
+                    <small>Applied labels</small>
+                    <div className="vendor-menu-card-labels vendor-menu-card-labels-compact">
+                      {draftLabelSelection.length > 0 ? draftLabelSelection.map((labelName) => {
+                        const match = allLabelOptions.find((label) => label.name === labelName);
+                        return (
+                          <span
+                            key={labelName}
+                            className="vendor-label-badge"
+                            style={{ "--vendor-label-color": match?.color ?? "var(--accent)" } as CSSProperties}
+                          >
+                            <span className="vendor-label-badge-dot" />
+                            {labelName}
+                          </span>
+                        );
+                      }) : <span className="vendor-muted vendor-inline-note">No labels selected yet.</span>}
+                    </div>
                   </div>
-                </div>
-                <div className="vendor-field">
-                  <label htmlFor="vendor-item-description">Description</label>
-                  <textarea
-                    id="vendor-item-description"
-                    className="vendor-textarea"
-                    value={formData.description}
-                    onChange={(event) => setFormData({ ...formData, description: event.target.value })}
-                  />
-                </div>
-                <div className="vendor-field">
-                  <label>Labels</label>
-                  <div className="vendor-label-picker">
-                    {customLabels.length === 0 && (
-                      <p className="vendor-muted vendor-inline-note">No labels created yet. Use "Manage Labels" button first.</p>
-                    )}
-                    {customLabels.map((label) => {
-                      const isSelected = formData.labels.includes(label.name);
+                  {labelOnlyMode && (
+                    <div className="vendor-label-inline-summary">
+                      <span className="vendor-label-inline-summary-kicker">Editing labels for</span>
+                      <strong>{formData.name}</strong>
+                      <small>
+                        {draftLabelSelection.length > 0
+                          ? `${draftLabelSelection.length} label${draftLabelSelection.length === 1 ? "" : "s"} selected`
+                          : "Choose one or more labels for this item."}
+                      </small>
+                    </div>
+                  )}
+                  <div className="vendor-label-picker-grid">
+                    {allLabelOptions.map((label) => {
+                      const isSelected = draftLabelSelection.includes(label.name);
                       return (
                         <button
                           key={label.name}
                           type="button"
                           onClick={() => {
-                            const current = formData.labels;
-                            const updated = isSelected 
-                              ? current.filter(l => l !== label.name)
-                              : [...current, label.name];
-                            setFormData({ ...formData, labels: updated });
+                            const updated = isSelected
+                              ? draftLabelSelection.filter((current) => current !== label.name)
+                              : [...draftLabelSelection, label.name];
+                            setDraftLabelSelection(updated);
                           }}
                           className={`vendor-label-toggle ${isSelected ? "vendor-label-toggle-selected" : ""}`}
-                          style={{
-                            borderColor: isSelected ? label.color : undefined,
-                            background: isSelected ? `${label.color}20` : undefined,
-                            color: isSelected ? label.color : undefined,
-                          }}
+                          style={{ "--vendor-label-color": label.color } as CSSProperties}
                         >
-                          {label.name}
+                          <span className="vendor-label-toggle-head">
+                            <span className="vendor-label-badge-dot" />
+                            {label.name}
+                          </span>
+                          <small>{label.description}</small>
                         </button>
                       );
                     })}
                   </div>
                 </div>
-                <label className="vendor-form-check">
-                  <input
-                    type="checkbox"
-                    checked={formData.isAvailable}
-                    onChange={(event) => setFormData({ ...formData, isAvailable: event.target.checked })}
-                  />
-                  <span className="vendor-form-toggle">Available for ordering</span>
-                </label>
+                <div className="vendor-label-sidecar-footer">
+                  <button
+                    type="button"
+                    className="vendor-button"
+                    onClick={() => {
+                      if (labelOnlyMode) {
+                        commitLabelOnlyUpdate();
+                        return;
+                      }
+                      setFormData((current) => ({ ...current, labels: draftLabelSelection }));
+                      setShowLabelEditor(false);
+                    }}
+                  >
+                    Confirm Labels
+                  </button>
+                </div>
+              </aside>
+
+              {!labelOnlyMode && (
+                <section
+                  className="vendor-form-panel vendor-edit-panel"
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={editingItem ? "Edit menu item" : "Add menu item"}
+                >
+                <div className="vendor-form-header">
+                  <div>
+                    <h2>{editingItem ? "Edit Menu Item" : "Add New Menu Item"}</h2>
+                    <p className="vendor-muted">Update details, pricing, and availability in a shorter, faster workflow.</p>
+                  </div>
+                  <button type="button" className="vendor-icon-button" onClick={closeForm} aria-label="Close form">
+                    <X size={18} />
+                  </button>
+                </div>
+                <div className="vendor-form-body">
+                    <>
+                      <div className="vendor-field">
+                        <label htmlFor="vendor-item-name">Item Name</label>
+                        <input
+                          id="vendor-item-name"
+                          className="vendor-input"
+                          value={formData.name}
+                          onChange={(event) => setFormData({ ...formData, name: event.target.value })}
+                        />
+                      </div>
+                      <div className="vendor-form-row">
+                        <div className="vendor-field">
+                          <label htmlFor="vendor-item-category">Category</label>
+                          <input
+                            id="vendor-item-category"
+                            className="vendor-input"
+                            list="vendor-category-options"
+                            value={formData.category}
+                            onChange={(event) => setFormData({ ...formData, category: event.target.value })}
+                            placeholder="Type or pick a category"
+                          />
+                          <datalist id="vendor-category-options">
+                            {categoryOptions.map((category) => (
+                              <option key={category} value={category} />
+                            ))}
+                          </datalist>
+                        </div>
+                        <div className="vendor-field">
+                          <label htmlFor="vendor-item-price">Price (Rs)</label>
+                          <input
+                            id="vendor-item-price"
+                            type="number"
+                            min="0"
+                            className="vendor-input"
+                            value={formData.price}
+                            onChange={(event) => setFormData({ ...formData, price: event.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div className="vendor-field">
+                        <label htmlFor="vendor-item-description">Description</label>
+                        <textarea
+                          id="vendor-item-description"
+                          className="vendor-textarea"
+                          value={formData.description}
+                          onChange={(event) => setFormData({ ...formData, description: event.target.value })}
+                        />
+                      </div>
+                      <div className="vendor-field">
+                        <label>Food Type</label>
+                        <div className="vendor-segmented-control">
+                          <button
+                            type="button"
+                            className={`vendor-segmented-option ${formData.isVeg ? "vendor-segmented-option-active" : ""}`}
+                            onClick={() => setFormData({ ...formData, isVeg: true })}
+                          >
+                            Veg
+                          </button>
+                          <button
+                            type="button"
+                            className={`vendor-segmented-option ${!formData.isVeg ? "vendor-segmented-option-active" : ""}`}
+                            onClick={() => setFormData({ ...formData, isVeg: false })}
+                          >
+                            Non-veg
+                          </button>
+                        </div>
+                      </div>
+                      <label className="vendor-form-check">
+                        <input
+                          type="checkbox"
+                          checked={formData.isAvailable}
+                          onChange={(event) => setFormData({ ...formData, isAvailable: event.target.checked })}
+                        />
+                        <span className="vendor-form-toggle">Available for ordering</span>
+                      </label>
+                    </>
+                </div>
+                <div className="vendor-form-actions">
+                  <button type="button" className="vendor-button-ghost" onClick={closeForm}>
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    className="vendor-button"
+                    disabled={!formData.name.trim() || !formData.category.trim() || !formData.price}
+                    onClick={handleSubmit}
+                  >
+                    {editingItem ? "Review Update" : "Review Item"}
+                  </button>
+                </div>
+              </section>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+
+      {showSaveReview && pendingSave && (
+        <>
+          <div className="vendor-form-backdrop" onClick={() => setShowSaveReview(false)} />
+          <div className="vendor-form-wrap">
+            <section className="vendor-form-panel vendor-review-panel" role="dialog" aria-modal="true" aria-label="Review menu changes">
+              <div className="vendor-form-header">
+                <div>
+                  <h2>Review Changes</h2>
+                  <p className="vendor-muted">Check what changed before committing it to the live menu.</p>
+                </div>
+                <button type="button" className="vendor-icon-button" onClick={() => setShowSaveReview(false)} aria-label="Close review">
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="vendor-form-body">
+                <div className="vendor-review-summary">
+                  {pendingSave.changes.map((change) => (
+                    <article key={`${change.label}-${change.from}-${change.to}`} className="vendor-review-row">
+                      <strong>{change.label}</strong>
+                      <div className="vendor-review-values">
+                        <span>{change.from}</span>
+                        <span className="vendor-review-arrow">{"->"}</span>
+                        <span>{change.to}</span>
+                      </div>
+                    </article>
+                  ))}
+                </div>
               </div>
               <div className="vendor-form-actions">
-                <button type="button" className="vendor-button-ghost" onClick={closeForm}>
-                  Cancel
+                <button type="button" className="vendor-button-ghost" onClick={() => setShowSaveReview(false)}>
+                  Go Back
                 </button>
-                <button
-                  type="button"
-                  className="vendor-button"
-                  disabled={!formData.name.trim() || !formData.category.trim() || !formData.price}
-                  onClick={handleSubmit}
-                >
-                  {editingItem ? "Update Item" : "Add Item"}
+                <button type="button" className="vendor-button" onClick={commitPendingSave}>
+                  Commit Changes
                 </button>
               </div>
             </section>
@@ -512,22 +777,46 @@ function VendorMenuPage() {
             <section className="vendor-form-panel" role="dialog" aria-modal="true" aria-label="Manage Labels">
               <div className="vendor-form-header">
                 <div>
-                  <h2>Manage Labels</h2>
-                  <p className="vendor-muted">Create custom labels with colors for your menu categories.</p>
+                  <h2>Food Labels</h2>
+                  <p className="vendor-muted">Mix built-in food traits with your own outlet-specific tags. These labels show up on student search and menu filters.</p>
                 </div>
                 <button type="button" className="vendor-icon-button" onClick={() => setShowLabelManager(false)} aria-label="Close">
                   <X size={18} />
                 </button>
               </div>
               <div className="vendor-form-body">
+                <div className="vendor-label-list-block">
+                  <label>Built-in Labels</label>
+                  <div className="vendor-label-library-grid">
+                    {systemLabels.map((label) => (
+                      <article key={label.id} className="vendor-label-library-card">
+                        <div className="vendor-label-library-top">
+                          <span className="vendor-label-badge" style={{ "--vendor-label-color": label.color } as CSSProperties}>
+                            <span className="vendor-label-badge-dot" />
+                            {label.name}
+                          </span>
+                          <span className="vendor-label-library-type">Default</span>
+                        </div>
+                        <p>{label.description}</p>
+                      </article>
+                    ))}
+                  </div>
+                </div>
+
                 <div className="vendor-field">
-                  <label>Create New Label</label>
-                  <div className="vendor-label-create-row">
+                  <label>Create Custom Label</label>
+                  <div className="vendor-label-creator-grid">
                     <input
                       className="vendor-input vendor-label-name-input"
                       value={newLabelName}
                       onChange={(e) => setNewLabelName(e.target.value)}
                       placeholder="Label name"
+                    />
+                    <input
+                      className="vendor-input"
+                      value={newLabelDescription}
+                      onChange={(e) => setNewLabelDescription(e.target.value)}
+                      placeholder="Short description"
                     />
                     <div className="vendor-color-swatch-row">
                       {defaultColors.map((color) => (
@@ -548,10 +837,10 @@ function VendorMenuPage() {
                 </div>
                 
                 <div className="vendor-label-list-block">
-                  <label>Your Labels</label>
+                  <label>Your Custom Labels</label>
                   <div className="vendor-label-list">
                     {customLabels.length === 0 && (
-                      <p className="vendor-muted vendor-inline-note">No custom labels yet. Create one above.</p>
+                      <p className="vendor-muted vendor-inline-note">No custom labels yet. Add one for outlet-specific callouts like chef specials or combo picks.</p>
                     )}
                     {customLabels.map((label) => (
                       <div
@@ -560,7 +849,10 @@ function VendorMenuPage() {
                         style={{ background: `${label.color}20`, borderColor: label.color }}
                       >
                         <span className="vendor-label-chip-swatch" style={{ background: label.color }} />
-                        <span className="vendor-label-chip-name">{label.name}</span>
+                        <span className="vendor-label-chip-copy">
+                          <span className="vendor-label-chip-name">{label.name}</span>
+                          <small>{label.description || "Custom food label."}</small>
+                        </span>
                         <button
                           type="button"
                           onClick={() => handleDeleteLabel(label.name)}

@@ -7,6 +7,7 @@ type CartItem = {
   price: number;
   image?: string;
   canteenId?: string;
+  pickupPoint?: "counter" | "vendor_stall";
   isAvailable?: boolean;
   quantity: number;
 };
@@ -140,9 +141,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clear = useCallback(() => dispatch({ type: "clear" }), []);
   const total = useCallback(() => state.items.reduce((sum, item) => sum + item.price * item.quantity, 0), [state.items]);
   const setSourceCanteen = useCallback((canteenId: string) => dispatch({ type: "setSourceCanteen", canteenId }), []);
-  const replaceItems = useCallback((items: CartItem[], sourceCanteen?: string) => {
-    dispatch({ type: "replaceItems", items, sourceCanteen });
-  }, []);
+  const replaceItems = useCallback((items: CartItem[], sourceCanteen?: string) => dispatch({ type: "replaceItems", items, sourceCanteen }), []);
 
   return (
     <CartContext.Provider value={{ state, addItem, removeItem, increment, decrement, clear, total, setSourceCanteen, replaceItems }}>

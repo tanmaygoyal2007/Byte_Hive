@@ -9,6 +9,7 @@ type PendingOutletSwitch = {
     price: number;
     image?: string;
     canteenId?: string;
+    pickupPoint?: "counter" | "vendor_stall";
   };
   currentOutletName: string;
   newOutletName: string;

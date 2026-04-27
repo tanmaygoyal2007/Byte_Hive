@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getStoredOrderById, updateStoredOrderStatus, updateStoredOrderTiming } from "@/lib/server/order-store";
+import { getStoredOrderById, updateStoredOrderStatus, updateStoredOrderTiming, verifyStoredOrderPickupSegment } from "@/lib/server/order-store";
 
 export async function GET(
   _request: NextRequest,
@@ -26,6 +26,14 @@ export async function PATCH(
   try {
     const { id } = await params;
     const payload = await request.json();
+
+    if (typeof payload?.pickupSegmentId === "string") {
+      const updated = await verifyStoredOrderPickupSegment(id, payload.pickupSegmentId);
+      if (!updated) {
+        return NextResponse.json({ error: "Order not found." }, { status: 404 });
+      }
+      return NextResponse.json(updated);
+    }
 
     if (typeof payload?.status === "string") {
       const updated = await updateStoredOrderStatus(id, payload.status);

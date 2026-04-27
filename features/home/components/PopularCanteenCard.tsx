@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "@/components/lib/router";
-import { getVendorOutletStatus } from "@/features/vendor/services/vendor-portal.service";
+import { getVendorOutletStatus, subscribeToVendorStatus } from "@/features/vendor/services/vendor-portal.service";
 import { ArrowRight } from "lucide-react";
 
 interface Props {
@@ -12,7 +12,13 @@ interface Props {
 
 const PopularCanteenCard: React.FC<Props> = ({ id, name, image, description }) => {
 	const navigate = useNavigate();
-	const isOpen = getVendorOutletStatus(name);
+	const [isOpen, setIsOpen] = useState(() => getVendorOutletStatus(name));
+
+	useEffect(() => {
+		const syncVendorStatus = () => setIsOpen(getVendorOutletStatus(name));
+		syncVendorStatus();
+		return subscribeToVendorStatus(syncVendorStatus);
+	}, [name]);
 
 	const goToMenu = (e?: React.MouseEvent) => {
 		if (e) e.preventDefault();

@@ -5,8 +5,8 @@ import Navbar from "@/components/components/layout/Navbar";
 import { CanteenCard } from "@/features/canteens/components/CanteenCard";
 import Footer from "@/components/components/layout/Footer";
 import { CANTEENS } from "@/features/canteens/components/canteens";
-import menuData from "@/features/menu/data/menu.json";
 import "@/features/canteens/components/CanteenCard.css";
+import "@/features/canteens/components/CanteenCardsPage.css";
 
 interface SearchBarProps {
     value: string
@@ -68,12 +68,7 @@ function CanteenCardsPage() {
             (canteen.description || "").toLowerCase().includes(query) ||
             (canteen.block || "").toLowerCase().includes(query);
             
-        if (matchesCanteen) return true;
-        
-        return (menuData as any[]).some(item => 
-            item.canteenId === canteen.id && 
-            (item.name || "").toLowerCase().includes(query)
-        );
+        return matchesCanteen;
     });
 
     return (
@@ -93,7 +88,10 @@ function CanteenCardsPage() {
                 </div>
 
                 <div className={`hero-enter search-delay ${isVisible ? 'hero-visible' : ''} search-controls`}>
-                    <SearchBar value={searchValue} onChange={setSearchValue} />
+                    <SearchBar
+                        value={searchValue}
+                        onChange={setSearchValue}
+                    />
                     {filter && (
                         <div className="filter-indicator">
                             <button onClick={() => navigate('/canteens')} className="clear-filter-btn">

@@ -24,6 +24,7 @@ interface CartItem {
   price: number;
   quantity: number;
   canteenId?: string;
+  pickupPoint?: "counter" | "vendor_stall";
   isAvailable?: boolean;
 }
 
@@ -31,13 +32,13 @@ interface PaymentButtonProps {
   items: CartItem[];
   total: number;
   canteenId: string;
-  onPaymentStart?: () => void;
-  onPaymentSuccess?: (paymentId: string, orderId: string) => void;
-  onPaymentFailure?: (error: string) => void;
   scheduledTime?: string | null;
   scheduledNote?: string;
   isExternallyBlocked?: boolean;
   blockedMessage?: string;
+  onPaymentStart?: () => void;
+  onPaymentSuccess?: (paymentId: string, orderId: string) => void;
+  onPaymentFailure?: (error: string) => void;
 }
 
 function loadRazorpayScript(): Promise<boolean> {
@@ -57,13 +58,13 @@ export default function PaymentButton({
   items,
   total,
   canteenId,
-  onPaymentStart,
-  onPaymentSuccess,
-  onPaymentFailure,
   scheduledTime,
   scheduledNote,
   isExternallyBlocked = false,
   blockedMessage,
+  onPaymentStart,
+  onPaymentSuccess,
+  onPaymentFailure,
 }: PaymentButtonProps) {
   const navigate = useNavigate();
   const cart = useCart();
@@ -143,7 +144,7 @@ export default function PaymentButton({
     }
 
     if (isExternallyBlocked) {
-      setError(blockedMessage ?? "Your cart needs attention before checkout.");
+      setError(blockedMessage ?? "Checkout is temporarily unavailable.");
       return;
     }
 
@@ -203,6 +204,7 @@ export default function PaymentButton({
                 name: item.name,
                 quantity: item.quantity,
                 price: item.price,
+                pickupPoint: item.pickupPoint,
               })),
               ...(scheduledTime && (() => {
                 const [hours, minutes] = scheduledTime.split(":").map(Number);

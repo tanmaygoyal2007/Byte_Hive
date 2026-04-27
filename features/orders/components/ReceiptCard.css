@@ -13,6 +13,37 @@
   padding: 28px 24px 72px;
 }
 
+.receipt-shell-split .receipt-container {
+  max-width: 1040px;
+}
+
+.receipt-shell-top {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 14px;
+}
+
+.receipt-exit-button {
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--border-soft);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface-card) 88%, transparent);
+  color: var(--text-primary);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.22s ease, border-color 0.22s ease, background-color 0.22s ease;
+}
+
+.receipt-exit-button:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent) 32%, var(--border-soft));
+  background: color-mix(in srgb, var(--surface-muted) 70%, transparent);
+}
+
 .receipt-success-banner,
 .receipt-fallback-note {
   display: flex;
@@ -210,10 +241,44 @@
   padding: 24px;
   border-bottom: 1px solid var(--border-soft);
   background: color-mix(in srgb, var(--surface-muted) 40%, transparent);
+}
+
+.receipt-pickup-qr-card {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
+}
+
+.receipt-pickup-qr-card-compact {
+  padding: 16px;
+  margin-bottom: 14px;
+  border-radius: 18px;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--surface-muted) 54%, transparent);
+}
+
+.receipt-pickup-qr-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.receipt-qr-expired-card {
+  min-height: 146px;
+  width: min(100%, 220px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 18px;
+  border: 1px dashed rgba(61, 165, 103, 0.28);
+  background: rgba(61, 165, 103, 0.08);
+  color: var(--text-primary);
 }
 
 .qr-container {
@@ -243,6 +308,46 @@
 .items-section {
   padding: 16px 24px;
   border-bottom: 1px solid var(--border-soft);
+}
+
+.receipt-pickup-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.receipt-pickup-group {
+  padding: 16px 16px 8px;
+  border-radius: 20px;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--surface-card) 86%, transparent);
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+}
+
+.receipt-pickup-group-stall {
+  border-color: rgba(245, 158, 11, 0.22);
+  background: color-mix(in srgb, rgba(245, 158, 11, 0.12) 62%, transparent);
+}
+
+.receipt-pickup-heading {
+  margin: 0 0 12px;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+}
+
+.receipt-pickup-note {
+  margin: 8px 0 4px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.18);
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
 }
 
 .section-title {
@@ -297,6 +402,21 @@
 
 .price-section {
   padding: 16px 24px;
+}
+
+.receipt-download-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px 20px;
+  border-top: 1px dashed var(--border-soft);
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
+.receipt-download-meta strong {
+  color: var(--text-primary);
 }
 
 .price-row {
@@ -429,6 +549,82 @@
   color: #1f1f1f !important;
 }
 
+.receipt-export-mode .receipt-download-meta {
+  border-top-color: #ddd2c5 !important;
+  color: #6d655d !important;
+}
+
+.receipt-export-mode .receipt-pickup-qr-card-compact,
+.receipt-export-mode .receipt-pickup-group,
+.receipt-export-mode .receipt-pickup-group-stall {
+  background: #f7f2ec !important;
+  border-color: #e6d7c7 !important;
+}
+
+.receipt-export-mode .receipt-qr-expired-card {
+  background: #eef6ef !important;
+  border-color: #c9ddcc !important;
+}
+
+.receipt-export-mode .receipt-download-meta strong {
+  color: #1f1f1f !important;
+}
+
+.receipt-export-download-meta {
+  padding: 18px 24px 0;
+  color: #6d655d;
+  font-size: 0.95rem;
+  text-align: right;
+}
+
+.receipt-leave-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.48);
+  backdrop-filter: blur(10px);
+}
+
+.receipt-leave-card {
+  width: min(100%, 420px);
+  padding: 26px;
+  border-radius: 24px;
+  border: 1px solid var(--border-soft);
+  background: color-mix(in srgb, var(--surface-card) 94%, transparent);
+  box-shadow: var(--shadow-soft);
+}
+
+.receipt-leave-card h3 {
+  margin: 0 0 10px;
+  color: var(--text-primary);
+  font-size: 1.45rem;
+}
+
+.receipt-leave-card p {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.receipt-leave-actions {
+  display: flex;
+  gap: 14px;
+  margin-top: 22px;
+}
+
+@media (min-width: 900px) {
+  .receipt-pickup-groups {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    align-items: stretch;
+  }
+}
+
 @media (max-width: 720px) {
   .receipt-shell {
     padding: 22px 16px 56px;
@@ -448,5 +644,28 @@
 
   .item-row {
     gap: 12px;
+  }
+
+  .receipt-download-meta {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .receipt-leave-actions {
+    flex-direction: column;
+  }
+
+  .action-buttons {
+    gap: 12px;
+  }
+
+  .button-primary,
+  .button-outline,
+  .receipt-download {
+    min-height: 56px;
+    height: 56px;
+    border-radius: 18px;
+    font-size: 1.08rem;
+    font-weight: 700;
   }
 }

@@ -281,11 +281,11 @@ export default function AppOverlays() {
       case "temporary_close_outlet": {
         const durationMinutes = Number(action.payload.durationMinutes ?? 20);
         const reason = action.payload.reason ? String(action.payload.reason) : null;
-        setVendorTemporaryClosure(durationMinutes, vendorOutlet, reason);
+        await setVendorTemporaryClosure(durationMinutes, vendorOutlet, reason);
         return `${vendorOutlet} is now temporarily closed for ${durationMinutes} minutes.${reason ? ` Reason: ${reason}` : ""}`;
       }
       case "reopen_outlet": {
-        clearVendorTemporaryClosure(vendorOutlet);
+        await clearVendorTemporaryClosure(vendorOutlet);
         return `${vendorOutlet} is now open again for checkout.`;
       }
       default:
