@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarClock, Clock3, MessageSquareText, Play, Store } from "lucide-react";
+import { ArrowLeft, CalendarClock, Clock3, MapPin, MessageSquareText, Play, Store } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "@/components/lib/router";
 import Footer from "@/components/components/layout/Footer";
@@ -76,19 +76,23 @@ function VendorSchedulePage() {
             Back to Dashboard
           </Link>
 
-          <section className="vendor-card vendor-schedule-hero">
-            <div className="vendor-card-header">
-              <div className="vendor-section-title">
+          <section className="vendor-card vendor-guidance-hero">
+            <div className="vendor-guidance-header">
+              <div className="vendor-guidance-title-section">
+                <span className="vendor-guidance-badge">
+                  <CalendarClock size={16} />
+                  Vendor Scheduling
+                </span>
                 <h1 className="vendor-page-title">Pre-Scheduled Orders</h1>
                 <p>Orders are automatically released when their scheduled time arrives. You can also manually release them earlier.</p>
               </div>
-              <div className="vendor-schedule-hero-meta">
-                <span className="vendor-section-icon">
-                  <CalendarClock size={24} />
+              <div className="vendor-guidance-meta">
+                <span className="vendor-guidance-meta-icon">
+                  <CalendarClock size={28} />
                 </span>
                 <strong>{outletName}</strong>
-                <span className="vendor-location">
-                  <Store size={16} />
+                <span className="vendor-guidance-location">
+                  <MapPin size={16} />
                   {getVendorLocation(outletName)}
                 </span>
               </div>

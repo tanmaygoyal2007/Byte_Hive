@@ -635,7 +635,15 @@ function VendorDashboardPage() {
                 {isLoadingOrders
                   ? renderSkeletons()
                   : activeOrders.length
-                    ? <div className="vendor-order-column vendor-order-column-scroll vendor-order-column-scroll-active">{activeOrders.map((order) => renderOrderCard(order))}</div>
+                    ? (
+                        <div
+                          className={`vendor-order-column vendor-order-column-scroll vendor-order-column-scroll-active${
+                            showCompletedWorkspace ? "" : " vendor-order-column-scroll-board"
+                          }`}
+                        >
+                          {activeOrders.map((order) => renderOrderCard(order))}
+                        </div>
+                      )
                     : renderEmpty("No active orders", "New orders will appear here.")}
                 </section>
 
