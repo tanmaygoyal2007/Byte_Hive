@@ -67,7 +67,9 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
   onBackHome,
   downloadStatus = "idle",
 }) => {
-  const hasSplitPickup = items.some((item) => item.pickupPoint);
+  const pickupPointsInItems = Array.from(
+    new Set(items.map((item) => item.pickupPoint).filter(Boolean))
+  ) as Array<"counter" | "vendor_stall">;
   const counterItems = items.filter((item) => item.pickupPoint !== "vendor_stall");
   const vendorStallItems = items.filter((item) => item.pickupPoint === "vendor_stall");
   const resolvedPickupQrSections =
@@ -88,6 +90,13 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
             },
           ]
         : [];
+  const pickupPointsInSections = Array.from(
+    new Set(resolvedPickupQrSections.map((section) => section.pickupPoint))
+  );
+  const uniquePickupPoints = Array.from(new Set([...pickupPointsInItems, ...pickupPointsInSections]));
+  const hasSplitPickup = uniquePickupPoints.length > 1;
+  const singlePickupSection = !hasSplitPickup ? resolvedPickupQrSections[0] : null;
+  const isSingleVendorStallPickup = !hasSplitPickup && uniquePickupPoints[0] === "vendor_stall";
   const pickupQrSectionsByPoint = new Map(
     resolvedPickupQrSections.map((section) => [section.pickupPoint, section])
   );
@@ -195,13 +204,15 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
             {delayMessage && <p className="receipt-delay-note">{delayMessage}</p>}
           </div>
 
-          {!hasSplitPickup && resolvedPickupQrSections[0] && hasVisiblePickupQr(resolvedPickupQrSections[0]) && (
+          {!hasSplitPickup && singlePickupSection && hasVisiblePickupQr(singlePickupSection) && (
             <div className="qr-section">
               {renderPickupQrCard({
-                ...resolvedPickupQrSections[0],
+                ...singlePickupSection,
                 description: isScheduledOrder
-                  ? "Show this QR code at the counter during your scheduled slot."
-                  : resolvedPickupQrSections[0].description,
+                  ? isSingleVendorStallPickup
+                    ? "Show this QR code at the vendor stall during your scheduled slot."
+                    : "Show this QR code at the counter during your scheduled slot."
+                  : singlePickupSection.description,
               })}
             </div>
           )}
@@ -209,6 +220,11 @@ const ReceiptCard: React.FC<ReceiptCardProps> = ({
           <div className="items-section">
             <h4 className="section-title">Items Ordered</h4>
             {!hasSplitPickup && renderItemRows(items)}
+            {!hasSplitPickup && isSingleVendorStallPickup && (
+              <p className="receipt-pickup-note receipt-pickup-note-inline">
+                Stall items are prepared separately. Please walk to the vendor stall area and show this receipt there.
+              </p>
+            )}
             {hasSplitPickup && (
               <div className="receipt-pickup-groups">
                 {counterItems.length > 0 && (

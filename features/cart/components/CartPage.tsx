@@ -497,91 +497,110 @@ function CartPage() {
                 <span>{outletMeta?.estimatedTime ?? "10-15 minutes"}</span>
               </div>
 
-              <button
-                type="button"
-                className="schedule-toggle-btn"
-                onClick={() => setShowSchedulePanel(!showSchedulePanel)}
+              <div
+                className={`schedule-module${showSchedulePanel ? " is-expanded" : ""}${scheduleConfirmed ? " is-confirmed" : ""}`}
               >
-                <div className="schedule-toggle-content">
-                  <CalendarClock size={20} aria-hidden="true" />
-                  <div className="schedule-toggle-text">
-                    <span className="summary-chip summary-chip-schedule">Pre-Schedule</span>
-                    <span className="schedule-toggle-label">
-                      {showSchedulePanel ? "Hide order time" : "Reserve an order time"}
-                    </span>
-                  </div>
-                </div>
-                {showSchedulePanel ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-              </button>
-
-              {showSchedulePanel && (
-                <div className="schedule-panel">
-                  <div className="schedule-panel-head">
-                    <div>
-                      <h3>Reserve an order time</h3>
+                <button
+                  type="button"
+                  className="schedule-toggle-btn"
+                  onClick={() => setShowSchedulePanel(!showSchedulePanel)}
+                  aria-expanded={showSchedulePanel}
+                >
+                  <div className="schedule-toggle-content">
+                    <div className="schedule-toggle-icon" aria-hidden="true">
+                      <CalendarClock size={20} />
                     </div>
-                    <CalendarClock size={20} aria-hidden="true" />
-                  </div>
-                  <p className="schedule-panel-copy">
-                    Choose a future time and we will send the order to the vendor schedule board. Your payment will be collected now.
-                  </p>
-
-                  <label className="schedule-label" htmlFor="schedule-at">
-                    Order time
-                  </label>
-                  <div className="schedule-input-wrap">
-                    <Clock3 size={18} aria-hidden="true" />
-                    <input
-                      id="schedule-at"
-                      className="schedule-input"
-                      type="time"
-                      value={scheduleAt}
-                      onChange={(event) => setScheduleAt(event.target.value)}
-                    />
-                  </div>
-
-                  <label className="schedule-label" htmlFor="schedule-note">
-                    Note for vendor
-                  </label>
-                  <textarea
-                    id="schedule-note"
-                    className="schedule-textarea"
-                    value={scheduleNote}
-                    onChange={(event) => setScheduleNote(event.target.value)}
-                    placeholder="Optional: less spicy, pack separately, pickup after class..."
-                    rows={3}
-                  />
-
-                  <div className="schedule-preview">
-                    <strong>Today, {formatTimeDisplay(scheduleAt)}</strong>
-                    <span>Payment will be collected now.</span>
-                  </div>
-
-                  {!scheduleConfirmed ? (
-                    <button
-                      type="button"
-                      className="summary-secondary-btn schedule-confirm-btn"
-                      onClick={() => setScheduleConfirmed(true)}
-                    >
-                      Confirm Schedule
-                    </button>
-                  ) : (
-                    <div className="schedule-confirmed-actions">
-                      <span className="schedule-confirmed-label">
-                        <CalendarClock size={16} />
-                        Scheduled for {formatTimeDisplay(scheduleAt)}
+                    <div className="schedule-toggle-text">
+                      <span className="summary-chip summary-chip-schedule">Pre-Schedule</span>
+                      <span className="schedule-toggle-label">
+                        {showSchedulePanel ? "Hide order time" : scheduleConfirmed ? "Pre-scheduled order" : "Reserve an order time"}
                       </span>
+                      <span className="schedule-toggle-meta">
+                        {scheduleConfirmed
+                          ? `Scheduled for Today, ${formatTimeDisplay(scheduleAt)}`
+                          : "Choose a future pickup slot before checkout."}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="schedule-toggle-trailing">
+                    {scheduleConfirmed && !showSchedulePanel ? (
+                      <span className="schedule-toggle-status">
+                        Today, {formatTimeDisplay(scheduleAt)}
+                      </span>
+                    ) : null}
+                    {showSchedulePanel ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                  </div>
+                </button>
+
+                {showSchedulePanel && (
+                  <div className="schedule-panel">
+                    <div className="schedule-panel-head">
+                      <div>
+                        <h3>Reserve an order time</h3>
+                      </div>
+                      <CalendarClock size={20} aria-hidden="true" />
+                    </div>
+                    <p className="schedule-panel-copy">
+                      Choose a future time and we will send the order to the vendor schedule board. Your payment will be collected now.
+                    </p>
+
+                    <label className="schedule-label" htmlFor="schedule-at">
+                      Order time
+                    </label>
+                    <div className="schedule-input-wrap">
+                      <Clock3 size={18} aria-hidden="true" />
+                      <input
+                        id="schedule-at"
+                        className="schedule-input"
+                        type="time"
+                        value={scheduleAt}
+                        onChange={(event) => setScheduleAt(event.target.value)}
+                      />
+                    </div>
+
+                    <label className="schedule-label" htmlFor="schedule-note">
+                      Note for vendor
+                    </label>
+                    <textarea
+                      id="schedule-note"
+                      className="schedule-textarea"
+                      value={scheduleNote}
+                      onChange={(event) => setScheduleNote(event.target.value)}
+                      placeholder="Optional: less spicy, pack separately, pickup after class..."
+                      rows={3}
+                    />
+
+                    <div className="schedule-preview">
+                      <strong>Today, {formatTimeDisplay(scheduleAt)}</strong>
+                      <span>Payment will be collected now.</span>
+                    </div>
+
+                    {!scheduleConfirmed ? (
                       <button
                         type="button"
-                        className="schedule-remove-btn"
-                        onClick={() => setScheduleConfirmed(false)}
+                        className="summary-secondary-btn schedule-confirm-btn"
+                        onClick={() => setScheduleConfirmed(true)}
                       >
-                        Remove
+                        Confirm Schedule
                       </button>
-                    </div>
-                  )}
-                </div>
-              )}
+                    ) : (
+                      <div className="schedule-confirmed-actions">
+                        <span className="schedule-confirmed-label">
+                          <CalendarClock size={16} />
+                          Scheduled for {formatTimeDisplay(scheduleAt)}
+                        </span>
+                        <button
+                          type="button"
+                          className="schedule-remove-btn"
+                          onClick={() => setScheduleConfirmed(false)}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
 
               <PaymentButton
                 items={items}

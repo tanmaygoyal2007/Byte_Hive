@@ -350,6 +350,10 @@
   line-height: 1.5;
 }
 
+.receipt-pickup-note-inline {
+  margin-top: 14px;
+}
+
 .section-title {
   font-size: 14px;
   font-weight: 600;

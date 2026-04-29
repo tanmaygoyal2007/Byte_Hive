@@ -850,6 +850,13 @@
 
 .vendor-orders-grid-split {
   grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
+  align-items: stretch;
+}
+
+.vendor-orders-grid-split .vendor-orders-panel {
+  min-height: min(72vh, 760px);
+  display: flex;
+  flex-direction: column;
 }
 
 .vendor-orders-panel {
@@ -897,7 +904,32 @@
 }
 
 .vendor-order-column-scroll-active {
-  max-height: min(66vh, 860px);
+  max-height: min(62vh, 760px);
+}
+
+.vendor-orders-grid-split .vendor-order-column-scroll,
+.vendor-orders-grid-split .vendor-order-column-scroll-active {
+  height: min(54vh, 610px);
+  max-height: min(54vh, 610px);
+  overflow-y: auto;
+  align-content: start;
+}
+
+.vendor-order-column-scroll-board {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: max-content;
+  gap: 14px;
+  align-content: start;
+  align-items: start;
+  height: min(58vh, 560px);
+  max-height: min(58vh, 560px);
+  overflow-y: auto;
+}
+
+.vendor-order-column-scroll-board .vendor-order-card {
+  height: auto;
+  align-self: start;
 }
 
 .vendor-order-column-scroll::-webkit-scrollbar {
@@ -930,6 +962,7 @@
 .vendor-empty,
 .vendor-skeleton-card {
   padding: 18px;
+  flex-shrink: 0;
 }
 
 .vendor-order-card {
