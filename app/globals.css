@@ -1,11 +1,6 @@
 @import "./not-found.css";
 @import "../components/components/layout/Footer.css";
 @import "../components/components/layout/Navbar.css";
-@import "../components/components/ui/BlockBadge.css";
-@import "../components/components/ui/Button.css";
-@import "../components/components/ui/RatingBadge.css";
-@import "../components/components/ui/SearchInput.css";
-@import "../components/components/ui/SiriBorder.css";
 @import "../features/about/components/AboutPage.css";
 @import "../features/auth/components/AuthModal.css";
 @import "../features/auth/components/PortalDropdown.css";
@@ -13,9 +8,7 @@
 @import "../features/auth/components/StudentLoginModal.css";
 @import "../features/canteens/components/CanteenCard.css";
 @import "../features/canteens/components/CanteenCardsPage.css";
-@import "../features/cart/components/CartItem.css";
 @import "../features/cart/components/CartPage.css";
-@import "../features/cart/components/CartSummary.css";
 @import "../features/chat/components/ChatWidget.css";
 @import "../features/home/components/ContactSection.css";
 @import "../features/home/components/HeroSection.css";
