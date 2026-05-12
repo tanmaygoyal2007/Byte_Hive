@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Facebook, Linkedin, Twitter } from "lucide-react";
 import { Link } from "@/components/lib/router";
 import { getVendorOutletId } from "@/features/vendor/services/vendor-portal.service";
@@ -8,12 +8,21 @@ type FooterProps = {
 };
 
 const Footer: React.FC<FooterProps> = ({ variant = "default" }) => {
-  const vendorOutletId = variant === "vendor" && typeof window !== "undefined" ? getVendorOutletId() : "";
+  const [vendorOutletId, setVendorOutletId] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    if (variant === "vendor") {
+      setVendorOutletId(getVendorOutletId());
+    }
+  }, [variant]);
+
   const quickLinks = variant === "vendor"
     ? [
         { label: "Dashboard", to: "/vendor/dashboard" },
         { label: "Guidance", to: "/vendor/guidance" },
-        ...(vendorOutletId ? [{ label: "Preview", to: `/canteens/${vendorOutletId}?preview=vendor&src=footer` }] : []),
+        ...(mounted && vendorOutletId ? [{ label: "Preview", to: `/canteens/${vendorOutletId}?preview=vendor&src=footer` }] : []),
         { label: "About Us", to: "/about" },
       ]
     : [

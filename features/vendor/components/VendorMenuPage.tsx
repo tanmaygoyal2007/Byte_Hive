@@ -42,7 +42,7 @@ const emptyForm: MenuForm = { name: "", category: "", price: "", description: ""
 
 function VendorMenuPage() {
   const navigate = useNavigate();
-  const [outletName, setOutletName] = useState(() => getVendorOutlet());
+  const [outletName, setOutletName] = useState("");
   const outletId = getOutletIdByName(outletName);
   const [menuItems, setMenuItems] = useState<MenuCatalogItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -339,7 +339,6 @@ function VendorMenuPage() {
             <div className="vendor-menu-toolbar">
               <div className="vendor-section-title">
                 <h1 className="vendor-page-title">Menu Management</h1>
-                <p>{outletName}</p>
               </div>
               <div className="vendor-toolbar-actions">
                 <button type="button" className="vendor-button-secondary vendor-preview-btn" onClick={handlePreview} disabled={!outletId}>
@@ -364,19 +363,29 @@ function VendorMenuPage() {
           <section className="vendor-card">
             <div className="vendor-field vendor-menu-search">
               <label htmlFor="vendor-menu-search">Search items</label>
-              <div className="vendor-search-input-wrap">
-                <Search
-                  size={18}
-                  className="vendor-search-input-icon"
-                />
-                <input
-                  id="vendor-menu-search"
-                  className="vendor-input vendor-input-has-icon"
-                  value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="Search by name, category, or description"
-                />
-              </div>
+                <div className="vendor-search-input-wrap">
+                  <Search
+                    size={18}
+                    className="vendor-search-input-icon"
+                  />
+                  <input
+                    id="vendor-menu-search"
+                    className="vendor-input vendor-input-has-icon"
+                    value={searchQuery}
+                    onChange={(event) => setSearchQuery(event.target.value)}
+                    placeholder="Search by name, category, or description"
+                  />
+                  {searchQuery && (
+                    <button
+                      className="vendor-search-clear"
+                      onClick={() => setSearchQuery("")}
+                      aria-label="Clear search"
+                      type="button"
+                    >
+                      <Trash2 size={24} />
+                    </button>
+                  )}
+                </div>
             </div>
           </section>
 
@@ -499,7 +508,7 @@ function VendorMenuPage() {
                             onClick={() => handleDelete(item.id)}
                             aria-label={`Delete ${item.name}`}
                           >
-                            <Trash2 size={16} />
+                      <Trash2 size={24} />
                           </button>
                         </div>
                       </td>
@@ -537,7 +546,7 @@ function VendorMenuPage() {
                         : "Pick labels for this item and confirm them separately."}
                     </p>
                   </div>
-                  <button type="button" className="vendor-icon-button" onClick={() => setShowLabelEditor(false)} aria-label="Close label editor">
+                  <button type="button" className="vendor-icon-button" onClick={() => { if (labelOnlyMode) { closeForm(); } else { setShowLabelEditor(false); } }} aria-label="Close label editor">
                     <X size={16} />
                   </button>
                 </div>

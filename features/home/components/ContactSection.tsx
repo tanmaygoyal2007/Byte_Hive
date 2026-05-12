@@ -87,7 +87,11 @@ const ContactSection: React.FC = () => {
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setName("");
+      setEmail("");
+      return;
+    }
     setName((current) => current || user.displayName || "");
     setEmail((current) => current || user.email || "");
   }, [user]);

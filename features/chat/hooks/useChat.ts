@@ -114,6 +114,12 @@ export function useChat({
         }
 
         setMessages([...updatedMessages, { role: "assistant", content: data.reply }]);
+
+        if (data.redirect) {
+          window.setTimeout(() => {
+            window.location.href = data.redirect;
+          }, 800);
+        }
       } catch (error) {
         window.clearTimeout(timeout);
 

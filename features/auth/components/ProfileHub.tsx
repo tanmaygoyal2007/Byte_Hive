@@ -508,6 +508,7 @@ function ProfileHub({
                 src={resolveMenuImageUrl(item.image) || "/placeholder.svg"}
                 alt={item.name}
                 className="profile-favorite-image"
+                loading="lazy"
               />
               <button
                 type="button"
@@ -565,7 +566,7 @@ function ProfileHub({
             <div className="profile-cart-list">
               {state.items.map((item: { id: string; image?: string; name: string; price: number; quantity: number }) => (
                 <div key={item.id} className="profile-cart-item">
-                  <img src={resolveMenuImageUrl(item.image) || "/placeholder.svg"} alt={item.name} className="profile-cart-image" />
+                  <img src={resolveMenuImageUrl(item.image) || "/placeholder.svg"} alt={item.name} className="profile-cart-image" loading="lazy" />
                   <div className="profile-cart-copy">
                     <strong>{item.name}</strong>
                     <small>Rs {item.price}</small>

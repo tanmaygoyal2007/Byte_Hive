@@ -56,16 +56,21 @@ type OrderContext = {
 };
 
 type StudentChatAction = {
-  type: "add_item_to_cart";
+  type: "add_item_to_cart" | "remove_item_from_cart";
   payload: {
-    itemId: string;
-    quantity: number;
+    itemId?: string;
+    itemName?: string;
+    quantity?: number;
+    items?: Array<{ itemId: string; quantity: number }>;
+    itemNames?: string[];
+    clearCart?: boolean;
   };
 };
 
 type StudentActionResponse = {
   reply: string;
   action?: StudentChatAction;
+  redirect?: string;
 };
 
 const CANTEEN_LABELS: Record<string, string> = {
@@ -79,6 +84,11 @@ const CANTEEN_LABELS: Record<string, string> = {
   dominos: "Domino's",
   gianis: "Gianis",
 };
+
+function canteenLink(canteenId: string) {
+  const name = CANTEEN_LABELS[canteenId] ?? canteenId;
+  return `[${name}](/canteens/${canteenId})`;
+}
 
 const LABEL_ALIASES: Record<string, string[]> = {
   Spicy: ["spicy", "hot", "masaledar", "masala"],
@@ -101,19 +111,29 @@ function extractBudget(query: string) {
 }
 
 function extractQuantity(query: string) {
-  const explicit = query.match(/\b(?:add|order|get|buy)\s+(\d+)\b/i) ?? query.match(/\b(\d+)\s*(?:x|qty|quantity)\b/i);
-  if (!explicit) return 1;
-  return Math.max(1, Number.parseInt(explicit[1], 10) || 1);
+  const WORD_NUMBERS: Record<string, number> = {
+    one: 1, two: 2, three: 3, four: 4, five: 5,
+    six: 6, seven: 7, eight: 8, nine: 9, ten: 10,
+  };
+  const wordMatch = query.match(/\b(one|two|three|four|five|six|seven|eight|nine|ten)\b/i);
+  const explicit = query.match(/\b(?:add|order|get|buy)\s+(\d+)\b/i)
+    ?? query.match(/\b(?:any|some|random)\s+(\d+)\b/i)
+    ?? query.match(/\b(\d+)\s*(?:x|qty|quantity|item|items)\b/i);
+  if (explicit) return Math.max(1, Number.parseInt(explicit[1], 10) || 1);
+  if (wordMatch) return WORD_NUMBERS[wordMatch[1].toLowerCase()] ?? 1;
+  return 1;
 }
 
 function extractRequestedItemPhrase(query: string) {
   const cleaned = query
     .replace(/\b(?:please|can you|could you|would you|i want|i would like|for me)\b/gi, " ")
-    .replace(/\b(?:add|put|get|buy|order)\b/gi, " ")
+    .replace(/\b(?:add|put|get|buy|order|remove|delete|clear)\b/gi, " ")
+    .replace(/\b(?:take)\s+(?:out|off)\b/gi, " ")
     .replace(/\bfrom\s+[a-z0-9\s&']+\b/gi, " ")
-    .replace(/\b(?:to|into|in)\s+my\s+cart\b/gi, " ")
+    .replace(/\b(?:to|into)\s+my\s+cart\b/gi, " ")
     .replace(/\b(?:to|into)\s+cart\b/gi, " ")
-    .replace(/\b(?:my|the|a|an)\b/gi, " ")
+    .replace(/\b(?:my|the|a|an|it|this|that|these|those|empty)\b/gi, " ")
+    .replace(/\b(?:item|items|dish|dishes|food|order|orders|any|random|some|whatever)\b/gi, " ")
     .replace(/\b(?:qty|quantity)\s*\d+\b/gi, " ")
     .replace(/\b\d+\s*(?:x)?\b/gi, " ")
     .replace(/\s+/g, " ")
@@ -162,6 +182,46 @@ function itemHasRequestedLabels(item: MenuItem, requestedLabels: string[]) {
 
 function hasUsablePrice(item: MenuItem) {
   return Number.isFinite(item.price) && item.price > 0;
+}
+
+function levenshteinDistance(left: string, right: string) {
+  const m = left.length;
+  const n = right.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = left[i - 1] === right[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
+function fuzzyFindMenuItem(menu: MenuItem[], phrase: string): MenuItem | null {
+  if (!phrase || phrase.length < 2) return null;
+  const normalizedPhrase = normalize(phrase);
+  const candidates = menu
+    .filter((item) => item.isAvailable !== false && hasUsablePrice(item))
+    .map((item) => {
+      const normalizedName = normalize(item.name);
+      const nameWords = normalizedName.split(" ");
+      const nameSim = nameWords.reduce((best, word) => {
+        const dist = levenshteinDistance(normalizedPhrase, word);
+        const len = Math.max(normalizedPhrase.length, word.length);
+        return Math.max(best, len > 0 ? 1 - dist / len : 0);
+      }, 0);
+      const dist = levenshteinDistance(normalizedPhrase, normalizedName);
+      const maxLen = Math.max(normalizedPhrase.length, normalizedName.length);
+      const fullSim = maxLen > 0 ? 1 - dist / maxLen : 0;
+      const similarity = Math.max(nameSim, fullSim);
+      return { item, dist, similarity };
+    })
+    .filter((c) => c.similarity >= 0.6)
+    .sort((left, right) => right.similarity - left.similarity || left.item.price - right.item.price);
+  return candidates[0]?.item ?? null;
 }
 
 function buildMenuSummary(menu: MenuItem[]) {
@@ -271,6 +331,22 @@ function scoreMenuItems(menu: MenuItem[], userQuery: string) {
   const normalizedQuery = normalize(userQuery);
   const budget = extractBudget(userQuery);
   const queryTerms = normalizedQuery.split(" ").filter((term) => term.length >= 3);
+  const STOPWORDS = new Set([
+    "the", "and", "for", "are", "but", "not", "you", "all", "can",
+    "has", "had", "was", "got", "get", "say", "see", "use", "way",
+    "want", "need", "buy", "put", "add", "order", "cart", "from",
+    "my", "its", "how", "why", "what", "who", "where", "when",
+    "will", "with", "have", "has", "had", "did", "does", "done",
+    "just", "also", "very", "too", "now", "new", "any", "some",
+    "show", "tell", "find", "give", "list", "look", "more",
+    "this", "that", "these", "those", "here", "there",
+    "empty", "clear", "remove", "delete", "check",
+    "please", "thank", "thanks", "help", "info",
+    "could", "would", "should", "might", "must",
+    "any", "random", "some", "whatever", "outlet",
+  ]);
+  const contentTerms = queryTerms.filter((term) => !STOPWORDS.has(term));
+  const effectiveTerms = contentTerms.length > 0 ? contentTerms : queryTerms;
   const requestedLabels = getRequestedLabels(userQuery, menu);
   const wantsVeg = /\bveg(etarian)?\b/.test(normalizedQuery);
   const wantsNonVeg = /\bnon veg\b|\bnonveg\b|\bchicken\b|\begg\b|\bmeat\b|\bfish\b/.test(normalizedQuery);
@@ -307,7 +383,27 @@ function scoreMenuItems(menu: MenuItem[], userQuery: string) {
       for (const term of queryTerms) {
         if (haystack.includes(term)) score += 4;
       }
-      if (normalizedQuery.includes(normalize(item.name))) score += 10;
+
+      const normalizedName = normalize(item.name);
+      if (normalizedQuery.includes(normalizedName)) score += 10;
+
+      if (score === 0 && effectiveTerms.length > 0) {
+        const fuzzyScore = effectiveTerms.reduce((max, term) => {
+          const nameWords = normalizedName.split(" ");
+          const wordSim = nameWords.reduce((best, word) => {
+            const dist = levenshteinDistance(term, word);
+            const len = Math.max(term.length, word.length);
+            return Math.max(best, len > 0 ? 1 - dist / len : 0);
+          }, 0);
+          const fullDist = levenshteinDistance(term, normalizedName);
+          const fullLen = Math.max(term.length, normalizedName.length);
+          const fullSim = fullLen > 0 ? 1 - fullDist / fullLen : 0;
+          const sim = Math.max(wordSim, fullSim);
+          return Math.max(max, sim >= 0.6 ? sim * 8 : 0);
+        }, 0);
+        score += Math.round(fuzzyScore);
+      }
+
       if (normalizedQuery.includes(normalize(item.category))) score += 3;
       if (requestedLabels.length > 0 && itemHasRequestedLabels(item, requestedLabels)) score += 8;
       if (wantsVeg && item.isVeg) score += 2;
@@ -340,7 +436,7 @@ function buildNearbyMenuSuggestions(menu: MenuItem[], userQuery: string) {
   return scoreMenuItems(menu, userQuery)
     .filter((entry) => entry.score > 0)
     .slice(0, 3)
-    .map(({ item }) => `${item.name} from ${CANTEEN_LABELS[item.canteenId] ?? item.canteenId} for Rs.${item.price}`);
+    .map(({ item }) => `${item.name} from ${canteenLink(item.canteenId)} for Rs.${item.price}`);
 }
 
 function maybeBuildLabelRecommendation(latestUserMessage: string, orderContext: OrderContext | null): StudentActionResponse | null {
@@ -370,7 +466,7 @@ function maybeBuildLabelRecommendation(latestUserMessage: string, orderContext: 
 
   const reply = [
     `Here are some ${requestedLabels.join(", ").toLowerCase()} options you can try:`,
-    ...matches.map((item) => `- ${item.name} from ${CANTEEN_LABELS[item.canteenId] ?? item.canteenId} for Rs.${item.price}`),
+    ...matches.map((item) => `- ${item.name} from ${canteenLink(item.canteenId)} for Rs.${item.price}`),
   ].join("\n");
 
   return { reply };
@@ -384,7 +480,8 @@ function maybeBuildStudentAction(
   const wantsAddToCart =
     /\badd\b.*\bcart\b/i.test(latestUserMessage) ||
     /\bput\b.*\bcart\b/i.test(latestUserMessage) ||
-    /\b(?:order|get|buy)\b/i.test(latestUserMessage) ||
+    /\b(?:order|get|buy|want|need)\b/i.test(latestUserMessage) ||
+    /\b(?:i.ll|could i|could you|can i|can you)\s+have\b/i.test(latestUserMessage) ||
     (
       /\badd\b/i.test(latestUserMessage) &&
       (
@@ -394,8 +491,60 @@ function maybeBuildStudentAction(
       )
     );
 
+  const wordCount = normalize(latestUserMessage).split(" ").length;
+  const isShortPhrase = wordCount >= 1 && wordCount <= 4 && !/\?/.test(latestUserMessage);
+  const isGreeting = /^(?:hi|hello|hey|yo|sup|thanks|thank you|ty|ok|okay|k|bye|goodbye|good.?bye|gm|gn|good.?morning|good.?afternoon|good.?evening|what.?s up|howdy|namaste|hii+)$/i.test(latestUserMessage.trim());
+
   if (!wantsAddToCart || menu.length === 0) {
+    if (isShortPhrase && menu.length > 0 && !isGreeting) {
+      const candidateItem = fuzzyFindMenuItem(menu, normalize(latestUserMessage));
+      if (candidateItem) {
+        const shortQuantity = extractQuantity(latestUserMessage);
+        const shortOutlet = canteenLink(candidateItem.canteenId);
+        return {
+          reply: `I can add ${shortQuantity === 1 ? candidateItem.name : `${shortQuantity} x ${candidateItem.name}`} from ${shortOutlet} to your cart for Rs.${candidateItem.price}${shortQuantity > 1 ? " each" : ""}. Reply with Confirm to continue or Cancel to keep things as they are.`,
+          action: { type: "add_item_to_cart", payload: { itemId: candidateItem.id, quantity: shortQuantity } },
+        };
+      }
+    }
     return null;
+  }
+
+  const isGenericAdd =
+    /\b(?:any|random|some|whatever)\b/i.test(latestUserMessage) &&
+    /\b(?:item|items|food|dish|dishes)\b/i.test(latestUserMessage);
+
+  if (isGenericAdd) {
+    const count = extractQuantity(latestUserMessage);
+    const availableItems = menu.filter(
+      (item) => item.isAvailable !== false && hasUsablePrice(item)
+    );
+
+    const outlets = [...new Set(availableItems.map((item) => item.canteenId).filter(Boolean))];
+    if (outlets.length === 0) {
+      return { reply: "There are no available items on the menu right now." };
+    }
+
+    const cartOutletId = orderContext?.cart?.outletId ?? null;
+    const preferredOutlet = cartOutletId && outlets.includes(cartOutletId) ? cartOutletId : null;
+    const chosenOutletId = preferredOutlet ?? outlets[Math.floor(Math.random() * outlets.length)];
+    const outletItems = availableItems.filter((item) => item.canteenId === chosenOutletId);
+    const shuffled = [...outletItems].sort(() => Math.random() - 0.5);
+    const chosen = shuffled.slice(0, count);
+
+    if (chosen.length === 0) {
+      return { reply: "There are no available items on the menu right now to suggest." };
+    }
+
+    const outletName = canteenLink(chosenOutletId);
+    const items = chosen.map((item) => ({ itemId: item.id, quantity: 1 }));
+    const itemNames = chosen
+      .map((item) => `${item.name} from ${outletName} for Rs.${item.price}`)
+      .join("\n");
+    return {
+      reply: `I can add these ${chosen.length} item(s) from ${outletName} to your cart:\n${itemNames}\n\nReply with Confirm to add them or Cancel to keep things as they are.`,
+      action: { type: "add_item_to_cart", payload: { items } },
+    };
   }
 
   const ranked = scoreMenuItems(menu, latestUserMessage);
@@ -417,6 +566,31 @@ function maybeBuildStudentAction(
       (chosenMatch?.score ?? 0) >= 10);
 
   if (!chosenMatch || !hasStrongMatch) {
+    const fuzzyMatch = requestedItemPhrase ? fuzzyFindMenuItem(menu, requestedItemPhrase) : null;
+    if (fuzzyMatch) {
+      const fuzzyQuantity = extractQuantity(latestUserMessage);
+      const fuzzyOutlet = canteenLink(fuzzyMatch.canteenId);
+      const fuzzyCartOutletId = orderContext?.cart?.outletId ?? null;
+      const fuzzyHasCart = Boolean(fuzzyCartOutletId);
+      const fuzzyDiffOutlet = fuzzyHasCart && fuzzyCartOutletId !== fuzzyMatch.canteenId;
+      if (fuzzyDiffOutlet) {
+        const currentOutletName = canteenLink(fuzzyCartOutletId ?? "");
+        const hasScheduleIntent = /\b(?:schedule|pre.?schedule|pre.?order|book|reserve|at\s+\d+\s*(?::\d+)?\s*(?:am|pm))\b/i.test(latestUserMessage);
+        if (hasScheduleIntent) {
+          return {
+            reply: `I can clear your current cart (from ${currentOutletName}) and add ${fuzzyMatch.name} from ${fuzzyOutlet} instead so you can set up your pre-schedule. Reply with Confirm to proceed.`,
+            action: { type: "add_item_to_cart", payload: { itemId: fuzzyMatch.id, quantity: fuzzyQuantity, clearCart: true } },
+          };
+        }
+        return {
+          reply: `I didn't add anything because your cart already has items from ${currentOutletName}. ByteHive only allows one outlet per cart, so you can either finish or clear that cart first, or ask me for something from ${currentOutletName}.`,
+        };
+      }
+      return {
+        reply: `I can add ${fuzzyQuantity === 1 ? fuzzyMatch.name : `${fuzzyQuantity} x ${fuzzyMatch.name}`} from ${fuzzyOutlet} to your cart for Rs.${fuzzyMatch.price}${fuzzyQuantity > 1 ? " each" : ""}. Reply with Confirm to continue or Cancel to keep things as they are.`,
+        action: { type: "add_item_to_cart", payload: { itemId: fuzzyMatch.id, quantity: fuzzyQuantity } },
+      };
+    }
     const suggestions = buildNearbyMenuSuggestions(menu, latestUserMessage);
     return {
       reply: suggestions.length
@@ -427,14 +601,21 @@ function maybeBuildStudentAction(
 
   const quantity = extractQuantity(latestUserMessage);
   const item = chosenMatch.item;
-  const outletName = CANTEEN_LABELS[item.canteenId] ?? item.canteenId;
+  const outletName = canteenLink(item.canteenId);
   const cartOutletId = orderContext?.cart?.outletId ?? null;
   const hasExistingCart = Boolean(cartOutletId);
   const isDifferentCartOutlet = hasExistingCart && cartOutletId !== item.canteenId;
   const quantityLabel = quantity === 1 ? item.name : `${quantity} x ${item.name}`;
 
   if (isDifferentCartOutlet) {
-    const currentOutletName = CANTEEN_LABELS[cartOutletId ?? ""] ?? cartOutletId;
+    const currentOutletName = canteenLink(cartOutletId ?? "");
+    const hasScheduleIntent = /\b(?:schedule|pre.?schedule|pre.?order|book|reserve|at\s+\d+\s*(?::\d+)?\s*(?:am|pm))\b/i.test(latestUserMessage);
+    if (hasScheduleIntent) {
+      return {
+        reply: `I can clear your current cart (from ${currentOutletName}) and add ${quantityLabel} from ${outletName} instead so you can set up your pre-schedule. Reply with Confirm to proceed.`,
+        action: { type: "add_item_to_cart", payload: { itemId: item.id, quantity, clearCart: true } },
+      };
+    }
     return {
       reply: `I didn't add anything because your cart already has items from ${currentOutletName}. ByteHive only allows one outlet per cart, so you can either finish or clear that cart first, or ask me for something from ${currentOutletName}.`,
     };
@@ -449,6 +630,79 @@ function maybeBuildStudentAction(
         quantity,
       },
     },
+  };
+}
+
+function maybeBuildStudentRemoveAction(
+  latestUserMessage: string,
+  orderContext: OrderContext | null
+): StudentActionResponse | null {
+  const wantsRemove =
+    /\b(?:remove|delete|take\s*(?:out|off)|clear|empty)\b/i.test(latestUserMessage) &&
+    (/\bcart\b/i.test(latestUserMessage) || (orderContext?.cart?.items?.length ?? 0) > 0);
+
+  if (!wantsRemove) return null;
+
+  const cartItems = orderContext?.cart?.items ?? [];
+  if (cartItems.length === 0) {
+    return { reply: "Your cart is already empty. Nothing to remove." };
+  }
+
+  const requestedItemPhrase = extractRequestedItemPhrase(latestUserMessage);
+
+  const isClearIntent =
+    /\b(?:clear|empty|all|everything|every\s+item|that|it|them)\b/i.test(latestUserMessage) &&
+    (/\bcart\b/i.test(latestUserMessage) || !requestedItemPhrase || requestedItemPhrase.length < 3 || /^(?:all|all\s+things|everything|that|it|them)$/i.test(requestedItemPhrase));
+
+  const isGenericRemoveItems =
+    /\b(?:any|random|some)\b/i.test(latestUserMessage) &&
+    /\b(?:item|items)\b/i.test(latestUserMessage);
+
+  if (isGenericRemoveItems) {
+    const count = extractQuantity(latestUserMessage);
+    const shuffled = [...cartItems].sort(() => Math.random() - 0.5);
+    const chosen = shuffled.slice(0, Math.min(count, cartItems.length));
+    if (chosen.length === 0) {
+      return { reply: "Your cart is already empty." };
+    }
+    const chosenNames = chosen.map((item): string => item.name ?? "").filter(Boolean);
+    return {
+      reply: `Remove these ${chosen.length} item(s) from your cart?\n${chosenNames.join("\n")}\n\nReply with Confirm to remove them or Cancel to keep things as they are.`,
+      action: { type: "remove_item_from_cart", payload: { itemNames: chosenNames } },
+    };
+  }
+
+  if (!requestedItemPhrase || requestedItemPhrase.length < 3 || isClearIntent) {
+    if (isClearIntent) {
+      return {
+        reply: `Remove all ${cartItems.length} item(s) from your cart? Reply with Confirm to clear your cart or Cancel to keep things as they are.`,
+        action: { type: "remove_item_from_cart", payload: { itemName: "__all__" } },
+      };
+    }
+    return { reply: "What would you like to remove from your cart? Try naming the item." };
+  }
+
+  const matchedCartItem = cartItems.find((item) => {
+    if (!item.name) return false;
+    const normalizedName = normalize(item.name);
+    return (
+      normalizedName === requestedItemPhrase ||
+      normalizedName.includes(requestedItemPhrase) ||
+      (requestedItemPhrase.length >= 3 &&
+        levenshteinDistance(requestedItemPhrase, normalizedName) <= 2)
+    );
+  });
+
+  if (!matchedCartItem) {
+    const names = cartItems.map((i) => i.name).filter(Boolean);
+    return {
+      reply: `I couldn't find "${requestedItemPhrase}" in your cart. Your cart has: ${names.join(", ")}.`,
+    };
+  }
+
+  return {
+    reply: `Remove ${matchedCartItem.name} from your cart? Reply with Confirm to remove it or Cancel to keep it.`,
+    action: { type: "remove_item_from_cart", payload: { itemName: matchedCartItem.name } },
   };
 }
 
@@ -493,6 +747,33 @@ async function parseUpstreamError(response: Response) {
   }
 }
 
+function maybeBuildNavigationAction(latestUserMessage: string): StudentActionResponse | null {
+  const msg = normalize(latestUserMessage);
+  const isQuestion = /\b(?:where|what|how|which|why|when|who|tell\s+me|guide\s+me|instruct\s+me|explain|show\s+me\s+how)\b/i.test(msg);
+  if (isQuestion) return null;
+  const wantsNav = /\b(?:go|take|bring|redirect|send|show|open|navigate)\b/i.test(msg);
+  if (!wantsNav) return null;
+
+  const navTargets: Record<string, RegExp[]> = {
+    "/": [/\bhome(?:page|screen)?\b/, /\bmain\s+page\b/, /\blanding\s+page\b/],
+    "/cart": [/\bcart\b/, /\bshopping\s+cart\b/, /\bmy\s+items\b/, /\bpayment\b/, /\bcheckout\b/, /\bpay\b/, /\bbill\b/],
+    "/canteens": [/\bcanteen(?:s)?\b/, /\boutlet(?:s)?\b/, /\bfood\s+court\b/, /\ball\s+(?:canteens|outlets)\b/],
+    "/popular": [/\bpopular\b/, /\btrending\b/, /\btop\s+(?:items?|dishes?)\b/],
+    "/about": [/\babout\s+(?:us|page)?\b/],
+  };
+
+  for (const [path, patterns] of Object.entries(navTargets)) {
+    if (patterns.some((pattern) => pattern.test(msg))) {
+      const labels: Record<string, string> = {
+        "/": "homepage", "/cart": "cart page", "/canteens": "canteens page", "/popular": "popular items page", "/about": "about page",
+      };
+      return { reply: `Taking you to the ${labels[path] ?? path}...`, redirect: path };
+    }
+  }
+
+  return null;
+}
+
 export async function POST(req: NextRequest) {
   try {
     if (!process.env.GROQ_API_KEY) {
@@ -513,6 +794,17 @@ export async function POST(req: NextRequest) {
     const relevantMenuLines = selectRelevantMenuItems(menu, latestUserMessage);
     const orderSummary = buildOrderContextSummary(orderContext);
     const cartSummary = buildCartSummary(orderContext);
+
+    const navigationAction = maybeBuildNavigationAction(latestUserMessage);
+    if (navigationAction) {
+      return NextResponse.json(navigationAction);
+    }
+
+    const studentRemoveAction = maybeBuildStudentRemoveAction(latestUserMessage, orderContext);
+    if (studentRemoveAction) {
+      return NextResponse.json(studentRemoveAction);
+    }
+
     const studentAction = maybeBuildStudentAction(latestUserMessage, orderContext);
     const labelRecommendation = maybeBuildLabelRecommendation(latestUserMessage, orderContext);
 
@@ -522,6 +814,24 @@ export async function POST(req: NextRequest) {
 
     if (labelRecommendation) {
       return NextResponse.json(labelRecommendation);
+    }
+
+    const lastChancePhrase = normalize(latestUserMessage);
+    const lastChanceWordCount = lastChancePhrase.split(" ").length;
+    const hasAddKeywords = /\b(?:add|order|get|buy|want|need|put)\b/i.test(latestUserMessage);
+    const isGreetingMsg = /^(?:hi|hello|hey|yo|sup|thanks|thank you|ty|ok|okay|k|bye|goodbye|good.?bye|gm|gn|good.?morning|good.?afternoon|good.?evening|what.?s up|howdy|namaste|hii+)$/i.test(latestUserMessage.trim());
+    const lastChanceItem = (
+      hasAddKeywords ||
+      (lastChanceWordCount >= 1 && lastChanceWordCount <= 5 && !isGreetingMsg)
+    ) ? fuzzyFindMenuItem(menu, lastChancePhrase) : null;
+
+    if (lastChanceItem) {
+      const lastQuantity = extractQuantity(latestUserMessage);
+      const lastOutlet = canteenLink(lastChanceItem.canteenId);
+      return NextResponse.json({
+        reply: `I can add ${lastQuantity === 1 ? lastChanceItem.name : `${lastQuantity} x ${lastChanceItem.name}`} from ${lastOutlet} to your cart for Rs.${lastChanceItem.price}${lastQuantity > 1 ? " each" : ""}. Reply with Confirm to continue or Cancel to keep things as they are.`,
+        action: { type: "add_item_to_cart", payload: { itemId: lastChanceItem.id, quantity: lastQuantity } },
+      });
     }
 
     const systemPrompt = `You are ByteBot, a friendly AI food assistant for ByteHive campus.
@@ -550,9 +860,10 @@ Rules:
 - If an order has a delay note, mention it when the user asks about timing or status
 - If the user asks where to collect an order, answer with the pickup location from the order context
 - If the user asks how long an order will take, use the estimated pickup value from the order context
+- ByteHive supports pre-scheduling orders. Users can add items to their cart and then use the "Pre-Schedule" option in the cart page to set a desired pickup time. Guide users to add items first, then visit the cart page to schedule.
 - If the user asks for a pickup code, only use the code from the order context
 - Never claim an item was added to the cart, ordered, booked, or changed unless a structured chat action has already executed outside this prompt
-- For cart-changing requests that are not already handled before this prompt, explain what is available but do not pretend the cart was updated
+- For cart-changing requests that are not already handled before this prompt, explain what is available but do not pretend the cart was updated. Do NOT say "your updated cart would be", "your cart now has", "I've added", or anything implying the cart changed — you can only describe what is currently in the cart from the context provided
 - Keep answers concise and helpful
 - Use bullet points when listing multiple items
 - If the request is broad and there are many matches, summarize the options instead of trying to list everything

@@ -105,11 +105,11 @@ export function useSearchParams() {
     const href = query ? `${pathname}?${query}` : pathname;
 
     if (options?.replace) {
-      router.replace(href);
+      router.replace(href, { scroll: false });
       return;
     }
 
-    router.push(href);
+    router.push(href, { scroll: false });
   };
 
   return [params, setSearchParams] as const;

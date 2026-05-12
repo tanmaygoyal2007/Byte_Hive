@@ -7,13 +7,13 @@ function ImageGallery({ canteen }: { canteen?: any }) {
     return (
         <div className="image-gallery">
             <div className="gallery-left">
-                <img src={heroImage} alt={canteen?.name ?? 'Canteen'} />
+                <img src={heroImage} alt={canteen?.name ?? 'Canteen'} loading="eager" />
             </div>
 
             <div className="gallery-right">
                 {sideImages.map((image: string, index: number) => (
                     <div key={image} className="small-img">
-                        <img src={image} alt={`${canteen?.name ?? "Canteen"} preview ${index + 2}`} />
+                        <img src={image} alt={`${canteen?.name ?? "Canteen"} preview ${index + 2}`} loading="lazy" />
                     </div>
                 ))}
             </div>

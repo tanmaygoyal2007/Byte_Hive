@@ -4,6 +4,7 @@ import { useLocation, useNavigate, useSearchParams } from "@/components/lib/rout
 import Footer from "@/components/components/layout/Footer";
 import Navbar from "@/components/components/layout/Navbar";
 import ReceiptCard from "@/features/orders/components/ReceiptCard";
+import confetti from "canvas-confetti";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import {
@@ -13,6 +14,7 @@ import {
   getPickupSegmentsForOrder,
   getQrValueForPickupSegment,
   subscribeToOrders,
+  type ByteHiveOrder,
 } from "@/features/orders/services/order-portal.service";
 
 interface LocationState {
@@ -32,7 +34,7 @@ const ReceiptPage: React.FC = () => {
 
   const state = location.state as LocationState | null;
   const resolvedOrderId = state?.orderId ?? searchParams.get("orderId") ?? "";
-  const [storedOrder, setStoredOrder] = useState(() => (resolvedOrderId ? getOrderById(resolvedOrderId) : null));
+  const [storedOrder, setStoredOrder] = useState<ByteHiveOrder | null>(null);
   const isRealPayment = !!(state?.paymentId || storedOrder?.paymentId);
 
   useEffect(() => {
@@ -43,6 +45,42 @@ const ReceiptPage: React.FC = () => {
       setStoredOrder(getOrderById(resolvedOrderId));
     });
   }, [resolvedOrderId]);
+
+  useEffect(() => {
+    if (!isRealPayment) return;
+
+    const duration = 2000;
+    const end = Date.now() + duration;
+
+    const frame = () => {
+      confetti({
+        particleCount: 4,
+        angle: 60,
+        spread: 80,
+        origin: { x: 0, y: 0.6 },
+        colors: ["#f97316", "#f59e0b", "#10b981", "#3b82f6", "#ec4899", "#8b5cf6", "#ef4444", "#06b6d4"],
+        gravity: 1,
+        scalar: 1,
+        startVelocity: 35,
+      });
+      confetti({
+        particleCount: 4,
+        angle: 120,
+        spread: 80,
+        origin: { x: 1, y: 0.6 },
+        colors: ["#f97316", "#f59e0b", "#10b981", "#3b82f6", "#ec4899", "#8b5cf6", "#ef4444", "#06b6d4"],
+        gravity: 1,
+        scalar: 1,
+        startVelocity: 35,
+      });
+
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    };
+
+    frame();
+  }, [isRealPayment]);
 
   const formatReceiptTimestamp = (value: string) =>
     new Intl.DateTimeFormat("en-IN", {
@@ -104,7 +142,7 @@ const ReceiptPage: React.FC = () => {
         orderId: resolvedOrderId || "BH2025012601",
         qrValue: resolvedOrderId ? getQrValueForPickupSegment(resolvedOrderId) : `ByteHive-Order-${resolvedOrderId || "BH2025012601"}`,
         pickupCode: undefined,
-        orderPlacedAt: formatReceiptTimestamp(new Date().toISOString()),
+        orderPlacedAt: "",
         downloadedAt: downloadedAt ? formatReceiptTimestamp(downloadedAt) : undefined,
         paymentId: state?.paymentId,
         fulfillmentType: "instant" as const,

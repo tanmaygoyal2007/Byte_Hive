@@ -384,7 +384,7 @@ const Navbar: React.FC<NavbarProps> = ({ isVendorPreview = false, previewOutletI
       <nav className="navbar">
         <Link to={getLogoLink()} className="navbar-logo" aria-label="ByteHive home">
           <span className="logo-box">
-            <img src="/images/bytehive-navbar-logo.png" alt="ByteHive logo" className="logo-box-image" />
+            <img src="/images/bytehive-navbar-logo.png" alt="ByteHive logo" className="logo-box-image" loading="eager" />
           </span>
           <span className="logo-text">ByteHive</span>
         </Link>

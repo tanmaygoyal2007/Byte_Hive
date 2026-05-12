@@ -28,7 +28,7 @@ const PopularCanteenCard: React.FC<Props> = ({ id, name, image, description }) =
 	return (
 		<article className="canteen-card">
 			<div className="canteen-card-media">
-				<img src={image} alt={name} />
+				<img src={image} alt={name} loading="lazy" />
 				{!isOpen && <span className="popular-closed-tag">Closed</span>}
 			</div>
 			<h3>{name}</h3>
