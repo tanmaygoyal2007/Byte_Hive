@@ -20,6 +20,8 @@ const VENDOR_SESSION_EVENT = "bytehive-vendor-session-updated";
 const VENDOR_STATUS_API_PATH = "/api/vendor-status";
 const VENDOR_STATUS_SYNC_INTERVAL_MS = 2500;
 const MIN_SYNC_INTERVAL_MS = 1500;
+const MENU_ACCESS_CONFIG_KEY = "bytehive-menu-access-config";
+const MENU_ACCESS_CONFIG_EVENT = "bytehive-menu-access-config-updated";
 
 let vendorStatusSyncTimer: number | null = null;
 let vendorStatusSubscriberCount = 0;
@@ -447,4 +449,39 @@ export function subscribeToVendorSession(callback: () => void) {
 export function getVendorLoginHref(outlet?: string) {
   if (!outlet) return "/vendor/login";
   return `/vendor/login?outlet=${encodeURIComponent(outlet)}`;
+}
+
+function readMenuAccessConfig(): Record<string, string> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(MENU_ACCESS_CONFIG_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveMenuAccessConfig(config: Record<string, string>) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(MENU_ACCESS_CONFIG_KEY, JSON.stringify(config));
+    window.dispatchEvent(new CustomEvent(MENU_ACCESS_CONFIG_EVENT));
+  } catch {}
+}
+
+export function getMenuAccessMode(outletName: string): "owner_only" | "all_staff" {
+  const config = readMenuAccessConfig();
+  return config[outletName] === "all_staff" ? "all_staff" : "owner_only";
+}
+
+export function setMenuAccessMode(outletName: string, mode: "owner_only" | "all_staff") {
+  const config = readMenuAccessConfig();
+  config[outletName] = mode;
+  saveMenuAccessConfig(config);
+}
+
+export function subscribeToMenuAccessConfig(callback: () => void) {
+  if (typeof window === "undefined") return () => undefined;
+  window.addEventListener(MENU_ACCESS_CONFIG_EVENT, callback as EventListener);
+  return () => window.removeEventListener(MENU_ACCESS_CONFIG_EVENT, callback as EventListener);
 }

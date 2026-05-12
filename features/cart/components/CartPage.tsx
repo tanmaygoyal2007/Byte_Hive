@@ -393,6 +393,7 @@ function CartPage() {
                           src={resolveMenuImageUrl(item.image)}
                           alt={item.name}
                           className="cart-item-img"
+                          loading="lazy"
                         />
                       ) : (
                         <div className="cart-item-img cart-item-img--placeholder" aria-hidden="true">

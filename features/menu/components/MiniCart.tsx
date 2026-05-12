@@ -61,7 +61,7 @@ function MiniCart({ previewOnly = false }: { previewOnly?: boolean }) {
           <div className="mini-items">
             {[...state.items].sort((a, b) => a.name.localeCompare(b.name)).map((item: { id: string; image?: string; name: string; price: number; quantity: number }) => (
               <div key={item.id} className="mini-item">
-                <img src={resolveMenuImageUrl(item.image) || "/placeholder.svg"} alt={item.name} />
+                <img src={resolveMenuImageUrl(item.image) || "/placeholder.svg"} alt={item.name} loading="lazy" />
 
                 <div className="mini-item-info">
                   <div className="mini-item-name">{item.name}</div>

@@ -274,7 +274,7 @@ function VendorQrScannerPage() {
     setScannerNotice(
       remainingSegments.length > 0
         ? `${verifiedSegment.label} verified for order ${updatedOrder.id}. ${remainingSegments.length} pickup point left to scan.`
-        : `All pickup points verified for order ${updatedOrder.id}. The student can now confirm collection.`
+        : `All pickup points verified for order ${updatedOrder.id}. The order has been marked as collected.`
     );
     setVerifiedOrder(null);
     setVerifiedSegment(null);
@@ -501,7 +501,7 @@ function VendorQrScannerPage() {
         title: "Pickup Already Verified",
         copy:
           verifiedOrder?.status === "handoff"
-            ? "All required pickup points are already verified. The student still needs to confirm that the full order was collected."
+            ? "All pickup points are already verified."
             : `The ${verifiedSegment?.pickupPoint === "vendor_stall" ? "vendor stall" : "counter"} QR has already been scanned for this order.`,
       },
       "wrong-outlet": {

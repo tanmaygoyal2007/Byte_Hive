@@ -49,7 +49,7 @@ function formatCurrency(value: number) {
 
 export default function AppOverlays() {
   const location = useLocation();
-  const { state: cartState, addItem } = useCart();
+  const { state: cartState, addItem, removeItem } = useCart();
   type CartStateItem = (typeof cartState.items)[number];
   const [menuItems, setMenuItems] = useState<MenuCatalogItem[]>(() => getAllMenuItems());
   const [userSession, setUserSession] = useState<UserSession | null>(() => getCurrentUserSession());
@@ -296,6 +296,55 @@ export default function AppOverlays() {
   const executeStudentAction = async (action: ChatAction) => {
     switch (action.type) {
       case "add_item_to_cart": {
+        const shouldClearFirst = action.payload.clearCart === true;
+        if (shouldClearFirst) {
+          const ids: string[] = cartState.items.map((item: CartStateItem) => item.id);
+          for (const id of ids) {
+            removeItem(id);
+          }
+        }
+
+        const batchItems = action.payload.items as Array<{ itemId: string; quantity: number }> | undefined;
+
+        if (batchItems && batchItems.length > 0) {
+          const resolved = batchItems.map((entry) => {
+            const found = menuItems.find((item) => item.id === entry.itemId);
+            if (!found) throw new Error(`Item ${entry.itemId} not found.`);
+            if (found.isAvailable === false) throw new Error(`${found.name} is currently unavailable.`);
+            return { item: found, quantity: Math.max(1, entry.quantity) };
+          });
+
+          const outlets = [...new Set(resolved.map((r) => r.item.canteenId).filter(Boolean))];
+          const previousOutletId = cartState.items[0]?.canteenId ?? null;
+
+          if (outlets.length > 1) {
+            throw new Error("Those items are from different outlets. ByteHive only allows one outlet per cart at a time.");
+          }
+          if (previousOutletId && outlets[0] && previousOutletId !== outlets[0]) {
+            const currentOutletName = getOutletMetaById(previousOutletId).name;
+            throw new Error(
+              `I couldn't add those items because your cart already has items from ${currentOutletName}. ByteHive allows one outlet per cart at a time.`
+            );
+          }
+
+          const addedNames: string[] = [];
+          for (const { item, quantity } of resolved) {
+            for (let i = 0; i < quantity; i++) {
+              addItem({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                image: item.image,
+                canteenId: item.canteenId,
+              });
+            }
+            addedNames.push(item.name);
+          }
+
+          const clearPrefix = shouldClearFirst ? "Your previous cart was cleared. " : "";
+          return `${clearPrefix}${resolved.length} item(s) added to your cart: ${[...new Set(addedNames)].join(", ")}.`;
+        }
+
         const itemId = String(action.payload.itemId ?? "");
         const quantity = Math.max(1, Number(action.payload.quantity ?? 1));
         const item = menuItems.find((entry) => entry.id === itemId);
@@ -332,8 +381,56 @@ export default function AppOverlays() {
 
         const quantityLabel = quantity === 1 ? "1 item" : `${quantity} items`;
         const outletName = item.canteenId ? getOutletMetaById(item.canteenId).name : "this outlet";
+        const clearPrefix = shouldClearFirst ? `Your previous cart was cleared. ` : "";
 
-        return `${quantityLabel} added to your cart: ${item.name} from ${outletName}.${hasExistingCart ? " It matches your current cart outlet, so everything stays in one order." : ""}`;
+        return `${clearPrefix}${quantityLabel} added to your cart: ${item.name} from ${outletName}.${hasExistingCart && !shouldClearFirst ? " It matches your current cart outlet, so everything stays in one order." : ""}`;
+      }
+      case "remove_item_from_cart": {
+        const itemNames = action.payload.itemNames as string[] | undefined;
+
+        if (itemNames && itemNames.length > 0) {
+          const removedNames: string[] = [];
+          for (const name of itemNames) {
+            const cleanName = name.trim();
+            if (!cleanName) continue;
+            const matches = cartState.items.filter((cartItem: CartStateItem) =>
+              cartItem.name.trim().toLowerCase() === cleanName.toLowerCase()
+            );
+            matches.forEach((cartItem: CartStateItem) => {
+              removeItem(cartItem.id);
+              removedNames.push(cartItem.name);
+            });
+          }
+          const unique = [...new Set(removedNames)];
+          if (unique.length === 0) throw new Error("I couldn't find those items in your cart.");
+          return `Removed ${unique.join(", ")} from your cart.`;
+        }
+
+        const itemName = String(action.payload.itemName ?? "");
+
+        if (itemName === "__all__") {
+          const count = cartState.items.length;
+          cartState.items.forEach((item: CartStateItem) => removeItem(item.id));
+          return `Cleared all ${count} item(s) from your cart.`;
+        }
+
+        if (!itemName) {
+          throw new Error("I could not determine which item to remove.");
+        }
+
+        const normalizedTarget = itemName.trim().toLowerCase();
+        const matchingItems = cartState.items.filter((cartItem: CartStateItem) =>
+          cartItem.name.trim().toLowerCase() === normalizedTarget ||
+          cartItem.name.trim().toLowerCase().includes(normalizedTarget)
+        );
+
+        if (matchingItems.length === 0) {
+          throw new Error(`I couldn't find "${itemName}" in your cart.`);
+        }
+
+        matchingItems.forEach((cartItem: CartStateItem) => removeItem(cartItem.id));
+        const removedNames = [...new Set(matchingItems.map((item: CartStateItem) => item.name))];
+        return `Removed ${removedNames.join(", ")} from your cart.`;
       }
       default:
         throw new Error("That student action is not supported yet.");

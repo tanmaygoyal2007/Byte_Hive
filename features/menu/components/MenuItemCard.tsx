@@ -139,16 +139,14 @@ function MenuItemCard({ item, previewOnly = false }: { item: MenuItem; previewOn
     <div className={`menu-item-card ${!canAdd ? "menu-item-unavailable" : ""}`}>
       {!isItemAvailable && <div className="menu-item-unavailable-overlay">Unavailable</div>}
       <div className="menu-item-image-wrap">
-        <img className="menu-item-image" src={imageUrl || "/images/CANTEEN1.jpg"} alt={item.name} />
-        {item.isVeg !== undefined && (
-          <span className={`menu-item-food-type ${item.isVeg ? "veg" : "non-veg"}`} aria-label={item.isVeg ? "Vegetarian" : "Non-vegetarian"}>
-            {item.isVeg ? "●" : "■"}
-          </span>
-        )}
+        <img className="menu-item-image" src={imageUrl || "/images/CANTEEN1.jpg"} alt={item.name} loading="lazy" />
       </div>
       <div className="menu-item-body">
         <div className="menu-item-copy">
           <div className="menu-item-title-row">
+            {item.isVeg !== undefined && (
+              <span className={`menu-item-food-type ${item.isVeg ? "veg" : "non-veg"}`} aria-label={item.isVeg ? "Vegetarian" : "Non-vegetarian"} />
+            )}
             <h4 className="menu-item-title">{item.name}</h4>
             {showVendorStallBadge && <span className="menu-item-stall-pill">Pick up at Vendor Stall</span>}
           </div>

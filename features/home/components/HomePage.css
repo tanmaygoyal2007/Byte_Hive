@@ -10,29 +10,8 @@
   width: 100%;
 }
 
-.homepage-footer-divider {
-  height: clamp(72px, 10vw, 132px);
-  width: 100%;
-  background:
-    linear-gradient(
-      180deg,
-      color-mix(in srgb, var(--home-surface-secondary) 92%, transparent) 0%,
-      var(--home-surface-secondary) 100%
-    );
-  border-top: 1px solid color-mix(in srgb, var(--border-soft) 72%, transparent);
-}
-
-.homepage .homepage-footer-divider + .footer {
-  border-top: none;
-  padding-top: 0;
-}
-
 @media (max-width: 900px) {
   .homepage {
     padding-top: 66px;
-  }
-
-  .homepage-footer-divider {
-    height: 56px;
   }
 }

@@ -1,7 +1,6 @@
 import React from "react";
 import { useNavigate } from "@/components/lib/router";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faBagShopping, faClock } from "@fortawesome/free-solid-svg-icons";
+import { ShoppingBag, Clock } from "lucide-react";
 
 const QuickDeliverySection: React.FC = () => {
     const navigate = useNavigate();
@@ -23,13 +22,13 @@ const QuickDeliverySection: React.FC = () => {
                   </p>
 
                   <button className="delivery-order-btn" onClick={orderNow}>
-                    <FontAwesomeIcon icon={faBagShopping} className="delivery-order-icon" aria-hidden="true" />
+                    <ShoppingBag className="delivery-order-icon" aria-hidden="true" />
                     Order Now
                   </button>
 
                   <div className="delivery-meta">
                     <span className="delivery-meta-icon" aria-hidden="true">
-                      <FontAwesomeIcon icon={faClock} />
+                      <Clock />
                     </span>
                     15-20 min delivery
                   </div>
@@ -37,14 +36,14 @@ const QuickDeliverySection: React.FC = () => {
 
               <div className="delivery-visual">
                 <div className="delivery-chip delivery-chip-top">
-                  <img src="/images/FOOD5.jpg" alt="Fries" />
+                  <img src="/images/FOOD5.jpg" alt="Fries" loading="lazy" />
                 </div>
-                <img src="/images/FOOD1.jpg" alt="Burger meal" className="delivery-img" />
+                <img src="/images/FOOD1.jpg" alt="Burger meal" className="delivery-img" loading="lazy" />
                 <div className="delivery-chip delivery-chip-mid">
-                  <img src="/images/FOOD3.jpg" alt="Dessert scoop" />
+                  <img src="/images/FOOD3.jpg" alt="Dessert scoop" loading="lazy" />
                 </div>
                 <div className="delivery-chip delivery-chip-bottom">
-                  <img src="/images/CCD.jpg" alt="Cold drink" />
+                  <img src="/images/CCD.jpg" alt="Cold drink" loading="lazy" />
                 </div>
               </div>
             </div>

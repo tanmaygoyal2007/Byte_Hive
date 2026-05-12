@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Bot, ChevronDown, ClipboardList, MessageCircle, Package, RotateCcw, Send, SlidersHorizontal, X } from "lucide-react";
 import { useChat, type ChatAction } from "@/features/chat/hooks/useChat";
 import SiriBorder from "@/components/components/ui/SiriBorder";
+import MarkdownRenderer from "@/components/components/ui/MarkdownRenderer";
 
 const STUDENT_QUICK_PROMPTS = [
   "What's vegetarian?",
@@ -109,6 +110,12 @@ export default function ChatWidget({ mode = "student", orderContext, executeActi
   }, [messages, isLoading]);
 
   useEffect(() => {
+    if (!isLoading) {
+      window.setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [isLoading]);
+
+  useEffect(() => {
     if (isOpen) {
       window.setTimeout(() => inputRef.current?.focus(), 300);
     }
@@ -185,7 +192,9 @@ export default function ChatWidget({ mode = "student", orderContext, executeActi
           {messages.map((message, index) => (
             <div key={index} className={`bh-msg-row ${message.role === "user" ? "bh-user-row" : "bh-bot-row"}`}>
               {message.role === "assistant" && <div className="bh-msg-avatar"><Bot size={15} aria-hidden="true" /></div>}
-              <div className={`bh-bubble ${message.role === "user" ? "bh-user-bubble" : "bh-bot-bubble"}`}>{message.content}</div>
+              <div className={`bh-bubble ${message.role === "user" ? "bh-user-bubble" : "bh-bot-bubble"}`}>
+                {message.role === "assistant" ? <MarkdownRenderer content={message.content} /> : message.content}
+              </div>
             </div>
           ))}
 

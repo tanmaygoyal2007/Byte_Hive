@@ -415,7 +415,7 @@ export async function verifyStoredOrderPickupSegment(orderId: string, pickupSegm
         : segment
     );
     const allSegmentsVerified = nextPickupSegments.every((segment) => segment.status === "verified");
-    const nextStatus: OrderStatus = allSegmentsVerified ? "handoff" : "partially-collected";
+    const nextStatus: OrderStatus = allSegmentsVerified ? "collected" : "partially-collected";
 
     updatedOrder = {
       ...order,

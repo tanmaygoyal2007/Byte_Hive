@@ -1,5 +1,5 @@
-import { ArrowLeft, CalendarClock, Clock3, MapPin, MessageSquareText, Play, Store } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { ArrowLeft, CalendarClock, Clock3, MapPin, MessageSquareText, Play } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@/components/lib/router";
 import Footer from "@/components/components/layout/Footer";
 import Navbar from "@/components/components/layout/Navbar";
@@ -21,38 +21,40 @@ function isScheduledTimeReached(scheduledFor: string | null | undefined) {
 
 function VendorSchedulePage() {
   const navigate = useNavigate();
-  const [outletName] = useState(() => getVendorOutlet() ?? "");
+  const [outletName, setOutletName] = useState("");
   const [orders, setOrders] = useState<ByteHiveOrder[]>([]);
-  const [autoReleasedIds, setAutoReleasedIds] = useState<Set<string>>(new Set());
+  const ordersRef = useRef(orders);
+  ordersRef.current = orders;
 
   useEffect(() => {
-    if (!isVendorSessionAuthorized() || !outletName) {
+    const outlet = getVendorOutlet();
+    if (!outlet || !isVendorSessionAuthorized()) {
       navigate("/vendor/unauthorized", { replace: true });
       return;
     }
 
-    const sync = () => setOrders(getOrdersForOutlet(outletName));
+    setOutletName(outlet);
+    const sync = () => setOrders(getOrdersForOutlet(outlet));
     sync();
     return subscribeToOrders(sync);
-  }, [navigate, outletName]);
+  }, [navigate]);
 
   useEffect(() => {
     const interval = setInterval(() => {
-      orders.forEach((order) => {
+      const currentOrders = ordersRef.current;
+      currentOrders.forEach((order) => {
         if (
           order.status === "scheduled" &&
           order.fulfillmentType === "scheduled" &&
-          isScheduledTimeReached(order.scheduledFor) &&
-          !autoReleasedIds.has(order.id)
+          isScheduledTimeReached(order.scheduledFor)
         ) {
           void updateOrderStatus(order.id, "preparing");
-          setAutoReleasedIds((prev) => new Set([...prev, order.id]));
         }
       });
-    }, 30000);
+    }, 5000);
 
     return () => clearInterval(interval);
-  }, [orders, autoReleasedIds]);
+  }, []);
 
   const scheduledOrders = useMemo(
     () =>
@@ -63,7 +65,7 @@ function VendorSchedulePage() {
   );
 
   const handleStartPreparation = (orderId: string) => {
-    void updateOrderStatus(orderId, "accepted");
+    void updateOrderStatus(orderId, "preparing");
   };
 
   return (
@@ -151,7 +153,7 @@ function VendorSchedulePage() {
 
                       <div className="vendor-order-footer">
                         <div className="vendor-order-total-copy">
-                          <small>Total</small>
+                          <small>Total </small>
                           <strong>Rs {order.total}</strong>
                         </div>
                         {isReady ? (

@@ -26,10 +26,10 @@ export function CanteenCard(props: Canteen) {
             <article className="card-wrap">
 
                 <div className="card-image-container">
-                    <img src={image || "/placeholder.svg"} alt={name} className="card-img" />
+                    <img src={image || "/placeholder.svg"} alt={name} className="card-img" loading="lazy" />
                     {logo && (
                         <div className="card-logo-badge">
-                            <img src={logo} alt={`${name} logo`} className="card-logo-img" />
+                            <img src={logo} alt={`${name} logo`} className="card-logo-img" loading="lazy" />
                         </div>
                     )}
                     {!isOpen && (

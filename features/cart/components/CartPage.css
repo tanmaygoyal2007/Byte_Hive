@@ -186,6 +186,8 @@
 
 .summary-chip-schedule {
   margin-bottom: 0.35rem;
+  padding-left: 0;
+  align-self: flex-start;
 }
 
 .cart-toolbar-btn--ghost:hover,
@@ -633,18 +635,33 @@
   align-items: flex-start;
   gap: 0.2rem;
   min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 
 .schedule-toggle-label {
+  display: block;
   font-size: 1rem;
   font-weight: 700;
   line-height: 1.2;
 }
 
 .schedule-toggle-meta {
+  display: block;
+  align-self: stretch;
   color: var(--cart-muted);
   font-size: 0.86rem;
   line-height: 1.45;
+  text-align: left;
+}
+
+.schedule-toggle-meta {
+  display: block;
+  width: 100%;
+  color: var(--cart-muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+  text-align: left;
 }
 
 .schedule-toggle-trailing {
@@ -757,9 +774,9 @@
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  padding: 1rem;
+  padding: 0.75rem 0;
   border-radius: 14px;
-  background: color-mix(in srgb, var(--success) 12%, transparent);
+  background: transparent;
 }
 
 .schedule-confirmed-label {
@@ -769,7 +786,7 @@
   font-size: 0.9rem;
   font-weight: 500;
   color: var(--success);
-  white-space: nowrap;
+  min-width: 0;
 }
 
 .schedule-remove-btn {
@@ -1187,7 +1204,8 @@
   }
 
   .schedule-toggle-label {
-    font-size: 0.96rem;
+    font-size: 1rem;
+    width: 75%;
   }
 
   .schedule-toggle-meta {

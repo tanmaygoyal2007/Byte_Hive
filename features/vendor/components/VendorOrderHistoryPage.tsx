@@ -43,9 +43,9 @@ function formatCurrency(amount: number) {
 
 function VendorOrderHistoryPage() {
   const navigate = useNavigate();
-  const [outletName, setOutletName] = useState(() => getVendorOutlet() ?? "");
+  const [outletName, setOutletName] = useState("");
   const [orders, setOrders] = useState<ByteHiveOrder[]>([]);
-  const [selectedHistoryDate, setSelectedHistoryDate] = useState(() => getDateInputValue());
+  const [selectedHistoryDate, setSelectedHistoryDate] = useState("");
   const [orderSearch, setOrderSearch] = useState("");
 
   useEffect(() => {
@@ -56,6 +56,7 @@ function VendorOrderHistoryPage() {
     }
 
     setOutletName(outlet);
+    setSelectedHistoryDate(getDateInputValue());
     const sync = () => setOrders(getOrdersForOutlet(outlet).sort((a, b) => b.createdAt.localeCompare(a.createdAt)));
     sync();
     return subscribeToOrders(sync);
@@ -171,7 +172,7 @@ function VendorOrderHistoryPage() {
                   type="date"
                   className="vendor-input vendor-history-date-input"
                   value={selectedHistoryDate}
-                  max={getDateInputValue()}
+                  max={selectedHistoryDate || getDateInputValue()}
                   onChange={(event) => setSelectedHistoryDate(event.target.value || getDateInputValue())}
                 />
               </label>

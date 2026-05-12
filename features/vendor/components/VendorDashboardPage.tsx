@@ -18,6 +18,7 @@ import {
 } from "@/features/orders/services/order-portal.service";
 import {
   clearVendorSession,
+  getMenuAccessMode,
   getVendorClosureNotice,
   clearVendorTemporaryClosure,
   getVendorClosureLabel,
@@ -25,8 +26,10 @@ import {
   getVendorOutlet,
   getVendorOutletStatusInfo,
   isVendorSessionAuthorized,
+  setMenuAccessMode,
   setVendorManualClosure,
   setVendorScheduledClosure,
+  subscribeToMenuAccessConfig,
   subscribeToVendorStatus,
   syncVendorStatusesFromServer,
   type VendorOutletStatusInfo,
@@ -60,6 +63,11 @@ function VendorDashboardPage() {
   const [orders, setOrders] = useState<ByteHiveOrder[]>([]);
   const [isMobile, setIsMobile] = useState(false);
   const [showMenuKeyModal, setShowMenuKeyModal] = useState(false);
+  const [showMenuAccessModal, setShowMenuAccessModal] = useState(false);
+  const [menuAccessMode, setMenuAccessModeState] = useState(() => getMenuAccessMode(outletName || ""));
+  const [menuAccessKey, setMenuAccessKey] = useState("");
+  const [menuAccessKeyError, setMenuAccessKeyError] = useState("");
+  const [isVerifyingMenuAccessKey, setIsVerifyingMenuAccessKey] = useState(false);
   const [showClosureModal, setShowClosureModal] = useState(false);
   const [showClosureGuidance, setShowClosureGuidance] = useState(false);
   const [isEditingClosure, setIsEditingClosure] = useState(false);
@@ -115,6 +123,14 @@ function VendorDashboardPage() {
       window.clearInterval(interval);
       unsubscribe();
     };
+  }, [outletName]);
+
+  useEffect(() => {
+    setMenuAccessModeState(getMenuAccessMode(outletName || ""));
+    const unsubscribe = subscribeToMenuAccessConfig(() => {
+      setMenuAccessModeState(getMenuAccessMode(outletName || ""));
+    });
+    return unsubscribe;
   }, [outletName]);
 
   const activeOrders = useMemo(
@@ -482,7 +498,7 @@ function VendorDashboardPage() {
 
             <div className="vendor-order-footer">
               <div className="vendor-order-total-copy">
-                <small>Total</small>
+                <small>Total </small>
                 <strong className="vendor-order-total">Rs {order.total}</strong>
               </div>
               {order.status !== "collected" && order.status !== "handoff" && (
@@ -534,8 +550,24 @@ function VendorDashboardPage() {
                       Close Outlet
                     </button>
                   )}
-                  <button type="button" className="vendor-button-secondary" onClick={() => setShowMenuKeyModal(true)}>
+                  <button type="button" className="vendor-button-secondary" onClick={() => {
+                    if (menuAccessMode === "all_staff") {
+                      navigate("/vendor/menu");
+                    } else {
+                      setShowMenuKeyModal(true);
+                    }
+                  }}>
                     <Settings size={18} />Manage Menu
+                  </button>
+                  <button
+                    type="button"
+                    className="vendor-icon-button"
+                    onClick={() => { setShowMenuAccessModal(true); setMenuAccessKey(""); setMenuAccessKeyError(""); }}
+                    aria-label="Menu access settings"
+                    title={`Access: ${menuAccessMode === "all_staff" ? "All Staff" : "Owner Only"}`}
+                    style={{ width: 36, height: 36, flexShrink: 0 }}
+                  >
+                    <Settings size={15} />
                   </button>
                   <button type="button" className="vendor-button-ghost" onClick={handleLogout}>Logout</button>
                 </div>
@@ -727,6 +759,114 @@ function VendorDashboardPage() {
                   onClick={handleMenuAccess}
                 >
                   {isVerifyingMenuKey ? "Verifying..." : "Verify & Access"}
+                </button>
+              </div>
+            </section>
+          </div>
+        </>
+      )}
+
+      {showMenuAccessModal && (
+        <>
+          <div className="vendor-form-backdrop" onClick={() => { setShowMenuAccessModal(false); setMenuAccessKey(""); setMenuAccessKeyError(""); }} />
+          <div className="vendor-form-wrap">
+            <section className="vendor-form-panel" role="dialog" aria-modal="true" aria-label="Menu Access Settings">
+              <div className="vendor-form-header">
+                <div>
+                  <h2>Menu Access Settings</h2>
+                  <p className="vendor-muted">Choose who can access the Menu Management page. Changing this requires the master key.</p>
+                </div>
+                <button
+                  type="button"
+                  className="vendor-icon-button"
+                  onClick={() => { setShowMenuAccessModal(false); setMenuAccessKey(""); setMenuAccessKeyError(""); }}
+                  aria-label="Close"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="vendor-form-body">
+                <div className="vendor-field">
+                  <label>Access Mode</label>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 8 }}>
+                    <label className="vendor-radio-label" style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "12px 14px", borderRadius: 12, border: `1px solid ${menuAccessMode === "owner_only" ? "var(--accent)" : "var(--border-soft)"}`, background: menuAccessMode === "owner_only" ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent" }}>
+                      <input
+                        type="radio"
+                        name="menuAccess"
+                        checked={menuAccessMode === "owner_only"}
+                        onChange={() => setMenuAccessModeState("owner_only")}
+                        style={{ accentColor: "var(--accent)" }}
+                      />
+                      <div>
+                        <strong>Owner Only</strong>
+                        <p style={{ margin: "2px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>Master key required to access menu management.</p>
+                      </div>
+                    </label>
+                    <label className="vendor-radio-label" style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", padding: "12px 14px", borderRadius: 12, border: `1px solid ${menuAccessMode === "all_staff" ? "var(--accent)" : "var(--border-soft)"}`, background: menuAccessMode === "all_staff" ? "color-mix(in srgb, var(--accent) 8%, transparent)" : "transparent" }}>
+                      <input
+                        type="radio"
+                        name="menuAccess"
+                        checked={menuAccessMode === "all_staff"}
+                        onChange={() => setMenuAccessModeState("all_staff")}
+                        style={{ accentColor: "var(--accent)" }}
+                      />
+                      <div>
+                        <strong>All Staff</strong>
+                        <p style={{ margin: "2px 0 0", fontSize: 13, color: "var(--text-secondary)" }}>Any logged-in vendor can access menu management.</p>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+                <div className="vendor-field" style={{ marginTop: 16 }}>
+                  <label htmlFor="vendor-menu-access-key">Confirm with Master Key</label>
+                  <div className="vendor-password-field">
+                    <div className="vendor-master-key-wrap">
+                      <KeyRound size={18} className="vendor-master-key-icon" />
+                      <input
+                        id="vendor-menu-access-key"
+                        type="password"
+                        className="vendor-input vendor-input-master-key"
+                        value={menuAccessKey}
+                        onChange={(event) => { setMenuAccessKey(event.target.value); setMenuAccessKeyError(""); }}
+                        placeholder="Enter master key to save"
+                      />
+                    </div>
+                  </div>
+                  {menuAccessKeyError && <p className="vendor-form-hint vendor-form-error">{menuAccessKeyError}</p>}
+                </div>
+              </div>
+              <div className="vendor-form-actions">
+                <button
+                  type="button"
+                  className="vendor-button-ghost"
+                  onClick={() => { setShowMenuAccessModal(false); setMenuAccessKey(""); setMenuAccessKeyError(""); }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  className="vendor-button"
+                  disabled={!menuAccessKey || isVerifyingMenuAccessKey}
+                  onClick={async () => {
+                    setIsVerifyingMenuAccessKey(true);
+                    setMenuAccessKeyError("");
+                    try {
+                      const result = await verifyVendorMasterKey(outletName, menuAccessKey);
+                      if (!result.success) {
+                        setMenuAccessKeyError("Invalid master key.");
+                        return;
+                      }
+                      setMenuAccessMode(outletName, menuAccessMode);
+                      setShowMenuAccessModal(false);
+                      setMenuAccessKey("");
+                    } catch (error) {
+                      setMenuAccessKeyError(error instanceof Error ? error.message : "Verification failed.");
+                    } finally {
+                      setIsVerifyingMenuAccessKey(false);
+                    }
+                  }}
+                >
+                  {isVerifyingMenuAccessKey ? "Verifying..." : "Save Settings"}
                 </button>
               </div>
             </section>

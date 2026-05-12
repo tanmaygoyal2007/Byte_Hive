@@ -9,10 +9,6 @@ async function parseErrorResponse(res: Response, fallback: string) {
   }
 }
 
-export function getBackendUrl() {
-  return BACKEND_URL;
-}
-
 export async function postJson<TResponse>(path: string, body: unknown, fallbackError: string): Promise<TResponse> {
   try {
     const res = await fetch(`${BACKEND_URL}${path}`, {
