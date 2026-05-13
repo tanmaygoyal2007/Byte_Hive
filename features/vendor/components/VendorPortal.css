@@ -1380,6 +1380,12 @@
   color: var(--text-primary);
 }
 
+.vendor-menu-settings-button {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
 .vendor-inline-note {
   font-size: 0.875rem;
 }
@@ -3267,6 +3273,8 @@
 @media (max-width: 560px) {
   .vendor-main {
     padding: 88px 12px 44px;
+    width: 100%;
+    overflow-x: hidden;
   }
 
   .vendor-auth-card,
@@ -3307,6 +3315,10 @@
     padding: 24px 16px;
   }
 
+  .vendor-stack {
+    gap: 12px;
+  }
+
   .vendor-auth-icon,
   .vendor-section-icon,
   .vendor-scan-state-icon {
@@ -3330,6 +3342,8 @@
     top: 76px;
     padding: 8px;
     border-radius: 16px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .vendor-history-metrics {
@@ -3340,6 +3354,7 @@
     min-height: 42px;
     padding: 0 10px;
     font-size: 0.92rem;
+    min-width: 0;
   }
 
   .vendor-badge {
@@ -3386,6 +3401,152 @@
   .vendor-verified-summary-row {
     flex-direction: column;
     align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .vendor-card-header,
+  .vendor-topline,
+  .vendor-section-title,
+  .vendor-outlet-meta,
+  .vendor-location,
+  .vendor-order-header,
+  .vendor-order-footer,
+  .vendor-menu-card-title,
+  .vendor-history-item-top,
+  .vendor-history-item-bottom {
+    gap: 10px;
+  }
+
+  .vendor-section-title,
+  .vendor-outlet-meta {
+    min-width: 0;
+  }
+
+  .vendor-outlet-meta {
+    align-items: flex-start;
+  }
+
+  .vendor-section-icon {
+    flex: 0 0 48px;
+  }
+
+  .vendor-page-title,
+  .vendor-section-title h1,
+  .vendor-section-title p,
+  .vendor-location,
+  .vendor-menu-card h3,
+  .vendor-order-customer,
+  .vendor-menu-description {
+    overflow-wrap: anywhere;
+  }
+
+  .vendor-tabs,
+  .vendor-toolbar-actions,
+  .vendor-table-actions,
+  .vendor-menu-card-actions,
+  .vendor-timing-actions,
+  .vendor-timing-secondary-actions,
+  .vendor-scanner-actions,
+  .vendor-unauthorized-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+
+  .vendor-menu-settings-button {
+    width: 100%;
+    height: 46px;
+  }
+
+  .vendor-status-toggle,
+  .vendor-history-fab,
+  .vendor-button,
+  .vendor-button-secondary,
+  .vendor-button-ghost,
+  .vendor-order-action,
+  .vendor-orders-toggle,
+  .vendor-time-chip {
+    min-width: 0;
+    max-width: 100%;
+    justify-content: center;
+    white-space: normal;
+  }
+
+  .vendor-order-card,
+  .vendor-menu-card {
+    min-width: 0;
+  }
+
+  .vendor-order-insights,
+  .vendor-timing-actions,
+  .vendor-timing-secondary-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .vendor-menu-toolbar {
+    gap: 10px;
+  }
+
+  .vendor-menu-search,
+  .vendor-label-name-input,
+  .vendor-history-date-field {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .vendor-menu-table-wrap {
+    margin-inline: -16px;
+    padding-inline: 16px;
+    width: calc(100% + 32px);
+  }
+
+  .vendor-menu-table {
+    min-width: 620px;
+  }
+
+  .vendor-form-wrap {
+    align-items: stretch;
+  }
+
+  .vendor-form-panel {
+    max-height: 100dvh;
+    border-radius: 18px 18px 0 0;
+  }
+
+  .vendor-form-header,
+  .vendor-form-body,
+  .vendor-form-actions {
+    padding: 14px;
+  }
+
+  .vendor-form-actions {
+    gap: 10px;
+  }
+
+  .vendor-input,
+  .vendor-select,
+  .vendor-textarea {
+    min-height: 46px;
+    padding: 12px 14px;
+    border-radius: 14px;
+  }
+
+  .vendor-input-master-key,
+  .vendor-input-has-icon {
+    padding-left: 44px;
+  }
+
+  .vendor-auth-switcher {
+    grid-template-columns: 1fr;
+  }
+
+  .vendor-scanner-frame {
+    min-height: 300px;
+  }
+
+  .vendor-scanner-surface {
+    aspect-ratio: 1 / 1.12;
   }
 }
 

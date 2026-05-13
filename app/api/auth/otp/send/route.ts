@@ -3,6 +3,7 @@ import { createOtp, getRequiredOtpDomain, isValidOtpEmail, normalizeOtpEmail } f
 import { sendOtpEmail } from "@/lib/utils/otp-mail";
 
 const OTP_TIMEOUT_MS = 8000;
+const SMTP_ERROR_CODES = ["EAUTH", "ECONNECTION", "ETIMEDOUT", "ESOCKET"];
 
 async function withTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMessage: string): Promise<T> {
   let timeoutId: ReturnType<typeof setTimeout>;
@@ -58,8 +59,13 @@ export async function POST(request: NextRequest) {
       resendAfterSeconds,
     });
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : "";
+    const isMailProviderError =
+      SMTP_ERROR_CODES.some((code) => errorMessage.includes(code)) ||
+      /Invalid login|BadCredentials|Username and Password not accepted/i.test(errorMessage);
+
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Unable to send OTP." },
+      { error: isMailProviderError ? "Unable to send OTP email. Please try again later." : errorMessage || "Unable to send OTP." },
       { status: 400 }
     );
   }

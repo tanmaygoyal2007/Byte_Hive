@@ -6,6 +6,11 @@ type SendOtpEmailResult = {
   mirrored?: boolean;
 };
 
+function shouldUseDevMailboxFallback() {
+  if (process.env.NODE_ENV === "production") return false;
+  return ["true", "1", "yes"].includes((process.env.OTP_DEV_MAILBOX_FALLBACK || "").toLowerCase());
+}
+
 export async function sendOtpEmail(params: {
   to: string;
   code: string;
@@ -29,18 +34,19 @@ export async function sendOtpEmail(params: {
       </div>
     `;
 
-  if (!host || !port || !user || !pass || !fromEmail) {
-    if (process.env.NODE_ENV !== "production") {
-      await addMirroredEmail({
-        from: fromEmail || "bytehive-local@dev.local",
-        to: params.to,
-        subject,
-        html,
-      });
-      return { delivered: true, mirrored: true };
-    }
+  async function mirrorEmail() {
+    await addMirroredEmail({
+      from: fromEmail || "bytehive-local@dev.local",
+      to: params.to,
+      subject,
+      html,
+    });
 
-    return { delivered: false };
+    return { delivered: true, mirrored: true };
+  }
+
+  if (!host || !port || !user || !pass || !fromEmail) {
+    return shouldUseDevMailboxFallback() ? mirrorEmail() : { delivered: false };
   }
 
   const transporter = nodemailer.createTransport({
@@ -59,12 +65,25 @@ export async function sendOtpEmail(params: {
         : undefined,
   });
 
-  await transporter.sendMail({
-    from: fromEmail,
-    to: params.to,
-    subject,
-    html,
-  });
+  try {
+    await transporter.sendMail({
+      from: fromEmail,
+      to: params.to,
+      subject,
+      html,
+    });
+  } catch (error) {
+    if (shouldUseDevMailboxFallback()) {
+      console.warn("SMTP delivery failed. Mirroring OTP email locally instead.", error);
+      return mirrorEmail();
+    }
+
+    throw new Error(
+      process.env.NODE_ENV === "production"
+        ? "Unable to send OTP email. Please try again later."
+        : "Gmail rejected the SMTP credentials. Update SMTP_USER and SMTP_PASS in .env.local with a valid app password."
+    );
+  }
 
   return { delivered: true };
 }

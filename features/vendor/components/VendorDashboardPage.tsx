@@ -561,11 +561,10 @@ function VendorDashboardPage() {
                   </button>
                   <button
                     type="button"
-                    className="vendor-icon-button"
+                    className="vendor-icon-button vendor-menu-settings-button"
                     onClick={() => { setShowMenuAccessModal(true); setMenuAccessKey(""); setMenuAccessKeyError(""); }}
                     aria-label="Menu access settings"
                     title={`Access: ${menuAccessMode === "all_staff" ? "All Staff" : "Owner Only"}`}
-                    style={{ width: 36, height: 36, flexShrink: 0 }}
                   >
                     <Settings size={15} />
                   </button>
