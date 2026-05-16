@@ -1,5 +1,4 @@
 import { getOutletIdByName } from "@/features/orders/services/order-portal.service";
-import { getCurrentAuthUser } from "@/features/auth/services/auth.service";
 
 export const VENDOR_OUTLETS = [
   "Taste of Delhi",
@@ -77,7 +76,7 @@ export function getVendorOutlet() {
 
 export function isVendorSessionAuthorized() {
   if (typeof window === "undefined") return false;
-  return Boolean(getVendorOutlet()) && !getCurrentAuthUser();
+  return Boolean(getVendorOutlet());
 }
 
 export function getVendorOutletId(outlet = getVendorOutlet()) {

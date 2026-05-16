@@ -42,7 +42,8 @@ const emptyForm: MenuForm = { name: "", category: "", price: "", description: ""
 
 function VendorMenuPage() {
   const navigate = useNavigate();
-  const [outletName, setOutletName] = useState("");
+  const [outletName, setOutletName] = useState(() => getVendorOutlet());
+  const [hasSyncedVendorOutlet, setHasSyncedVendorOutlet] = useState(false);
   const outletId = getOutletIdByName(outletName);
   const [menuItems, setMenuItems] = useState<MenuCatalogItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,11 +63,19 @@ function VendorMenuPage() {
   const [newLabelColor, setNewLabelColor] = useState(defaultColors[0]);
 
   useEffect(() => {
-    const syncOutlet = () => setOutletName(getVendorOutlet());
+    const syncOutlet = () => {
+      setOutletName(getVendorOutlet());
+      setHasSyncedVendorOutlet(true);
+    };
+    syncOutlet();
     return subscribeToVendorSession(syncOutlet);
   }, []);
 
   useEffect(() => {
+    if (!hasSyncedVendorOutlet) {
+      return;
+    }
+
     if (!isVendorSessionAuthorized() || !outletName) {
       navigate("/vendor/unauthorized", { replace: true });
       return;
@@ -77,7 +86,7 @@ function VendorMenuPage() {
 
     const unsubscribe = subscribeToMenu(syncMenu);
     return unsubscribe;
-  }, [navigate, outletId, outletName]);
+  }, [hasSyncedVendorOutlet, navigate, outletId, outletName]);
 
   useEffect(() => {
     const syncViewport = () => setIsMobile(window.innerWidth < 860);
@@ -102,10 +111,10 @@ function VendorMenuPage() {
         ...getDisplayLabelsForItem(item, outletId).map((label) => label.name),
       ].some((value) => value.toLowerCase().includes(query))
     );
-  }, [menuItems, searchQuery]);
+  }, [menuItems, outletId, searchQuery]);
 
   const systemLabels = useMemo(() => getSystemFoodLabels(), []);
-  const allLabelOptions = useMemo(() => getAllFoodLabelsForCanteen(outletId), [outletId, customLabels]);
+  const allLabelOptions = getAllFoodLabelsForCanteen(outletId);
 
   const categoryOptions = useMemo(() => {
     const categories = new Set<string>(suggestedCategories);

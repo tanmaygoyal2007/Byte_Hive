@@ -24,7 +24,10 @@ function VendorSchedulePage() {
   const [outletName, setOutletName] = useState("");
   const [orders, setOrders] = useState<ByteHiveOrder[]>([]);
   const ordersRef = useRef(orders);
-  ordersRef.current = orders;
+
+  useEffect(() => {
+    ordersRef.current = orders;
+  }, [orders]);
 
   useEffect(() => {
     const outlet = getVendorOutlet();

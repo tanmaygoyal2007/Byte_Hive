@@ -48,7 +48,7 @@ function CanteenMenuPage() {
   const categories = useMemo(() => {
     const set = new Set<string>();
     items.forEach((item) => set.add(item.category));
-    let list = Array.from(set).sort((a, b) => a.localeCompare(b));
+    const list = Array.from(set).sort((a, b) => a.localeCompare(b));
     const hasUnavailable = items.some((item) => item.isAvailable === false);
     if (hasUnavailable && !list.includes("Unavailable")) {
       list.push("Unavailable");
@@ -84,7 +84,10 @@ function CanteenMenuPage() {
   }, [activeCanteenId]);
 
   const rawCategory = searchParams.get("category") ?? "All";
-  const selectedLabelFilters = (searchParams.get("labels") ?? "").split(",").map((value) => value.trim()).filter(Boolean);
+  const selectedLabelFilters = useMemo(
+    () => (searchParams.get("labels") ?? "").split(",").map((value) => value.trim()).filter(Boolean),
+    [searchParams]
+  );
   const previewSrc = searchParams.get("src");
   const category = rawCategory === "All" || categories.includes(rawCategory) ? rawCategory : "All";
   const availableLabelOptions = useMemo(
