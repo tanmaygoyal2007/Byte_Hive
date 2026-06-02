@@ -480,7 +480,7 @@ function AuthModal({ isOpen, role, onClose, onSubmit }: AuthModalProps) {
                   setEmail(event.target.value);
                   if (mode === "signup" && signupStep !== "identity") resetSignupFlow();
                 }}
-                placeholder={role === "student" ? "student@dept.christuniversity.in" : "faculty@christuniversity.in"}
+                placeholder={role === "student" ? "student@course.christuniversity.in" : "faculty@christuniversity.in"}
                 list="bytehive-saved-auth-emails"
                 required
               />
@@ -505,7 +505,7 @@ function AuthModal({ isOpen, role, onClose, onSubmit }: AuthModalProps) {
                       type="email"
                       value={email}
                       onChange={(event) => setEmail(event.target.value)}
-                      placeholder={role === "student" ? "student@dept.christuniversity.in" : "faculty@christuniversity.in"}
+                      placeholder={role === "student" ? "student@course.christuniversity.in" : "faculty@christuniversity.in"}
                       list="bytehive-saved-auth-emails"
                       required
                     />
@@ -553,7 +553,7 @@ function AuthModal({ isOpen, role, onClose, onSubmit }: AuthModalProps) {
                       type="email"
                       value={email}
                       onChange={(event) => setEmail(event.target.value)}
-                      placeholder={role === "student" ? "student@dept.christuniversity.in" : "faculty@christuniversity.in"}
+                      placeholder={role === "student" ? "student@course.christuniversity.in" : "faculty@christuniversity.in"}
                       list="bytehive-saved-auth-emails"
                       required
                     />

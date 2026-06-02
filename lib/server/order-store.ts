@@ -1,5 +1,6 @@
 import { mkdir, open, readFile, rm, writeFile } from "fs/promises";
 import path from "path";
+import baseMenuData from "@/features/menu/data/menu.json";
 import {
   formatScheduledOrderLabel,
   getLivePrepMinutes,
@@ -7,6 +8,7 @@ import {
   type ByteHiveOrder,
   type ByteHiveOrderItem,
   type ByteHivePickupSegment,
+  type MenuCatalogItem,
   type OrderDelayState,
   type OrderFulfillmentType,
   type OrderStatus,
@@ -25,6 +27,7 @@ type CreateOrderPayload = {
   fulfillmentType?: OrderFulfillmentType;
   scheduledFor?: string | null;
   vendorNotes?: string | null;
+  prepMinutes?: number;
 };
 
 type UpdateTimingPayload = {
@@ -89,6 +92,13 @@ async function withLock<T>(lockFilePath: string, callback: () => Promise<T>, att
     }
 
     throw error;
+  }
+}
+
+const itemPrepMinutesMap = new Map<string, number>();
+for (const menuItem of (baseMenuData as MenuCatalogItem[])) {
+  if (menuItem.prepMinutes && menuItem.prepMinutes > 0) {
+    itemPrepMinutesMap.set(menuItem.id, menuItem.prepMinutes);
   }
 }
 
@@ -296,7 +306,15 @@ export async function createStoredOrder(payload: CreateOrderPayload) {
     const sequenceNumber = await getNextSequenceNumber(payload.outletId, businessDate);
     const receiptNumber = createReceiptNumber(payload.outletId, businessDate, sequenceNumber);
     const now = createdAt.toISOString();
-    const basePrepMinutes = parseEstimatedMinutes(outletMeta.estimatedTime);
+    const maxItemPrep = Math.max(
+      ...normalizedItems.map((item) => itemPrepMinutesMap.get(item.id) ?? 0),
+      0
+    );
+    const basePrepMinutes = payload.prepMinutes ?? (
+      maxItemPrep > 0
+        ? maxItemPrep
+        : parseEstimatedMinutes(outletMeta.estimatedTime)
+    );
     const pickupSegments = buildPickupSegments(payload.outletId, normalizedItems, sequenceNumber);
     const primarySegment = getPrimarySegment(pickupSegments);
     const fulfillmentType = payload.fulfillmentType === "scheduled" ? "scheduled" : "instant";
