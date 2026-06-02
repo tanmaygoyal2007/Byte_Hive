@@ -1146,6 +1146,16 @@
   color: #d04747;
 }
 
+.vendor-order-auto-ready-notice {
+  margin-top: 12px;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 16%, transparent);
+}
+
 .vendor-order-delay-banner,
 .vendor-timing-panel {
   margin-top: 14px;

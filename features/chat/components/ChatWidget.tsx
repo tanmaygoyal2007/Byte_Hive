@@ -549,6 +549,10 @@ export default function ChatWidget({ mode = "student", orderContext, executeActi
   };
 
   const handleVoiceOverlayCancel = () => {
+    if (voiceMode === "error") {
+      setVoiceError("Please grant microphone permission in your browser settings (click the lock icon next to the URL) and try again.");
+      return;
+    }
     if (isListening) {
       recognitionRef.current?.stop();
       setIsListening(false);
@@ -790,7 +794,7 @@ export default function ChatWidget({ mode = "student", orderContext, executeActi
               aria-label="Stop voice conversation"
               title="Stop voice conversation"
             >
-              {voiceMode === "processing" ? <Loader2 size={28} /> : voiceMode === "speaking" ? <VolumeX size={28} /> : <MicOff size={28} />}
+              {voiceMode === "processing" ? <Loader2 size={28} /> : voiceMode === "speaking" ? <VolumeX size={28} /> : voiceMode === "error" ? <MicOff size={28} /> : <Mic size={28} />}
             </button>
           </div>
         ) : (
@@ -813,7 +817,7 @@ export default function ChatWidget({ mode = "student", orderContext, executeActi
                 aria-label={isListening ? "Stop listening" : speakingMessageIndex !== null ? "Stop speaking" : "Start voice input"}
                 title={isListening ? "Stop listening" : speakingMessageIndex !== null ? "Stop speaking" : "Start voice input"}
               >
-                {speakingMessageIndex !== null ? <VolumeX size={16} /> : isListening ? <MicOff size={16} /> : <Mic size={16} />}
+                {speakingMessageIndex !== null ? <VolumeX size={16} /> : <Mic size={16} />}
               </button>
             )}
             <button className="bh-send-btn" onClick={handleSend} disabled={!input.trim() || isLoading} aria-label="Send">

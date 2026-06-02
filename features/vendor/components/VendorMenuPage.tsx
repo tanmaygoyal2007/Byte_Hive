@@ -29,6 +29,7 @@ type MenuForm = {
   isAvailable: boolean;
   isVeg: boolean;
   labels: string[];
+  prepMinutes: string;
 };
 
 type PendingMenuSave = {
@@ -38,7 +39,7 @@ type PendingMenuSave = {
 
 const suggestedCategories = ["Breakfast", "Main Course", "Beverages", "Snacks", "Desserts"];
 const defaultColors = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#06b6d4", "#3b82f6", "#8b5cf6", "#ec4899"];
-const emptyForm: MenuForm = { name: "", category: "", price: "", description: "", isAvailable: true, isVeg: true, labels: [] };
+const emptyForm: MenuForm = { name: "", category: "", price: "", description: "", isAvailable: true, isVeg: true, labels: [], prepMinutes: "" };
 
 function VendorMenuPage() {
   const navigate = useNavigate();
@@ -194,6 +195,7 @@ function VendorMenuPage() {
       isAvailable: item.isAvailable,
       isVeg: item.isVeg ?? true,
       labels: existingLabels,
+      prepMinutes: item.prepMinutes ? String(item.prepMinutes) : "",
     });
     setDraftLabelSelection(existingLabels);
     setShowLabelEditor(openLabels);
@@ -252,6 +254,8 @@ function VendorMenuPage() {
 
     if (!name || !category || Number.isNaN(price) || !outletId) return;
 
+    const prepMinutes = formData.prepMinutes ? Number.parseInt(formData.prepMinutes, 10) : undefined;
+
     const nextItem: MenuCatalogItem = {
       id: editingItem ?? `${outletId}-${Date.now()}`,
       canteenId: outletId,
@@ -263,6 +267,7 @@ function VendorMenuPage() {
       isAvailable: formData.isAvailable,
       isVeg: formData.isVeg,
       labels: draftLabelSelection,
+      prepMinutes: prepMinutes && prepMinutes > 0 ? prepMinutes : undefined,
     };
 
     const previousItem = menuItems.find((item) => item.id === editingItem);
@@ -318,6 +323,12 @@ function VendorMenuPage() {
       const nextLabels = (nextItem.labels ?? []).join(", ") || "No labels";
       if (previousLabels !== nextLabels) {
         changeSummary.push({ label: "Labels", from: previousLabels, to: nextLabels });
+      }
+
+      const previousPrep = previousItem.prepMinutes ? `${previousItem.prepMinutes} min` : "Outlet default";
+      const nextPrep = nextItem.prepMinutes ? `${nextItem.prepMinutes} min` : "Outlet default";
+      if (previousPrep !== nextPrep) {
+        changeSummary.push({ label: "Prep Time", from: previousPrep, to: nextPrep });
       }
     }
 
@@ -725,6 +736,19 @@ function VendorMenuPage() {
                         />
                         <span className="vendor-form-toggle">Available for ordering</span>
                       </label>
+                      <div className="vendor-field">
+                        <label htmlFor="vendor-item-prep-time">Prep Time (minutes)</label>
+                        <input
+                          id="vendor-item-prep-time"
+                          type="number"
+                          min="0"
+                          max="120"
+                          className="vendor-input"
+                          value={formData.prepMinutes}
+                          onChange={(event) => setFormData({ ...formData, prepMinutes: event.target.value })}
+                          placeholder="Leave empty for outlet default"
+                        />
+                      </div>
                     </>
                 </div>
                 <div className="vendor-form-actions">

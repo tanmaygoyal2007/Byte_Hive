@@ -80,6 +80,7 @@ export interface MenuCatalogItem {
   isAvailable: boolean;
   labels?: string[];
   pickupPoint?: PickupPoint;
+  prepMinutes?: number;
 }
 
 export interface MenuItemDraftInput {
@@ -91,6 +92,7 @@ export interface MenuItemDraftInput {
   isVeg?: boolean;
   image?: string;
   pickupPoint?: PickupPoint;
+  prepMinutes?: number;
 }
 
 export interface FavoriteMenuItem {
@@ -705,12 +707,21 @@ export async function createOrder(payload: {
   scheduledFor?: string | null;
   vendorNotes?: string | null;
 }) {
+  const menuItems = getMenuItemsForOutlet(payload.outletId);
+  const orderPrepMinutes = Math.max(
+    ...payload.items.map((item) => {
+      const menuItem = menuItems.find((m) => m.id === item.id);
+      return menuItem?.prepMinutes ?? 0;
+    }),
+    0
+  );
+
   const response = await fetch(ORDERS_API_PATH, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(orderPrepMinutes > 0 ? { ...payload, prepMinutes: orderPrepMinutes } : payload),
   });
 
   if (!response.ok) {

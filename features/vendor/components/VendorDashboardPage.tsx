@@ -1,5 +1,5 @@
 import { CheckCircle2, ChevronDown, ChevronUp, CircleHelp, Clock3, History, KeyRound, MapPin, Package, QrCode, Settings, Store, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "@/components/lib/router";
 import Footer from "@/components/components/layout/Footer";
 import Navbar from "@/components/components/layout/Navbar";
@@ -9,11 +9,12 @@ import {
   getOrderCountdownState,
   getOrderDelayCopy,
   getOrderEtaLabel,
+  getOrderRemainingMs,
   getOrdersForOutlet,
   getOrdersSummaryTimestamp,
   subscribeToOrders,
-  updateOrderTiming,
   updateOrderStatus,
+  updateOrderTiming,
   type ByteHiveOrder,
 } from "@/features/orders/services/order-portal.service";
 import {
@@ -133,6 +134,21 @@ function VendorDashboardPage() {
     return unsubscribe;
   }, [outletName]);
 
+  const autoReadyRef = useRef<Set<string>>(new Set());
+
+  useEffect(() => {
+    for (const order of orders) {
+      if (
+        (order.status === "preparing" || order.status === "accepted") &&
+        getOrderRemainingMs(order, now) <= 0 &&
+        !autoReadyRef.current.has(order.id)
+      ) {
+        autoReadyRef.current.add(order.id);
+        updateOrderStatus(order.id, "ready");
+      }
+    }
+  }, [orders, now]);
+
   const activeOrders = useMemo(
     () => orders.filter((order) => order.status !== "scheduled" && order.status !== "handoff" && order.status !== "collected"),
     [orders]
@@ -242,12 +258,6 @@ function VendorDashboardPage() {
     await clearVendorTemporaryClosure(outletName);
   };
 
-  const handleOrderAction = (orderId: string, currentStatus: ByteHiveOrder["status"]) => {
-    if (currentStatus === "preparing" || currentStatus === "accepted") void updateOrderStatus(orderId, "ready");
-    if (currentStatus === "ready" || currentStatus === "partially-collected") return;
-    if (currentStatus === "handoff") void updateOrderStatus(orderId, "collected");
-  };
-
   const handleAddPrepTime = (order: ByteHiveOrder, minutesToAdd: number) => {
     void updateOrderTiming(order.id, {
       prepMinutes: getLivePrepMinutes(order) + minutesToAdd,
@@ -336,15 +346,6 @@ function VendorDashboardPage() {
     }
   };
 
-  const getActionMeta = (status: ByteHiveOrder["status"]) => {
-    if (status === "preparing" || status === "accepted") return { label: "Ready", className: "vendor-order-action vendor-order-action-accepted", disabled: false };
-    if (status === "ready") return { label: "Awaiting Scan", className: "vendor-order-action vendor-order-action-ready", disabled: true };
-    if (status === "partially-collected") return { label: "Partially Collected", className: "vendor-order-action vendor-order-action-ready", disabled: true };
-    if (status === "handoff") return { label: "Completed", className: "vendor-order-action vendor-order-action-ready", disabled: true };
-    if (status === "collected") return { label: "Completed", className: "vendor-order-action vendor-order-action-ready", disabled: true };
-    return { label: "Completed", className: "vendor-order-action vendor-order-action-ready", disabled: true };
-  };
-
   const getBadgeMeta = (status: ByteHiveOrder["status"]) => {
     if (status === "preparing" || status === "accepted") return { className: "vendor-status-badge vendor-status-new", label: "New Order" };
     if (status === "ready") return { className: "vendor-status-badge vendor-status-ready", label: "Ready" };
@@ -375,7 +376,6 @@ function VendorDashboardPage() {
 
   const renderOrderCard = (order: ByteHiveOrder, collapsible = false) => {
     const isExpanded = expandedOrders.includes(order.id);
-    const action = getActionMeta(order.status);
     const badge = getBadgeMeta(order.status);
     const etaLabel = getOrderEtaLabel(order);
     const delayCopy = getOrderDelayCopy(order);
@@ -434,6 +434,10 @@ function VendorDashboardPage() {
                 <strong>{order.pickupLocation}</strong>
               </div>
             </div>
+
+            {order.status !== "scheduled" && order.status !== "handoff" && order.status !== "collected" && (
+              <p className="vendor-order-auto-ready-notice">Auto-ready after the estimated time</p>
+            )}
 
             {delayCopy && (
               <div className="vendor-order-delay-banner">
@@ -501,16 +505,6 @@ function VendorDashboardPage() {
                 <small>Total </small>
                 <strong className="vendor-order-total">Rs {order.total}</strong>
               </div>
-              {order.status !== "collected" && order.status !== "handoff" && (
-                <button
-                  type="button"
-                  className={action.className}
-                  disabled={action.disabled}
-                  onClick={() => handleOrderAction(order.id, order.status)}
-                >
-                  {action.label}
-                </button>
-              )}
             </div>
           </>
         )}
